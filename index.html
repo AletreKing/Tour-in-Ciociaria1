@@ -422,8 +422,8 @@ function render(){
     h+=catTag(p.c)+'<h2>'+esc(p.n)+'</h2><div class="meta">'+(p.com?'<span>'+esc(p.com)+'</span>':'')+'</div>';
     h+='<div class="gal" id="gal"></div>';
     h+='<div id="desc"></div>';
-    h+='<div class="drv"><p class="k">Come ci arrivi</p><div class="row"><a class="btn pri" href="guida.html#vai-'+p.id+'">Guida tu</a><button class="btn" type="button" data-act="arrivo">Salta il viaggio</button></div>';
-    h+='<div class="sub">Guida automatica: <a href="guida.html#vai-'+p.id+'-a1">Lenta</a><a href="guida.html#vai-'+p.id+'-a2">Normale</a><a href="guida.html#vai-'+p.id+'-a3">Rapida</a></div></div>';
+    h+='<div class="drv"><p class="k">Come ci arrivi</p><div class="row"><a class="btn pri" href="guida.html#vai-'+p.id+'">Guida tu</a><a class="btn" href="guida.html#vai-'+p.id+'-v">Parti a 300 m</a><button class="btn" type="button" data-act="arrivo">Salta il viaggio</button></div>';
+    h+='<div class="sub">Guida automatica, ti godi il paesaggio: <a href="guida.html#vai-'+p.id+'-a1">×1</a><a href="guida.html#vai-'+p.id+'-a2">×2</a><a href="guida.html#vai-'+p.id+'-a4">×4</a><a href="guida.html#vai-'+p.id+'-a5">×5</a></div></div>';
     h+='<div class="row"><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+p.lat+','+p.lon+'">Indicazioni reali</a>';
     if(p.w){var wl=p.w.split(':'),lang=wl.shift();h+='<a class="btn" target="_blank" rel="noopener" href="https://'+lang+'.wikipedia.org/wiki/'+encodeURIComponent(wl.join(':').replace(/ /g,'_'))+'">Wikipedia</a>';}
     h+='</div>';
