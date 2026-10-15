@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e6a5a">
+<style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>Schede dei luoghi</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+:root{
+  --bg:#eef0eb; --ink:#1f2a26; --dim:#5d6a63; --line:#c3cbbf; --panel:#fbfcf8; --accent:#1e6a5a; --accent-ink:#fff; --warn:#b4621a; --bad:#b23b2b;
+  --c-arch:#b0781c; --c-fede:#4a5fa8; --c-cast:#7a5a86; --c-muse:#1f8a86; --c-nat:#3f8a3a; --c-lett:#b04a68; --c-alt:#7d857f;
+  --g1:#b23b2b; --g2:#c9861d; --g3:#4a5fa8; --g4:#3f8a3a; --g5:#1e6a5a;
+  --f-disp:"Cinzel",Georgia,serif; --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif; color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111715; --ink:#e7ece8; --dim:#9aa8a1; --line:#2c3833; --panel:#151d1a; --accent:#5cc2a8; --accent-ink:#0d1512; --warn:#f0a83a; --bad:#ef8a70;
+  --c-arch:#e0a440; --c-fede:#8ea2ec; --c-cast:#c19ccf; --c-muse:#4cc7c2; --c-nat:#7fc86f; --c-lett:#ec8aa6; --c-alt:#9aa59f;
+  --g1:#ef8a70; --g2:#f0a83a; --g3:#8ea2ec; --g4:#7fc86f; --g5:#5cc2a8; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111715; --ink:#e7ece8; --dim:#9aa8a1; --line:#2c3833; --panel:#151d1a; --accent:#5cc2a8; --accent-ink:#0d1512; --warn:#f0a83a; --bad:#ef8a70;
+  --c-arch:#e0a440; --c-fede:#8ea2ec; --c-cast:#c19ccf; --c-muse:#4cc7c2; --c-nat:#7fc86f; --c-lett:#ec8aa6; --c-alt:#9aa59f; --g1:#ef8a70; --g2:#f0a83a; --g3:#8ea2ec; --g4:#7fc86f; --g5:#5cc2a8; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body)}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top h1{margin:0;font:700 21px/1.1 var(--f-disp);letter-spacing:.03em}
+.top h1 em{font-style:normal;font-weight:500;color:var(--accent)}
+.top .who{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
+.top .who input{width:150px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 9px}
+.top .acts{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer;text-decoration:none;font-size:15px}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.btn.del{color:var(--bad)}
+.wrap{display:grid;grid-template-columns:minmax(300px,420px) 1fr;height:calc(100vh - 64px)}
+.side,.ed{overflow:auto}
+@media (max-width:820px){.wrap{grid-template-columns:1fr;height:auto}.side,.ed{overflow:visible}.ed{border-left:0;border-top:1px solid var(--line)}}
+.side{padding:14px 16px;border-right:1px solid var(--line);min-width:0}
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.gb{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:8px 10px;text-align:left;cursor:pointer;display:grid;gap:0}
+.gb b{font-size:24px;line-height:1.1;color:var(--g)}
+.gb span{font-size:13px;color:var(--dim)}
+.gb[aria-pressed="true"]{border-color:var(--g);box-shadow:inset 0 0 0 2px var(--g)}
+.filt{display:flex;gap:8px;margin-bottom:8px}
+.filt input,.filt select{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 9px}
+.list{display:grid;gap:2px}
+.li{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;text-align:left;border:0;background:none;border-radius:8px;padding:7px 6px;cursor:pointer}
+.li:hover{background:var(--panel)}
+.li[aria-current="true"]{background:var(--panel);box-shadow:inset 3px 0 0 var(--accent)}
+.li i{width:11px;height:11px;background:var(--c);clip-path:polygon(18% 0,82% 6%,100% 52%,74% 100%,10% 88%,0 38%)}
+.li small{color:var(--dim);font-size:12px;text-align:right}
+.li .loc{color:var(--warn);font-weight:700}
+.note{font-size:13px;color:var(--dim)}
+.ed{padding:16px 22px 60px;border-left:1px solid var(--line);min-width:0}
+.ed h2{margin:2px 0 0;font:700 24px/1.2 var(--f-disp)}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);font-weight:700}
+.tag i{width:10px;height:10px;background:var(--c);clip-path:polygon(18% 0,82% 6%,100% 52%,74% 100%,10% 88%,0 38%)}
+.st{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--g);color:var(--g);margin-left:8px;vertical-align:middle}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:14px 0 0;background:var(--panel)}
+legend{font-weight:700;padding:0 6px}
+label.f{display:grid;gap:4px;font-size:14px;color:var(--dim);margin-top:8px}
+label.f input,label.f textarea,label.f select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 9px;color:var(--ink);width:100%}
+textarea{min-height:120px;resize:vertical;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.web{font-size:14px}
+.web p{margin:4px 0}
+.ok{color:var(--g4);font-weight:700}.no{color:var(--g1);font-weight:700}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.th{width:150px;display:grid;gap:4px;font-size:12px}
+.th img{width:150px;height:100px;object-fit:cover;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.th input{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:3px 6px;font-size:12px;width:100%}
+.item{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px;background:var(--bg)}
+.sres{display:grid;gap:4px;margin-top:6px}
+.sres button{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 9px;cursor:pointer;font-size:14px}
+.sres small{display:block;color:var(--dim)}
+.empty{padding:30px 10px;color:var(--dim)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;z-index:30}
+.help{font-size:14px;color:var(--dim)}
+.help ol{margin:6px 0 0;padding-left:20px}
+</style>
+
+<header class="top">
+  <h1>Schede <em>dei luoghi</em></h1>
+  <label class="who">Il tuo nome <input id="who" placeholder="es. Prof. Rossi" autocomplete="name"></label>
+  <div class="acts">
+    <label class="btn" for="imp">Importa lavoro di un collega</label><input id="imp" type="file" accept=".zip,.json" hidden>
+    <button class="btn" type="button" id="expMine">Scarica le mie modifiche</button>
+    <button class="btn pri" type="button" id="expAll">Scarica per il sito</button>
+  </div>
+</header>
+<div class="wrap">
+  <aside class="side">
+    <div class="groups" id="groups"></div>
+    <div class="filt"><input id="q" type="search" placeholder="Cerca luogo o comune"><select id="cat"></select></div>
+    <p class="note" id="sum"></p>
+    <div class="list" id="list"></div>
+  </aside>
+  <main class="ed" id="ed"></main>
+</div>
+
+<script type="application/json" id="data">{"cat":{"arch":"Archeologia","fede":"Fede e abbazie","cast":"Castelli e torri","muse":"Musei","nat":"Natura","lett":"Luoghi letterari","alt":"Altri luoghi"},"poi":[{"n":"Monte Calvilli","nome":"","c":"nat","com":"Castro dei Volsci","w":"it:Monte Calvilli","wd":"Q8545763","t":""},{"n":"Monte Campo Lupino","nome":"","c":"nat","com":"","w":"","wd":"Q31625448","t":""},{"n":"Monte Malaina","nome":"","c":"nat","com":"","w":"it:Monte Malaina","wd":"Q3861714","t":""},{"n":"Grotte di Pastena","nome":"","c":"nat","com":"Pastena","w":"it:Grotte di Pastena","wd":"Q3777127","t":""},{"n":"Acropoli di Civitavecchia","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":"Sul colle di Civitavecchia, sopra Arpino, resta un tratto di mura poligonali con una porta ad arco acuto, molto rara in questa tecnica. Arpino è la città natale di Marco Tullio Cicerone e di Gaio Mario."},{"n":"Cascatelle Anitrella","nome":"","c":"nat","com":"Fontana Liri","w":"","wd":"","t":""},{"n":"Cascata Grande","nome":"","c":"nat","com":"Isola del Liri","w":"","wd":"","t":"Nel centro di Isola del Liri il fiume precipita per quasi trenta metri accanto al castello Boncompagni-Viscogliosi. È un caso raro di cascata nel cuore di un paese."},{"n":"Porta San Francesco","nome":"","c":"arch","com":"Alatri","w":"it:Porte di Alatri","wd":"Q3909017","t":""},{"n":"Porta San Pietro","nome":"","c":"arch","com":"Alatri","w":"","wd":"","t":""},{"n":"Monte Cacume","nome":"","c":"nat","com":"Patrica","w":"it:Monte Cacume","wd":"Q3861269","t":""},{"n":"Monte Gemma","nome":"","c":"nat","com":"Supino","w":"it:Monte Gemma","wd":"Q3861575","t":""},{"n":"Capitolium di Aquinum","nome":"","c":"arch","com":"Castrocielo","w":"","wd":"","t":""},{"n":"Monte Schierano","nome":"","c":"nat","com":"Pastena","w":"it:Monte Schierano","wd":"Q8545767","t":""},{"n":"Valle dell'Inferno","nome":"","c":"nat","com":"Vico nel Lazio","w":"","wd":"","t":""},{"n":"Monte La Monna","nome":"","c":"nat","com":"Vico nel Lazio","w":"it:Monte Monna","wd":"Q3861757","t":""},{"n":"Monte Scalambra","nome":"","c":"nat","com":"Piglio","w":"it:Monte Scalambra","wd":"Q3861986","t":""},{"n":"Colle Nero","nome":"","c":"nat","com":"Settefrati","w":"it:Colle Nero","wd":"Q16542881","t":""},{"n":"Monte Cappello","nome":"","c":"nat","com":"Pastena","w":"it:Monte Cappello (Lazio)","wd":"Q8545753","t":""},{"n":"Monte Fanfilli","nome":"","c":"nat","com":"Vico nel Lazio","w":"","wd":"","t":""},{"n":"Monte Solo","nome":"","c":"nat","com":"Pastena","w":"it:Monte Solo","wd":"Q8545758","t":""},{"n":"Grotte di Collepardo","nome":"","c":"nat","com":"Collepardo","w":"it:Grotte di Collepardo","wd":"Q3777122","t":""},{"n":"Acropoli (Civita) Di Alatri","nome":"Acropoli di Alatri (la Civita)","c":"arch","com":"Alatri","w":"","wd":"","t":"La Civita di Alatri è uno dei recinti megalitici meglio conservati d'Italia. Mura di grandi blocchi poligonali sostengono la spianata su cui sorge la concattedrale di San Paolo. Si entra dalla Porta Maggiore, chiusa in alto da un enorme architrave di pietra."},{"n":"Aia della Rotonaria","nome":"","c":"nat","com":"Vico nel Lazio","w":"","wd":"","t":""},{"n":"Sorgenti Capofiume","nome":"","c":"nat","com":"Alatri","w":"","wd":"","t":""},{"n":"Castello Caetani","nome":"","c":"cast","com":"Trevi nel Lazio","w":"","wd":"Q113583604","t":""},{"n":"Torre del Castello","nome":"","c":"nat","com":"Trevi nel Lazio","w":"","wd":"","t":""},{"n":"Monte Ginepro","nome":"","c":"nat","com":"Alatri","w":"","wd":"Q54857613","t":""},{"n":"Monte Pratillo","nome":"","c":"nat","com":"","w":"it:Pizzo Deta","wd":"Q3905990","t":""},{"n":"Porta Santa Maria","nome":"","c":"arch","com":"Anagni","w":"","wd":"Q56258736","t":""},{"n":"Fosso Colaceco","nome":"","c":"nat","com":"Alatri","w":"","wd":"","t":""},{"n":"Museo Bonifacio VIII","nome":"","c":"muse","com":"Anagni","w":"","wd":"Q27989523","t":""},{"n":"Museo Civico","nome":"","c":"muse","com":"Alatri","w":"it:Museo civico (Alatri)","wd":"Q3867755","t":""},{"n":"Porta Maggiore","nome":"","c":"arch","com":"Alatri","w":"","wd":"","t":""},{"n":"Porta Minore","nome":"","c":"arch","com":"Alatri","w":"","wd":"","t":""},{"n":"Porta Portadi","nome":"","c":"arch","com":"Alatri","w":"","wd":"","t":""},{"n":"Arco di Trevi","nome":"","c":"arch","com":"Guarcino","w":"","wd":"Q72980901","t":""},{"n":"Porta Santa Croce","nome":"","c":"arch","com":"Veroli","w":"","wd":"","t":""},{"n":"Monte Cavallo","nome":"","c":"nat","com":"San Biagio Saracinisco","w":"","wd":"Q31678600","t":""},{"n":"Porta dell'Assunta","nome":"","c":"arch","com":"Atina","w":"","wd":"","t":""},{"n":"Spazio Museo Arte Sacra","nome":"","c":"muse","com":"Atina","w":"","wd":"Q70332018","t":""},{"n":"Porta Santa Maria","nome":"","c":"arch","com":"Atina","w":"","wd":"","t":""},{"n":"Museo dell'Abbazia","nome":"","c":"muse","com":"Cassino","w":"","wd":"","t":""},{"n":"Porta Romana","nome":"","c":"arch","com":"Veroli","w":"","wd":"","t":""},{"n":"Porta Orticelli","nome":"","c":"arch","com":"Vico nel Lazio","w":"","wd":"","t":""},{"n":"Porta a Monte","nome":"","c":"arch","com":"Vico nel Lazio","w":"","wd":"","t":""},{"n":"Porta Guarcino","nome":"","c":"arch","com":"Vico nel Lazio","w":"","wd":"","t":""},{"n":"Mostra permanente della Cività Ciociara","nome":"","c":"muse","com":"Veroli","w":"","wd":"","t":""},{"n":"Porta Maggiore","nome":"","c":"arch","com":"Ferentino","w":"","wd":"","t":""},{"n":"Monte Mare","nome":"","c":"nat","com":"","w":"","wd":"Q31619481","t":""},{"n":"Ruderi Castello di Monte Acuto","nome":"","c":"cast","com":"Giuliano di Roma","w":"","wd":"","t":""},{"n":"Porta San Francesco","nome":"","c":"arch","com":"Anagni","w":"","wd":"Q56258734","t":""},{"n":"Museo delle piante","nome":"","c":"muse","com":"Trevi nel Lazio","w":"","wd":"","t":""},{"n":"Monte Cairo","nome":"","c":"nat","com":"Terelle","w":"it:Monte Cairo","wd":"Q3861274","t":""},{"n":"Cerreto","nome":"","c":"nat","com":"Alatri","w":"","wd":"","t":""},{"n":"Le Pratacce","nome":"","c":"nat","com":"Collepardo","w":"","wd":"","t":""},{"n":"Monte La Meta","nome":"","c":"nat","com":"","w":"it:Monte Meta","wd":"Q3861742","t":""},{"n":"Villa Magna","nome":"","c":"arch","com":"Anagni","w":"en:Villa Magna","wd":"Q7930405","t":""},{"n":"Monte Cimate","nome":"","c":"nat","com":"Pastena","w":"it:Monte Cimate","wd":"Q8545755","t":""},{"n":"anfiteatro romano","nome":"","c":"arch","com":"Frosinone","w":"it:Anfiteatro romano di Frosinone","wd":"Q28978031","t":""},{"n":"Monte della Strega","nome":"","c":"nat","com":"","w":"","wd":"Q55831668","t":""},{"n":"Testamento di Aulo Quintilio Prisco","nome":"","c":"arch","com":"Ferentino","w":"it:Testamento di Aulo Quintilio Prisco","wd":"Q3985197","t":"Grande iscrizione latina incisa nella roccia, poco fuori dalle mura. Ricorda i lasciti di un benefattore alla città di Ferentino."},{"n":"Colle Aquilone","nome":"","c":"nat","com":"Vallerotonda","w":"it:Colle Aquilone","wd":"Q16542874","t":""},{"n":"Monte Maio","nome":"","c":"nat","com":"Viticuso","w":"","wd":"Q31619721","t":""},{"n":"Monte Forcellone","nome":"","c":"nat","com":"Picinisco","w":"","wd":"Q31678583","t":""},{"n":"Madonna del Sacchetto","nome":"","c":"nat","com":"Collepardo","w":"","wd":"","t":""},{"n":"Cascata di Trevi nel Lazio","nome":"","c":"nat","com":"Trevi nel Lazio","w":"","wd":"","t":""},{"n":"Monte Salerio","nome":"","c":"nat","com":"Supino","w":"","wd":"Q31614800","t":""},{"n":"Balcone su Trisulti","nome":"","c":"nat","com":"Collepardo","w":"","wd":"","t":""},{"n":"Madonnina","nome":"","c":"nat","com":"Sgurgola","w":"","wd":"","t":""},{"n":"Monte Cornacchia","nome":"","c":"nat","com":"Pescosolido","w":"it:Monte Cornacchia (Appennino abruzzese)","wd":"Q8540842","t":""},{"n":"Rocca Altiera","nome":"","c":"nat","com":"Settefrati","w":"it:Rocca Altiera","wd":"Q16494641","t":""},{"n":"Ruderi castello","nome":"","c":"cast","com":"Morolo","w":"","wd":"","t":""},{"n":"Montecassino","nome":"","c":"nat","com":"Cassino","w":"it:Montecassino","wd":"Q154372","t":""},{"n":"Madonna della Neve","nome":"","c":"fede","com":"Frosinone","w":"","wd":"Q55162296","t":""},{"n":"Punto panoramico","nome":"","c":"nat","com":"Arpino","w":"","wd":"","t":""},{"n":"Bocca del Lupo","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":""},{"n":"Ponte Romano","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":""},{"n":"Vista Arpino e Valle del Liri","nome":"","c":"nat","com":"Arpino","w":"","wd":"","t":""},{"n":"Torre di Cicerone","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":"Torre medievale sull'acropoli di Civitavecchia, ad Arpino. Prende il nome dal più celebre cittadino di Arpino, Marco Tullio Cicerone."},{"n":"I Pozzi","nome":"","c":"nat","com":"Alatri","w":"","wd":"","t":""},{"n":"Croce I Pozzi","nome":"","c":"nat","com":"Alatri","w":"","wd":"","t":""},{"n":"Monte Pila Rocca","nome":"","c":"nat","com":"Piglio","w":"it:Monte Pila Rocca","wd":"Q8545634","t":""},{"n":"Monte Carmine","nome":"","c":"nat","com":"Acuto","w":"it:Monte Carmine (Lazio)","wd":"Q8545630","t":""},{"n":"Monte Castellone","nome":"","c":"nat","com":"Castelliri","w":"it:Monte Castellone","wd":"Q8545676","t":""},{"n":"Monte Monna Casale","nome":"","c":"nat","com":"Vallerotonda","w":"it:Monte Monna Casale","wd":"Q8545627","t":""},{"n":"Monte Castrocielo","nome":"","c":"nat","com":"Castrocielo","w":"it:Monte Castrocielo","wd":"Q8545694","t":""},{"n":"Monte Marro","nome":"","c":"nat","com":"Casalattico","w":"it:Monte Marro","wd":"Q8545655","t":""},{"n":"Monte le Catenelle","nome":"","c":"nat","com":"Casalattico","w":"it:Monte le Catenelle","wd":"Q8545651","t":""},{"n":"Monte Obachelle","nome":"","c":"nat","com":"Colle San Magno","w":"it:Monte Obachelle","wd":"Q8545644","t":""},{"n":"Pizzo di Prato Caselle","nome":"","c":"nat","com":"Atina","w":"it:Pizzo di Prato Caselle","wd":"Q8545648","t":""},{"n":"Monte Morrone","nome":"","c":"nat","com":"Belmonte Castello","w":"it:Monte Morrone","wd":"Q8540918","t":""},{"n":"Monte Bianco","nome":"","c":"nat","com":"Villa Latina","w":"it:Monte Bianco (Lazio)","wd":"Q16579505","t":""},{"n":"Bel Vedere","nome":"","c":"nat","com":"Fumone","w":"","wd":"","t":""},{"n":"Aletrium","nome":"","c":"arch","com":"Alatri","w":"","wd":"","t":""},{"n":"Ponte San Teodoro","nome":"","c":"nat","com":"Trevi nel Lazio","w":"","wd":"","t":""},{"n":"Serra Comune","nome":"","c":"nat","com":"Sora","w":"it:Monte Serra Comune","wd":"Q55831637","t":""},{"n":"Arco Campagiorni","nome":"","c":"arch","com":"Frosinone","w":"","wd":"","t":""},{"n":"Chiesa di San Ciro e Santa Restituta","nome":"","c":"fede","com":"Sora","w":"","wd":"Q120824749","t":""},{"n":"Monna di Rosa","nome":"","c":"nat","com":"Sora","w":"","wd":"Q31618663","t":""},{"n":"Arco di Marcantonio","nome":"","c":"mem","com":"Aquino","w":"it:Arco di Marcantonio","wd":"Q3621781","t":""},{"n":"Casa di San Tommaso d'Aquino","nome":"","c":"mem","com":"Aquino","w":"it:Tommaso d'Aquino (disambigua)","wd":"Q2428421","t":""},{"n":"Castello (o Grangia) di Tecchiena","nome":"","c":"cast","com":"Alatri","w":"","wd":"","t":""},{"n":"Mercato romano","nome":"","c":"arch","com":"Ferentino","w":"","wd":"Q107064051","t":"Edificio di età repubblicana con un lungo ambiente coperto a volta, usato come mercato. È uno degli edifici romani meglio conservati della città."},{"n":"Porta Sanguinaria","nome":"","c":"arch","com":"Ferentino","w":"","wd":"Q107063842","t":"Una delle porte delle mura di Ferentino, città degli Ernici e poi municipio romano. Le mura sono in opera poligonale: grandi blocchi di calcare tagliati a più facce e incastrati senza malta. Corrono ancora attorno al centro storico."},{"n":"Oratorio di San Pietro Eremita","nome":"","c":"fede","com":"Trevi nel Lazio","w":"","wd":"Q120824776","t":""},{"n":"Belvedere","nome":"","c":"nat","com":"Pastena","w":"","wd":"","t":""},{"n":"Casa Nino Manfredi","nome":"","c":"muse","com":"Pastena","w":"","wd":"","t":""},{"n":"cascata Wojtyla","nome":"","c":"nat","com":"Picinisco","w":"","wd":"","t":""},{"n":"Museo della cattedrale di Anagni","nome":"","c":"muse","com":"Anagni","w":"","wd":"","t":""},{"n":"Tomba Saturno (Jocca dell'ova)","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":""},{"n":"Resti Via Latina","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":""},{"n":"Ponte Romano","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":""},{"n":"Cascatella","nome":"","c":"nat","com":"Arpino","w":"","wd":"","t":""},{"n":"Rava Calvuccio","nome":"","c":"nat","com":"Sgurgola","w":"","wd":"","t":""},{"n":"Cascata di San Nicola","nome":"","c":"nat","com":"Sgurgola","w":"","wd":"","t":""},{"n":"Arcazzi di Piscina","nome":"","c":"arch","com":"Anagni","w":"","wd":"","t":""},{"n":"Monte Trocchio","nome":"","c":"nat","com":"Cervaro","w":"it:Monte Trocchio","wd":"","t":""},{"n":"Monte Prato","nome":"","c":"nat","com":"Vico nel Lazio","w":"it:Monte Prato (Ernici)","wd":"Q54857599","t":""},{"n":"Peschio dei Briganti","nome":"","c":"nat","com":"Veroli","w":"","wd":"","t":""},{"n":"Fonte Fiaschetti","nome":"","c":"arch","com":"Sgurgola","w":"","wd":"","t":""},{"n":"Casa del Fantasma","nome":"","c":"cast","com":"Cassino","w":"","wd":"","t":""},{"n":"Museo Parrocchia Santa Maria Assunta","nome":"","c":"muse","com":"Trevi nel Lazio","w":"","wd":"","t":""},{"n":"Trono del Papa","nome":"","c":"nat","com":"Sgurgola","w":"","wd":"","t":""},{"n":"Croce i Preti","nome":"","c":"nat","com":"Morolo","w":"","wd":"","t":""},{"n":"Tomba Sant'Angelo","nome":"","c":"arch","com":"Frosinone","w":"it:Tomba Sant'Angelo","wd":"Q113164573","t":""},{"n":"Cascata Pilella","nome":"","c":"nat","com":"Rocca d'Arce","w":"","wd":"","t":""},{"n":"Belvedere Valle del Sacco e del Liri","nome":"","c":"nat","com":"Falvaterra","w":"","wd":"","t":""},{"n":"Villa Romana Supino","nome":"","c":"arch","com":"Supino","w":"","wd":"","t":""},{"n":"Cuccetto dell'Inferno","nome":"","c":"nat","com":"Pescosolido","w":"","wd":"","t":""},{"n":"Cascata Fra Bettuse","nome":"","c":"nat","com":"Campoli Appennino","w":"","wd":"","t":""},{"n":"Porta Santa Maria","nome":"","c":"arch","com":"Boville Ernica","w":"","wd":"","t":""},{"n":"Posterula","nome":"","c":"arch","com":"Boville Ernica","w":"","wd":"","t":""},{"n":"Porta San Francesco","nome":"","c":"arch","com":"Boville Ernica","w":"","wd":"","t":""},{"n":"Porta San Nicola","nome":"","c":"arch","com":"Boville Ernica","w":"","wd":"","t":""},{"n":"Museo d'Arte Moderna Luigi Centra","nome":"","c":"muse","com":"Monte San Giovanni Campano","w":"","wd":"","t":""},{"n":"Museo della civiltà contadina e dell'ulivo","nome":"","c":"muse","com":"Pastena","w":"","wd":"","t":""},{"n":"Cascatella","nome":"","c":"nat","com":"Supino","w":"","wd":"","t":""},{"n":"Vecchia Pesa","nome":"","c":"att","com":"Cassino","w":"","wd":"","t":""},{"n":"Fasti Verulani","nome":"","c":"mem","com":"Veroli","w":"it:Fasti verulani","wd":"","t":""},{"n":"Chiesa di Santa Maria della Vittoria","nome":"","c":"fede","com":"Arce","w":"","wd":"Q120824377","t":""},{"n":"Museo della Ferrovia della Valle del Liri","nome":"","c":"muse","com":"Arce","w":"","wd":"","t":""},{"n":"Chiostro di San Francesco","nome":"","c":"muse","com":"Alatri","w":"","wd":"","t":""},{"n":"Castello dei Conti d'Aquino;Castello Dei Conti D'Aquino","nome":"","c":"cast","com":"Roccasecca","w":"it:Castello dei Conti d'Aquino (Roccasecca)","wd":"Q106766784","t":""},{"n":"Cascata Vivian","nome":"","c":"nat","com":"Guarcino","w":"","wd":"","t":""},{"n":"Cascada Vivian","nome":"","c":"nat","com":"Guarcino","w":"","wd":"","t":""},{"n":"Lago di San Giovanni Incarico","nome":"","c":"nat","com":"San Giovanni Incarico","w":"it:Lago di San Giovanni Incarico","wd":"Q17635200","t":""},{"n":"Sacco","nome":"","c":"nat","com":"Falvaterra","w":"it:Sacco (fiume)","wd":"Q547937","t":""},{"n":"Abbazia di Montecassino","nome":"","c":"fede","com":"Cassino","w":"it:Abbazia di Montecassino","wd":"Q334051","t":"Fondata da san Benedetto intorno al 529, è la culla del monachesimo benedettino. Fu distrutta dal bombardamento del 15 febbraio 1944, durante la battaglia di Cassino, poi ricostruita e riconsacrata nel 1964."},{"n":"Convento San Lorenzo","nome":"","c":"fede","com":"Piglio","w":"it:Convento di San Lorenzo (Piglio)","wd":"Q3689569","t":""},{"n":"San Giacomo","nome":"","c":"fede","com":"Anagni","w":"","wd":"Q60792839","t":""},{"n":"Chiesa Sant'Andrea","nome":"","c":"fede","com":"Anagni","w":"","wd":"Q56258343","t":""},{"n":"Abbazia di Casamari","nome":"","c":"fede","com":"Veroli","w":"en:Casamari Abbey","wd":"Q833129","t":"Abbazia cistercense nel territorio di Veroli. La chiesa, consacrata nel 1217, è uno degli esempi più puri dell'architettura gotico-cistercense in Italia."},{"n":"Museo archeologico nazionale G. Carettoni di Cassino","nome":"","c":"arch","com":"Cassino","w":"it:Museo archeologico nazionale G. Carettoni di Cassino","wd":"Q3867696","t":""},{"n":"Concattedrale di Sant'Andrea","nome":"","c":"fede","com":"Veroli","w":"it:Concattedrale di Sant'Andrea (Veroli)","wd":"Q2942851","t":""},{"n":"Castello Ladislao","nome":"","c":"cast","com":"Arpino","w":"","wd":"","t":""},{"n":"Badia di San Sebastiano","nome":"","c":"fede","com":"Alatri","w":"it:Protocenobio di San Sebastiano","wd":"Q3924276","t":""},{"n":"Castello Boncompagni-Viscogliosi","nome":"","c":"cast","com":"Isola del Liri","w":"","wd":"","t":""},{"n":"Cattedrale di Santa Maria Assunta","nome":"","c":"fede","com":"Sora","w":"it:Cattedrale di Santa Maria Assunta (Sora)","wd":"Q2942812","t":""},{"n":"Castello di Fumone","nome":"","c":"cast","com":"Fumone","w":"it:Castello Longhi","wd":"Q16538000","t":""},{"n":"Castello di Vicalvi","nome":"","c":"cast","com":"Vicalvi","w":"it:Castello di Vicalvi","wd":"Q16538186","t":""},{"n":"Santa Maria Assunta","nome":"","c":"fede","com":"Sgurgola","w":"","wd":"Q120824718","t":""},{"n":"Liri","nome":"","c":"nat","com":"Arce","w":"it:Liri","wd":"Q71562","t":""},{"n":"Santuario della Madonna della Guardia","nome":"","c":"fede","com":"San Giovanni Incarico","w":"it:Santuario di Nostra Signora della Guardia (San Giovanni Incarico)","wd":"Q17265978","t":""},{"n":"Lago la Selva","nome":"","c":"nat","com":"Vallerotonda","w":"it:Lago Selva","wd":"Q3825784","t":""},{"n":"Lago di Canterno","nome":"","c":"nat","com":"Trivigliano","w":"it:Lago di Canterno","wd":"Q3215397","t":""},{"n":"Pozzo D'Antullo","nome":"","c":"nat","com":"Collepardo","w":"it:Pozzo d'Antullo","wd":"Q3909758","t":""},{"n":"Lago di Posta Fibreno","nome":"","c":"nat","com":"Posta Fibreno","w":"en:Lago di Posta Fibreno","wd":"Q1001156","t":"Lago alimentato da sorgenti, al centro di una riserva naturale regionale. È noto per la «rota», un'isola galleggiante di torba e vegetazione."},{"n":"Certosa di Trisulti","nome":"","c":"fede","com":"Collepardo","w":"it:Certosa di Trisulti","wd":"Q2961291","t":"Fondata all'inizio del Duecento per volontà di papa Innocenzo III, sorge isolata nei boschi dei monti Ernici, sopra Collepardo. È celebre la sua antica farmacia."},{"n":"Chiesa dell'Immacolata","nome":"","c":"fede","com":"Patrica","w":"","wd":"","t":""},{"n":"Chiesa di Santa Maria Assunta in Cielo","nome":"","c":"fede","com":"Castrocielo","w":"","wd":"Q133275296","t":""},{"n":"Porta Capuana","nome":"","c":"arch","com":"Castrocielo","w":"","wd":"Q131369619","t":""},{"n":"Museo della Città di Aquino e del territorio","nome":"","c":"muse","com":"Aquino","w":"","wd":"","t":""},{"n":"Madonna della Libera","nome":"","c":"fede","com":"Aquino","w":"it:Chiesa di Santa Maria della Libera","wd":"","t":""},{"n":"Concattedrale di Aquino","nome":"","c":"fede","com":"Aquino","w":"it:Concattedrale di Aquino","wd":"Q3685977","t":""},{"n":"Eremo dello Santo Spirito","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824681","t":""},{"n":"Chiesa di San Francesco","nome":"","c":"fede","com":"Alatri","w":"it:Chiesa di San Francesco (Alatri)","wd":"Q3670015","t":""},{"n":"Concattedrale di San Paolo","nome":"","c":"fede","com":"Alatri","w":"it:Concattedrale di San Paolo","wd":"Q2981009","t":""},{"n":"Chiesa di San Rocco","nome":"","c":"fede","com":"Picinisco","w":"","wd":"Q134678299","t":""},{"n":"Porta Cerere","nome":"","c":"arch","com":"Anagni","w":"","wd":"Q56258731","t":""},{"n":"Collegio Principe di Piemonte","nome":"","c":"fede","com":"Anagni","w":"","wd":"","t":""},{"n":"San Pietro in Vineis","nome":"","c":"fede","com":"Anagni","w":"","wd":"Q138208697","t":""},{"n":"Parrocchia di San Giovanni","nome":"","c":"fede","com":"Anagni","w":"","wd":"Q55085677","t":""},{"n":"Chiesa di Santa Chiara","nome":"","c":"fede","com":"Anagni","w":"","wd":"Q56258344","t":""},{"n":"Collegiata di Santa Maria Maggiore","nome":"","c":"fede","com":"Alatri","w":"it:Collegiata di Santa Maria Maggiore (Alatri)","wd":"Q3682928","t":""},{"n":"Resti del Teatro Romano","nome":"","c":"arch","com":"Ferentino","w":"","wd":"Q107063823","t":""},{"n":"Concattedrale dei Santi Giovanni e Paolo","nome":"","c":"fede","com":"Ferentino","w":"it:Duomo di Ferentino","wd":"","t":""},{"n":"Chiesa di Santa Lucia","nome":"","c":"fede","com":"Alatri","w":"","wd":"Q120824331","t":""},{"n":"Porta San Nicola","nome":"","c":"arch","com":"Alatri","w":"","wd":"","t":""},{"n":"Chiesa di Portadini","nome":"","c":"fede","com":"Alatri","w":"","wd":"Q3669453","t":""},{"n":"Porta San Benedetto","nome":"","c":"arch","com":"Alatri","w":"","wd":"","t":""},{"n":"Chiesa di San Rocco","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824685","t":""},{"n":"Area archeologica di San Marco","nome":"","c":"arch","com":"Atina","w":"","wd":"","t":""},{"n":"Chiesa di Santo Stefano","nome":"","c":"fede","com":"Settefrati","w":"","wd":"Q118318832","t":""},{"n":"Anfiteatro Romano","nome":"","c":"arch","com":"Cassino","w":"","wd":"Q28978014","t":""},{"n":"Museo Archeologico Nazionale G. Carettoni","nome":"","c":"muse","com":"Cassino","w":"it:Museo archeologico nazionale G. Carettoni di Cassino","wd":"Q3867696","t":""},{"n":"Teatro Romano","nome":"","c":"arch","com":"Cassino","w":"","wd":"Q51994627","t":""},{"n":"Rocca Janula","nome":"","c":"cast","com":"Cassino","w":"it:Rocca Janula","wd":"Q3939392","t":""},{"n":"Chiesa di Santa Maria Assunta","nome":"","c":"fede","com":"Atina","w":"","wd":"Q50880591","t":""},{"n":"Museo Civico Archeologico di Atina e della Valle di Comino","nome":"","c":"muse","com":"Atina","w":"","wd":"","t":""},{"n":"Basilica Cattedrale di Montecassino","nome":"","c":"fede","com":"Cassino","w":"","wd":"Q17624416","t":""},{"n":"Chiesa della Maddalena","nome":"","c":"fede","com":"Alatri","w":"","wd":"","t":""},{"n":"Santa Maria dei Franconi","nome":"","c":"fede","com":"Veroli","w":"","wd":"","t":""},{"n":"Santa Maria Salome","nome":"","c":"fede","com":"Veroli","w":"","wd":"Q123194897","t":""},{"n":"Palazzo Quiñones","nome":"","c":"att","com":"Veroli","w":"","wd":"","t":""},{"n":"Resti della Via Latina","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":""},{"n":"Decumanus Maximus","nome":"","c":"arch","com":"Arpino","w":"","wd":"","t":""},{"n":"Chiesa di Santa Maria Maggiore","nome":"","c":"fede","com":"Ferentino","w":"","wd":"Q55140393","t":""},{"n":"Porta Roma","nome":"","c":"arch","com":"Pastena","w":"","wd":"","t":""},{"n":"Chiesa di Santa Maria Maggiore","nome":"","c":"fede","com":"Pastena","w":"","wd":"Q120824602","t":""},{"n":"Cattedrale di Santa Maria Assunta","nome":"","c":"fede","com":"Frosinone","w":"it:Cattedrale di Santa Maria Assunta (Frosinone)","wd":"Q2942666","t":""},{"n":"Chiesa di San Benedetto","nome":"","c":"fede","com":"Frosinone","w":"it:Chiesa di San Benedetto (Frosinone)","wd":"Q55162300","t":""},{"n":"Chiesa di San Antonio","nome":"","c":"fede","com":"Ceprano","w":"","wd":"Q131597693","t":""},{"n":"Fregellae","nome":"","c":"arch","com":"Arce","w":"en:Fregellae","wd":"Q1453755","t":""},{"n":"Roman domus","nome":"","c":"arch","com":"Arce","w":"","wd":"","t":""},{"n":"Roman bath","nome":"","c":"arch","com":"Arce","w":"","wd":"Q95625283","t":""},{"n":"Chiesa di Sant'Oliva","nome":"","c":"fede","com":"Castro dei Volsci","w":"","wd":"Q120824475","t":""},{"n":"Chiesa di Sant'Antonio da Padova","nome":"","c":"fede","com":"Cassino","w":"","wd":"Q120824459","t":""},{"n":"Chiesa di San Giovanni Battista","nome":"","c":"fede","com":"Cassino","w":"","wd":"Q120824453","t":""},{"n":"Historiale di Cassino","nome":"","c":"muse","com":"Cassino","w":"","wd":"Q55359882","t":""},{"n":"Chiesa dell'Annunziata","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q111459082","t":""},{"n":"San Francesco","nome":"","c":"fede","com":"Sora","w":"","wd":"Q138785663","t":""},{"n":"Chiesa di Santa Restituta","nome":"","c":"fede","com":"Sora","w":"it:Chiesa di Santa Restituta (Sora)","wd":"Q104635414","t":""},{"n":"SS Giovanni Battista ed Evangelista","nome":"","c":"fede","com":"Pescosolido","w":"","wd":"Q120824615","t":""},{"n":"Santuario diocesano Maria Santissima di Canneto","nome":"","c":"fede","com":"Settefrati","w":"it:Santuario di Canneto","wd":"Q3949869","t":""},{"n":"Chiesa di Santa Maria Assunta e San Bernardo Pellegrino","nome":"","c":"fede","com":"Rocca d'Arce","w":"","wd":"Q120824672","t":""},{"n":"Museo Media Valle del Liri","nome":"","c":"muse","com":"Sora","w":"it:Museo della media valle del Liri","wd":"Q3868098","t":""},{"n":"Torre medievale","nome":"","c":"cast","com":"Campoli Appennino","w":"","wd":"","t":""},{"n":"Chiesa dei Santi Giovanni Battista ed Evangelista","nome":"","c":"fede","com":"Fontechiari","w":"","wd":"Q120824551","t":""},{"n":"Abbazia di San Domenico","nome":"","c":"fede","com":"Sora","w":"it:Abbazia di San Domenico","wd":"Q3603214","t":""},{"n":"Museo delle Bande Musicali","nome":"","c":"muse","com":"Sgurgola","w":"","wd":"","t":""},{"n":"Castello dei Santi Casto e Cassio","nome":"","c":"cast","com":"Sora","w":"","wd":"Q111550381","t":""},{"n":"Chiesa di Santa Maria Annunziata","nome":"","c":"fede","com":"Fumone","w":"","wd":"Q55162346","t":""},{"n":"Chiesa di San Bartolomeo Apostolo","nome":"","c":"fede","com":"Sora","w":"it:Chiesa di San Bartolomeo (Sora)","wd":"Q76659225","t":""},{"n":"Museo dell'Energia di Ripi","nome":"","c":"muse","com":"Ripi","w":"","wd":"","t":""},{"n":"Monastero della Santissima Annunziata","nome":"","c":"fede","com":"Alatri","w":"","wd":"","t":""},{"n":"Chiesa di San Simeone","nome":"","c":"fede","com":"Alvito","w":"","wd":"Q55085509","t":""},{"n":"Ecomuseo Orto del Centauro Chirone","nome":"","c":"muse","com":"Collepardo","w":"","wd":"","t":""},{"n":"Chiesa del Santissimo Salvatore","nome":"","c":"fede","com":"Collepardo","w":"","wd":"Q55137260","t":""},{"n":"Chiesa di San Rocco","nome":"","c":"fede","com":"Collepardo","w":"","wd":"Q120824507","t":""},{"n":"Mausoleo di Ummidia Quadratilla","nome":"","c":"arch","com":"Cassino","w":"it:Mausoleo di Ummidia Quadratilla","wd":"Q3852985","t":""},{"n":"Castel Sindici","nome":"","c":"cast","com":"Ceccano","w":"","wd":"","t":""},{"n":"Castello dei Conti di Ceccano","nome":"","c":"cast","com":"Ceccano","w":"","wd":"Q55131997","t":""},{"n":"Santa Maria Maggiore (S. Arduino)","nome":"","c":"fede","com":"Ceprano","w":"","wd":"Q55132156","t":""},{"n":"San Sebastiano","nome":"","c":"fede","com":"Ceccano","w":"","wd":"Q55132007","t":""},{"n":"Collegiata di San Giovanni Battista","nome":"","c":"fede","com":"Ceccano","w":"","wd":"Q55131998","t":""},{"n":"Piazza Labriola","nome":"","c":"att","com":"Cassino","w":"","wd":"","t":""},{"n":"Interamna Lirenas","nome":"","c":"arch","com":"Pignataro Interamna","w":"en:Interamna Lirenas","wd":"Q1665908","t":""},{"n":"Chiesa Sant'Antonio e Santa Restituta","nome":"","c":"fede","com":"Sora","w":"","wd":"Q120824746","t":""},{"n":"Chiesa di San Bartolomeo","nome":"","c":"fede","com":"Cassino","w":"","wd":"Q120824450","t":""},{"n":"Area archeologica di Casale di Madonna del Piano","nome":"","c":"arch","com":"Castro dei Volsci","w":"","wd":"Q135216670","t":""},{"n":"Ex chiesa di Santa Maria del Rosario","nome":"","c":"cast","com":"Santopadre","w":"","wd":"","t":""},{"n":"Chiesa di San Nicola","nome":"","c":"fede","com":"Ceccano","w":"","wd":"Q55132002","t":""},{"n":"Santa Maria a Fiume","nome":"","c":"fede","com":"Ceccano","w":"","wd":"Q55132000","t":""},{"n":"Convento dei Passionisti","nome":"","c":"fede","com":"Sora","w":"","wd":"","t":""},{"n":"Chiesa di Santa Lucia","nome":"","c":"fede","com":"Cervaro","w":"","wd":"Q135917989","t":""},{"n":"S. Martino","nome":"","c":"fede","com":"Paliano","w":"","wd":"","t":""},{"n":"Chiesa di Santa Maria Porta Coeli","nome":"","c":"fede","com":"Sora","w":"","wd":"","t":""},{"n":"Chiesa di San Nicola","nome":"","c":"fede","com":"Alvito","w":"","wd":"Q55085508","t":""},{"n":"Eremo di S. Michele","nome":"","c":"fede","com":"Serrone","w":"","wd":"","t":""},{"n":"Parrocchia Santa Marria Della Stella","nome":"","c":"fede","com":"Broccostella","w":"","wd":"Q120824421","t":""},{"n":"Chiesa della Sacra Famiglia","nome":"","c":"fede","com":"Cassino","w":"","wd":"Q120824449","t":""},{"n":"Area archeologica di piazza Anunziata","nome":"","c":"arch","com":"Sora","w":"","wd":"","t":""},{"n":"Porta Romana","nome":"","c":"arch","com":"Fumone","w":"","wd":"","t":""},{"n":"Chiesa di Santa Lucia","nome":"","c":"fede","com":"Ferentino","w":"","wd":"Q138341792","t":""},{"n":"Santa Croce in Suburba","nome":"","c":"fede","com":"Colle San Magno","w":"","wd":"Q133296876","t":""},{"n":"Teatro romano, Aquino","nome":"","c":"arch","com":"Castrocielo","w":"","wd":"","t":""},{"n":"Aquinum, Thermae","nome":"","c":"arch","com":"Castrocielo","w":"","wd":"Q131369636","t":""},{"n":"Fabrateria Nova amphitheatre","nome":"","c":"arch","com":"San Giovanni Incarico","w":"","wd":"Q28978067","t":""},{"n":"Rocca Dei Colonna","nome":"","c":"cast","com":"Serrone","w":"","wd":"Q113583608","t":""},{"n":"Fabrateria Nova tempio repubblicano","nome":"","c":"arch","com":"San Giovanni Incarico","w":"","wd":"","t":""},{"n":"museo-laboratorio della zapogna","nome":"","c":"muse","com":"Villa Latina","w":"it:Museo della zampogna (Villa Latina)","wd":"Q118316148","t":""},{"n":"Palazzo Quadrini","nome":"","c":"cast","com":"Arpino","w":"","wd":"Q138266075","t":""},{"n":"Chiesa San Rocco","nome":"","c":"fede","com":"Ripi","w":"","wd":"Q120824667","t":""},{"n":"Chiesa di San Nicola","nome":"","c":"fede","com":"Arnara","w":"","wd":"Q55086241","t":""},{"n":"Rocca di Arnara","nome":"","c":"cast","com":"Arnara","w":"","wd":"","t":""},{"n":"Chiesa di santa Maria","nome":"","c":"fede","com":"Boville Ernica","w":"","wd":"Q138266508","t":""},{"n":"Castello Succorte","nome":"","c":"cast","com":"Fontana Liri","w":"","wd":"","t":""},{"n":"Chiesa di San Rocco","nome":"","c":"fede","com":"Giuliano di Roma","w":"","wd":"Q120824570","t":""},{"n":"Museo del Vulcanismo Ernico","nome":"","c":"muse","com":"Giuliano di Roma","w":"","wd":"","t":""},{"n":"Santa Maria Maggiore","nome":"","c":"fede","com":"Giuliano di Roma","w":"","wd":"Q120824571","t":""},{"n":"Chiesa dei Santi Filippo e Giacomo ai pozzi","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824677","t":""},{"n":"Chiesa Madonna di Loreto","nome":"","c":"fede","com":"Anagni","w":"","wd":"Q56258345","t":""},{"n":"Chiesa di Santa Maria Assunta","nome":"","c":"fede","com":"Belmonte Castello","w":"","wd":"Q135919339","t":""},{"n":"Chiesa di Santa Maria Maggiore","nome":"","c":"fede","com":"Cervaro","w":"","wd":"Q135917952","t":""},{"n":"Chiesa parrocchiale di Santa Maria delle Grazie","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824692","t":""},{"n":"mura poligonali","nome":"","c":"arch","com":"Ferentino","w":"","wd":"","t":""},{"n":"Chiesa rupestre di San Michele Arcangelo","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824683","t":""},{"n":"Palazzo Palleschi","nome":"","c":"cast","com":"Fontana Liri","w":"","wd":"","t":""},{"n":"Chiesa di San Silvestro","nome":"","c":"fede","com":"Sora","w":"","wd":"Q28229450","t":""},{"n":"chiesa della Santissima Vergine Assunta","nome":"","c":"fede","com":"Viticuso","w":"","wd":"Q98640196","t":""},{"n":"Chiesa di Sant'Antonio","nome":"","c":"fede","com":"Acquafondata","w":"","wd":"Q123586491","t":""},{"n":"Santuario della Madonna de' Piternis","nome":"","c":"fede","com":"Cervaro","w":"","wd":"Q25112957","t":""},{"n":"Chiesa di San Benedetto Abate","nome":"","c":"fede","com":"Cervaro","w":"","wd":"Q135917975","t":""},{"n":"Chiesa di San Paolo","nome":"","c":"fede","com":"Cervaro","w":"","wd":"Q135918023","t":""},{"n":"Chiesa del Santissimo Salvatore","nome":"","c":"fede","com":"Pignataro Interamna","w":"","wd":"Q135919131","t":""},{"n":"Chiesa della Madonna dei Sette Dolori","nome":"","c":"fede","com":"Pignataro Interamna","w":"","wd":"Q135919157","t":""},{"n":"Chiesa della Madonna Addolorata","nome":"","c":"fede","com":"Terelle","w":"","wd":"Q120824763","t":""},{"n":"Chiesa di Santa Maria della Pace e San Barbato","nome":"","c":"fede","com":"Casalattico","w":"","wd":"Q120824431","t":""},{"n":"Chiesa di Santa Margherita Vergine e Martire","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824690","t":""},{"n":"Chiesa di Santa Maria Assunta","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824691","t":""},{"n":"Chiesa di San Vito vecchia","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824688","t":""},{"n":"Chiesa di San Francesco","nome":"","c":"fede","com":"Roccasecca","w":"","wd":"Q120824682","t":""},{"n":"Chiesa di San Rocco","nome":"","c":"fede","com":"Rocca d'Arce","w":"","wd":"Q120824670","t":""},{"n":"Chiesa di San Cataldo","nome":"","c":"fede","com":"Rocca d'Arce","w":"","wd":"Q120824669","t":""},{"n":"Chiesa di Santa Maria de Paris","nome":"","c":"fede","com":"Rocca d'Arce","w":"","wd":"Q120824673","t":""},{"n":"Chiesa di Santa Felicita","nome":"","c":"fede","com":"Settefrati","w":"","wd":"Q120824715","t":""},{"n":"Chiesa di Santa Maria della Consolazione","nome":"","c":"fede","com":"Settefrati","w":"","wd":"Q120824716","t":""},{"n":"Chiesa della Madonna di Loreto","nome":"","c":"fede","com":"Campoli Appennino","w":"","wd":"Q120824422","t":""},{"n":"Palazzo Simoncelli","nome":"","c":"cast","com":"Boville Ernica","w":"","wd":"Q135925638","t":""},{"n":"Chiesa di Santa Maria Assunta","nome":"","c":"fede","com":"Trivigliano","w":"","wd":"Q120824779","t":""},{"n":"Castello dei Conti D'Aquino","nome":"","c":"cast","com":"Piedimonte San Germano","w":"","wd":"","t":""},{"n":"parco archeologico del Monte Asprano","nome":"","c":"arch","com":"Roccasecca","w":"it:Parco archeologico del Monte Asprano","wd":"Q3895372","t":""},{"n":"Chiesa dei Santi Giovanni Battista ed Evangelista","nome":"","c":"fede","com":"Vicalvi","w":"it:Chiesa dei Santi Giovanni Battista ed Evangelista (Vicalvi)","wd":"Q141621823","t":""},{"n":"Pico, il paese di Tommaso Landolfi","nome":"","c":"lett","com":"Pico","w":"it:Tommaso Landolfi","wd":"","t":"Tommaso Landolfi (Pico, 1908 – Ronciglione, 1979) è stato narratore, poeta e traduttore, soprattutto dal russo e dal francese. Nei suoi racconti il fantastico si mescola all'ironia e all'inquietudine."}]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var D=JSON.parse($('data').textContent),CAT=D.cat;
+var POI=D.poi.map(function(o){return{k:o.n+'|'+(o.com||''),n:o.nome||o.n,c:CAT[o.c]?o.c:'alt',com:o.com||'',w:o.w||'',wd:o.wd||'',t0:o.t||''};});
+var BYK={};POI.forEach(function(p){BYK[p.k]=p;});
+var GR=[['vuota','Vuote','--g1'],['img','Solo immagini','--g2'],['txt','Solo testo','--g3'],['both','Immagini e testo','--g4'],['plus','Con aggiunte','--g5']];
+var S={base:{},loc:{},wk:{},group:'vuota',sel:null,cat:'',q:''};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove();},2600);}
+function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('cdsa_'+k));localStorage.setItem('cdsa_'+k,JSON.stringify(v));}catch(e){return null;}}
+
+/* ---------- archivio locale: modifiche e foto caricate (IndexedDB) ---------- */
+var DB=null;
+function db(){if(DB)return DB;DB=new Promise(function(ok,ko){var r=indexedDB.open('cds-admin',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv');r.result.createObjectStore('img');};r.onsuccess=function(){ok(r.result);};r.onerror=function(){ko(r.error);};});return DB;}
+function idb(store,mode,fn){return db().then(function(d){return new Promise(function(ok,ko){var t=d.transaction(store,mode),s=t.objectStore(store),res=fn(s);t.oncomplete=function(){ok(res instanceof IDBRequest?res.result:res);};t.onerror=function(){ko(t.error);};});});}
+function saveLoc(){return idb('kv','readwrite',function(s){return s.put(S.loc,'loc');});}
+function putImg(name,blob){return idb('img','readwrite',function(s){return s.put(blob,name);});}
+function getImg(name){return idb('img','readonly',function(s){return s.get(name);});}
+function allImgNames(){return idb('img','readonly',function(s){return s.getAllKeys();});}
+var URLS={};
+function imgURL(src,el){
+  if(!/^foto\//.test(src)){el.src=src;return;}
+  if(URLS[src]){el.src=URLS[src];return;}
+  getImg(src).then(function(b){if(b){URLS[src]=URL.createObjectURL(b);el.src=URLS[src];}else el.src=src;}).catch(function(){el.src=src;});
+}
+
+/* ---------- stato di una scheda ---------- */
+function cur(k){return S.loc[k]||S.base[k]||null;}
+function status(p){
+  var s=cur(p.k)||{},w=S.wk[p.k]||{};
+  var plus=(s.foto||[]).length||(s.video||[]).length||(s.extra||[]).length||(s.link||[]).length;
+  if(plus)return'plus';
+  var txt=!!(s.t||p.t0||w.txt||s.w),img=!!w.img;
+  return txt&&img?'both':img?'img':txt?'txt':'vuota';
+}
+/* controllo su Wikidata: foto (P18, P373) e voce di Wikipedia, a gruppi di 50 */
+function checkWeb(){
+  var cache=ls('wk')||{};S.wk=cache.d||{};
+  if(cache.t&&Date.now()-cache.t<7*864e5){draw();return;}
+  var ids=POI.filter(function(p){return p.wd;}),i=0,got={};
+  POI.forEach(function(p){if(p.w)got[p.k]={txt:true,img:false};});
+  function next(){
+    if(i>=ids.length){S.wk=got;ls('wk',{t:Date.now(),d:got});draw();return;}
+    var part=ids.slice(i,i+50);i+=50;
+    fetch('https://www.wikidata.org/w/api.php?format=json&origin=*&action=wbgetentities&props=claims|sitelinks&sitefilter=itwiki|enwiki&ids='+part.map(function(p){return p.wd;}).join('|'))
+      .then(function(r){return r.json();}).then(function(j){
+        part.forEach(function(p){var e=j.entities&&j.entities[p.wd];if(!e)return;var c=e.claims||{},sl=e.sitelinks||{};got[p.k]={img:!!(c.P18||c.P373),txt:!!(p.w||sl.itwiki||sl.enwiki)};});
+        draw();next();
+      }).catch(function(){S.offline=true;S.wk=got;draw();});
+  }
+  next();
+}
+
+/* ---------- elenco ---------- */
+function draw(){
+  var cnt={};GR.forEach(function(g){cnt[g[0]]=0;});POI.forEach(function(p){p.st=status(p);cnt[p.st]++;});
+  $('groups').innerHTML=GR.map(function(g){return'<button class="gb" type="button" data-g="'+g[0]+'" style="--g:var('+g[2]+')" aria-pressed="'+(S.group===g[0])+'"><b>'+cnt[g[0]]+'</b><span>'+g[1]+'</span></button>';}).join('');
+  var q=S.q.toLowerCase(),L=POI.filter(function(p){return p.st===S.group&&(!S.cat||p.c===S.cat)&&(!q||(p.n+' '+p.com).toLowerCase().indexOf(q)>=0);}).sort(function(a,b){return(a.com+a.n).localeCompare(b.com+b.n,'it');});
+  var nl=Object.keys(S.loc).length;
+  $('sum').textContent=L.length+' schede in questo gruppo'+(nl?' · '+nl+' modificate da te e non ancora pubblicate (in arancione)':'')+(S.offline?' · senza rete: lo stato delle foto e dei testi da internet non è verificato':'');
+  $('list').innerHTML=L.length?L.map(function(p){return'<button class="li" type="button" data-k="'+esc(p.k)+'" style="--c:var(--c-'+p.c+')" aria-current="'+(S.sel===p.k)+'"><i></i><span>'+esc(p.n)+'</span><small'+(S.loc[p.k]?' class="loc"':'')+'>'+esc(p.com)+'</small></button>';}).join(''):'<p class="empty">Nessuna scheda in questo gruppo.</p>';
+}
+$('groups').addEventListener('click',function(e){var b=e.target.closest('.gb');if(!b)return;S.group=b.dataset.g;draw();});
+$('list').addEventListener('click',function(e){var b=e.target.closest('.li');if(!b)return;S.sel=b.dataset.k;draw();edit();});
+$('q').addEventListener('input',function(){S.q=this.value;draw();});
+$('cat').innerHTML='<option value="">Tutte le categorie</option>'+Object.keys(CAT).map(function(c){return'<option value="'+c+'">'+CAT[c]+'</option>';}).join('');
+$('cat').addEventListener('change',function(){S.cat=this.value;draw();});
+$('who').value=ls('who')||'';$('who').addEventListener('change',function(){ls('who',this.value.trim());});
+
+/* ---------- editor della scheda ---------- */
+function work(k){if(!S.loc[k])S.loc[k]=JSON.parse(JSON.stringify(cur(k)||{}));return S.loc[k];}
+function touch(k){var s=S.loc[k];s.ts=Date.now();s.da=$('who').value.trim()||'anonimo';saveLoc();draw();}
+function edit(){
+  var p=BYK[S.sel],el=$('ed');if(!p){el.innerHTML=help();return;}
+  var s=cur(p.k)||{},w=S.wk[p.k],g=GR.filter(function(x){return x[0]===status(p);})[0];
+  var h='<span class="tag" style="--c:var(--c-'+p.c+')"><i></i>'+CAT[p.c]+'</span><h2>'+esc(p.n)+'<span class="st" style="--g:var('+g[2]+')">'+g[1]+'</span></h2><p class="note">'+esc(p.com)+(s.ts?' · ultima modifica di '+esc(s.da||'?')+' il '+new Date(s.ts).toLocaleDateString('it-IT'):'')+'</p>';
+  /* da internet */
+  var wl=s.w||p.w;
+  h+='<fieldset class="web"><legend>Da internet</legend>';
+  h+='<p>Voce di Wikipedia: '+(wl?'<a target="_blank" rel="noopener" href="https://'+wl.split(':')[0]+'.wikipedia.org/wiki/'+encodeURIComponent(wl.split(':').slice(1).join(':').replace(/ /g,'_'))+'">'+esc(wl.split(':').slice(1).join(':'))+'</a>'+(s.w?' (collegata a mano)':''):(w&&w.txt?'<span class="ok">sì</span> (tramite Wikidata)':'<span class="no">nessuna</span>'))+'</p>';
+  h+='<p>Foto da Wikimedia Commons: '+(p.wd?(w?(w.img?'<span class="ok">sì</span>':'<span class="no">nessuna</span>'):'da verificare (serve la rete)'):(s.w||p.w?'la foto principale della voce di Wikipedia, se c\u2019è':'<span class="no">luogo non collegato a Wikidata</span>'))+'</p>';
+  h+='<div class="row"><input id="wq" class="btn" style="font-weight:400;flex:1;min-width:180px;border-radius:8px" value="'+esc(p.n+' '+p.com)+'"><button class="btn sm" type="button" data-a="wsearch">Cerca su Wikipedia</button>'+(s.w?'<button class="btn sm del" type="button" data-a="wunlink">Scollega</button>':'')+'</div><div class="sres" id="wres"></div>';
+  h+='<p class="note">Se il luogo ha una voce di Wikipedia, collegarla basta a far comparire nella scheda il riassunto (breve) e la parte iniziale della voce (all’arrivo).</p></fieldset>';
+  /* testo della scuola */
+  h+='<fieldset><legend>Testo della scuola</legend><label class="f">Descrizione (sostituisce quella di Wikipedia nella scheda breve)<textarea id="ft">'+esc(s.t!=null?s.t:p.t0)+'</textarea></label><label class="row" style="color:var(--dim);font-size:14px"><input type="checkbox" id="fb"'+(s.bozza||(!s.t&&p.t0)?' checked':'')+'> Bozza da verificare</label></fieldset>';
+  /* foto */
+  h+='<fieldset><legend>Foto della scuola</legend><div class="thumbs" id="thumbs">'+(s.foto||[]).map(function(f,i){return'<div class="th"><img alt="" data-src="'+esc(f.src)+'"><input data-fi="'+i+'" data-ff="autore" placeholder="Autore" value="'+esc(f.autore)+'"><input data-fi="'+i+'" data-ff="licenza" placeholder="Licenza o permesso" value="'+esc(f.licenza)+'"><button class="btn sm del" type="button" data-a="fdel" data-i="'+i+'">Togli</button></div>';}).join('')+'</div>';
+  h+='<div class="row"><label class="btn sm" for="fup">Carica foto</label><input id="fup" type="file" accept="image/*" multiple hidden><input id="furl" placeholder="oppure indirizzo di un’immagine (https://…)" style="flex:1;min-width:200px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 9px"><button class="btn sm" type="button" data-a="furl">Aggiungi</button></div>';
+  h+='<p class="note">Usate foto scattate da voi o con licenza libera, e indicate sempre l’autore. Le foto caricate vengono ridotte a 1600 pixel.</p></fieldset>';
+  /* video */
+  h+='<fieldset><legend>Video</legend>'+(s.video||[]).map(function(v,i){return'<div class="item"><label class="f">Titolo<input data-vi="'+i+'" data-vf="titolo" value="'+esc(v.titolo)+'"></label><label class="f">Indirizzo (YouTube, Vimeo o file .mp4)<input data-vi="'+i+'" data-vf="url" value="'+esc(v.url)+'"></label><div class="row"><button class="btn sm del" type="button" data-a="vdel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="vadd">Aggiungi un video</button></div></fieldset>';
+  /* approfondimenti */
+  h+='<fieldset><legend>Approfondimenti (si vedono all’arrivo)</legend>'+(s.extra||[]).map(function(x,i){return'<div class="item"><label class="f">Titolo<input data-xi="'+i+'" data-xf="titolo" value="'+esc(x.titolo)+'"></label><label class="f">Testo<textarea data-xi="'+i+'" data-xf="testo">'+esc(x.testo)+'</textarea></label><div class="row"><button class="btn sm del" type="button" data-a="xdel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="xadd">Aggiungi un approfondimento</button></div></fieldset>';
+  /* link */
+  h+='<fieldset><legend>Link e documenti</legend>'+(s.link||[]).map(function(l,i){return'<div class="item"><label class="f">Titolo<input data-li="'+i+'" data-lf="titolo" value="'+esc(l.titolo)+'"></label><label class="f">Indirizzo<input data-li="'+i+'" data-lf="url" value="'+esc(l.url)+'"></label><div class="row"><button class="btn sm del" type="button" data-a="ldel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="ladd">Aggiungi un link</button></div></fieldset>';
+  if(S.loc[p.k])h+='<div class="row"><button class="btn del" type="button" data-a="undo">Annulla le mie modifiche a questa scheda</button></div>';
+  el.innerHTML=h;
+  el.querySelectorAll('img[data-src]').forEach(function(i){imgURL(i.dataset.src,i);});
+}
+function help(){
+  return'<h2>Come si lavora</h2><div class="help"><ol>'+
+  '<li>Scegli un gruppo a sinistra (per esempio <b>Vuote</b>) e apri una scheda.</li>'+
+  '<li>Collega la voce di Wikipedia, scrivi il testo, carica foto, aggiungi video, approfondimenti e link. Tutto si salva da solo su questo computer.</li>'+
+  '<li>Quando hai finito una sessione: <b>Scarica le mie modifiche</b> e manda il file al responsabile del sito.</li>'+
+  '<li>Il responsabile usa <b>Importa lavoro di un collega</b> per ogni file ricevuto, poi <b>Scarica per il sito</b>: ottiene un pacchetto con <code>schede.json</code> e la cartella <code>foto</code>, da caricare su GitHub accanto a <code>index.html</code>.</li></ol>'+
+  '<p>Se due persone modificano la stessa scheda, vale la modifica più recente. Le schede modificate e non ancora pubblicate compaiono in arancione nell’elenco.</p>'+
+  '<p>Questa pagina non ha password: chi la apre può preparare modifiche solo sul proprio computer. Il sito cambia soltanto quando il responsabile carica i file su GitHub.</p></div>';
+}
+var ED=$('ed');
+ED.addEventListener('input',function(e){
+  var t=e.target,k=S.sel;if(!k)return;var s=work(k),d=t.dataset;
+  if(t.id==='ft')s.t=t.value;
+  else if(t.id==='fb')s.bozza=t.checked;
+  else if(d.fi!=null)s.foto[+d.fi][d.ff]=t.value;
+  else if(d.vi!=null)s.video[+d.vi][d.vf]=t.value;
+  else if(d.xi!=null)s.extra[+d.xi][d.xf]=t.value;
+  else if(d.li!=null)s.link[+d.li][d.lf]=t.value;
+  else return;
+  clearTimeout(ED._t);ED._t=setTimeout(function(){touch(k);},400);
+});
+ED.addEventListener('change',function(e){var t=e.target;if(t.id==='fb'){work(S.sel).bozza=t.checked;touch(S.sel);}if(t.id==='fup')upload(t.files);});
+ED.addEventListener('click',function(e){
+  var b=e.target.closest('[data-a]');if(!b)return;var k=S.sel,a=b.dataset.a,i=+b.dataset.i,s;
+  if(a==='wsearch'){wsearch($('wq').value);return;}
+  if(a==='wpick'){s=work(k);s.w='it:'+b.dataset.t;touch(k);edit();toast('Voce collegata');return;}
+  if(a==='undo'){delete S.loc[k];saveLoc();draw();edit();return;}
+  s=work(k);
+  if(a==='wunlink')delete s.w;
+  else if(a==='fdel')s.foto.splice(i,1);
+  else if(a==='furl'){var u=$('furl').value.trim();if(!/^https?:\/\//.test(u)){toast('Scrivi un indirizzo che inizia con https://');return;}(s.foto=s.foto||[]).push({src:u,autore:'',licenza:''});}
+  else if(a==='vadd')(s.video=s.video||[]).push({titolo:'',url:''});
+  else if(a==='vdel')s.video.splice(i,1);
+  else if(a==='xadd')(s.extra=s.extra||[]).push({titolo:'',testo:''});
+  else if(a==='xdel')s.extra.splice(i,1);
+  else if(a==='ladd')(s.link=s.link||[]).push({titolo:'',url:''});
+  else if(a==='ldel')s.link.splice(i,1);
+  touch(k);edit();
+});
+function wsearch(q){
+  var box=$('wres');box.innerHTML='<p class="note">Cerco…</p>';
+  fetch('https://it.wikipedia.org/w/api.php?format=json&origin=*&action=query&list=search&srlimit=6&srsearch='+encodeURIComponent(q))
+    .then(function(r){return r.json();}).then(function(j){
+      var L=(j.query&&j.query.search)||[];
+      box.innerHTML=L.length?L.map(function(x){var sn=document.createElement('div');sn.innerHTML=x.snippet;return'<button type="button" data-a="wpick" data-t="'+esc(x.title)+'"><b>'+esc(x.title)+'</b><small>'+esc(sn.textContent)+'…</small></button>';}).join('')+'<p class="note">Scegli la voce giusta: controlla che parli proprio di questo luogo.</p>':'<p class="note">Nessuna voce trovata.</p>';
+    }).catch(function(){box.innerHTML='<p class="note">Senza rete la ricerca non funziona.</p>';});
+}
+function slug(t){return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);}
+function shrink(file){
+  return new Promise(function(ok,ko){
+    var im=new Image(),u=URL.createObjectURL(file);
+    im.onload=function(){var k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?ok(b):ko(new Error('foto'));},'image/jpeg',.82);};
+    im.onerror=function(){ko(new Error('foto'));};im.src=u;
+  });
+}
+function upload(files){
+  var k=S.sel,s=work(k),who=$('who').value.trim();s.foto=s.foto||[];
+  Promise.all([].slice.call(files).map(function(f,i){return shrink(f).then(function(b){var name='foto/'+slug(BYK[k].n)+'-'+Date.now().toString(36)+i+'.jpg';return putImg(name,b).then(function(){s.foto.push({src:name,autore:who,licenza:'Per gentile concessione'});});});}))
+    .then(function(){touch(k);edit();toast('Foto aggiunte');}).catch(function(){toast('Una foto non si è potuta leggere');});
+}
+
+/* ---------- pacchetti: scarica e importa ---------- */
+function pack(keys,name){
+  if(!window.JSZip){toast('Serve la rete per preparare il pacchetto');return;}
+  var out={},z=new JSZip(),need={};
+  keys.forEach(function(k){var s=cur(k);if(!s)return;out[k]=s;(s.foto||[]).forEach(function(f){if(/^foto\//.test(f.src))need[f.src]=1;});});
+  z.file('schede.json',JSON.stringify({versione:1,aggiornato:new Date().toISOString(),schede:out},null,1));
+  Promise.all(Object.keys(need).map(function(n){return getImg(n).then(function(b){if(b)z.file(n,b);});}))
+    .then(function(){return z.generateAsync({type:'blob'});})
+    .then(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();});
+}
+$('expMine').addEventListener('click',function(){var k=Object.keys(S.loc);if(!k.length){toast('Non hai ancora modificato nessuna scheda');return;}pack(k,'schede-'+(slug($('who').value)||'modifiche')+'.zip');});
+$('expAll').addEventListener('click',function(){var k={};Object.keys(S.base).concat(Object.keys(S.loc)).forEach(function(x){k[x]=1;});pack(Object.keys(k),'schede-per-il-sito.zip');});
+$('imp').addEventListener('change',function(){
+  var f=this.files[0];this.value='';if(!f)return;
+  var job=/\.zip$/i.test(f.name)&&window.JSZip?JSZip.loadAsync(f).then(function(z){
+      var tasks=[];z.forEach(function(path,ent){if(/^foto\/.+\.(jpe?g|png|webp)$/i.test(path))tasks.push(ent.async('blob').then(function(b){return putImg(path,b);}));});
+      return Promise.all(tasks).then(function(){return z.file('schede.json').async('string');});
+    }):f.text();
+  job.then(function(txt){
+    var j=JSON.parse(txt),sc=j.schede||{},n=0,skip=0;
+    Object.keys(sc).forEach(function(k){if(!BYK[k])return;var mine=cur(k);if(!mine||(sc[k].ts||0)>(mine.ts||0)){S.loc[k]=sc[k];n++;}else skip++;});
+    saveLoc();draw();edit();toast(n+' schede importate'+(skip?', '+skip+' tenute perché più recenti':''));
+  }).catch(function(){toast('Il file non è un pacchetto di schede');});
+});
+
+/* ---------- avvio ---------- */
+db().then(function(){return idb('kv','readonly',function(s){return s.get('loc');});}).then(function(v){S.loc=v||{};}).catch(function(){S.loc={};})
+  .then(function(){return fetch('schede.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():{};}).catch(function(){return{};});})
+  .then(function(j){S.base=(j&&j.schede)||{};draw();edit();checkWeb();});
+draw();edit();
+})();
+</script>
+
+</body>
+</html>
