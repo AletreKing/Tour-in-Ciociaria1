@@ -359,7 +359,7 @@ button{font:inherit;color:inherit}
       <div class="opt"><span>Sensibilità dello sterzo</span><div class="seg" id="segSens"><button type="button" id="sens0" data-v="0">Bassa</button><button type="button" id="sens1" data-v="1">Media</button><button type="button" id="sens2" data-v="2">Alta</button></div></div>
       <div class="opt"><span>Verso dell'inclinazione</span><div class="seg" id="segInv"><button type="button" id="inv0" data-v="0">Normale</button><button type="button" id="inv1" data-v="1">Invertito</button></div></div>
       <div class="opt"><span>Suono del motore</span><div class="seg" id="segSnd"><button type="button" id="snd1" data-v="1">Acceso</button><button type="button" id="snd0" data-v="0">Spento</button></div></div>
-      <div class="opt"><span>Traffico in autostrada</span><div class="seg" id="segTraf"><button type="button" id="trf0" data-v="0">Nessuno</button><button type="button" id="trf1" data-v="1">Poco</button><button type="button" id="trf2" data-v="2">Normale</button></div></div>
+      <div class="opt"><span>Traffico</span><div class="seg" id="segTraf"><button type="button" id="trf0" data-v="0">Nessuno</button><button type="button" id="trf1" data-v="1">Poco</button><button type="button" id="trf2" data-v="2">Normale</button></div></div>
       <div class="opt"><span>Specchietti</span><div class="seg" id="segMir"><button type="button" id="mir1" data-v="1">Riflettono</button><button type="button" id="mir0" data-v="0">Spenti</button></div></div>
       <div class="opt"><span>Luce</span><div class="seg" id="segLight"><button type="button" id="lgtReal" data-v="real">Ora reale</button><button type="button" id="lgtDay" data-v="day">Giorno</button><button type="button" id="lgtDusk" data-v="dusk">Tramonto</button><button type="button" id="lgtNight" data-v="night">Notte</button></div></div>
       <div class="opt"><span>Meteo</span><div class="seg" id="segWx"><button type="button" data-v="real">Reale</button><button type="button" data-v="clear">Sereno</button><button type="button" data-v="rain">Pioggia</button><button type="button" data-v="snow">Neve</button><button type="button" data-v="fog">Nebbia</button></div></div>
@@ -831,7 +831,7 @@ var hwFlatM=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSi
 var hwMarkM=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:0,polygonOffsetUnits:-10});
 var signGeo=new THREE.PlaneGeometry(7.6,4.35),nameGeo=new THREE.PlaneGeometry(13,1.9);
 function hc(h){return new THREE.Color(h);}
-var HC={as:hc(0x2c313a),as2:hc(0x272c34),nj:hc(0x8f9297),rail:hc(0xaeb6c1),post:hc(0x6d747e),mark:hc(0xc9ced6),tree:[hc(0x26402c),hc(0x2f4a30),hc(0x1f3526)],
+var HC={as:hc(0x353a44),as2:hc(0x272c34),nj:hc(0x8f9297),rail:hc(0xaeb6c1),post:hc(0x6d747e),mark:hc(0xc9ced6),tree:[hc(0x26402c),hc(0x2f4a30),hc(0x1f3526)],
         deck:hc(0x7d8087),bank:hc(0x33402f),roof:hc(0xd5d9de),booth:hc(0x4b525d),pole:hc(0x565c66),stop:hc(0xd6362b),orange:hc(0xff8a1f),
         oak:[hc(0x2c4a2b),hc(0x35542f),hc(0x284126)],olive:hc(0x5d6e50),poplar:hc(0x486834),pine:hc(0x23412a),trunk:hc(0x4a3b2e),
         shed:hc(0x8a8f96),shed2:hc(0x767b84),casa:hc(0xc9b08a),tetto:hc(0x9a4f35),vine:hc(0x3f5a2c)};
@@ -1064,7 +1064,7 @@ function setWorld(w){
   if(!N)netClear();
   hwGround.visible=!N;
   if(w==='city'){OX=OZ=0;}else if(H)bioTick(0,true);else netBack();
-  trafG.visible=H;skyClear();
+  trafG.visible=H||N;skyClear();if(!N)ntrClear();
 }
 
 /* ================= LUCE: giorno e notte sull'ora reale di Roma (la stessa della radio in diretta) ================= */
@@ -3984,7 +3984,7 @@ seg('segLight',function(v){opts.light=v;store.set('light',v);applyLight();});
 seg('segMir',function(v){opts.mir=+v;store.set('mir',opts.mir);});
 seg('segWx',function(v){var g0=WX.ground;opts.wx=v;store.set('wx',v);if(v==='real'){WX.src='';WX.t=0;wxSet(0,0,null,0);wxFetch();}else wxManual(v);wxAfter(g0);});
 seg('segSeas',function(v){opts.season=v;store.set('season',v);natRebuild();});
-seg('segTraf',function(v){opts.traf=+v;store.set('traf',opts.traf);trafClear();trafFill=true;});
+seg('segTraf',function(v){opts.traf=+v;store.set('traf',opts.traf);trafClear();ntrClear();trafFill=true;});
 function openOpts(o){if(o)saveRun();paused=o;$('opts').hidden=!o;inp.kbGas=inp.kbBrake=inp.kbL=inp.kbR=false;inp.syncPedals();}
 $('btnOpt').addEventListener('click',function(){openOpts(true);});
 $('btnClose').addEventListener('click',function(){openOpts(false);});
@@ -4391,7 +4391,7 @@ function frame(now){
     if(world==='hw')raceTickHw();else if(world==='net')netRace();else raceTick();
     if(world==='hw'){OX=car.x;OZ=car.z;trafTick(dt);}
     else if(world==='net'){OX=car.x;OZ=car.z;netTick(dt);}   /* origine aggiornata prima di disporre traffico e cielo */
-    tripTick(dt);skyTick(dt);natTick(dt);warnTick(dt);hintTick(dt);hudTick();mapTick(dt);
+    tripTick(dt);skyTick(dt);natTick(dt);ntrTick(dt);warnTick(dt);hintTick(dt);hudTick();mapTick(dt);
     saveT-=dt;if(saveT<=0){saveT=5;saveRun();}
     if(camMode===1){gaugeDraw();navT-=dt;if(navT<=0){navT=.2;navDraw();}}
   }
@@ -4895,6 +4895,86 @@ function scNear(){
 }
 luInit();
 
+
+/* ================= TRAFFICO SULLE STRADE DELLA PROVINCIA (Opzioni → Traffico: nessuno, poco, normale) ================= */
+var NTR=[],NTRD=[0,9,20],ntrT=0;
+function ntrAt(ei,s){   /* punto del tratto ei a s metri dall'inizio: x, z, y, direzione */
+  var e=NET.E[ei],P=NET.P,a=e.p0,b=e.p1-1,k=a;
+  if(s<=0)k=a;else if(s>=e.len)k=b;else{while(k<b&&P.s1[k]<s)k++;}
+  var L=Math.max(1e-6,P.s1[k]-P.s0[k]),f=clamp((s-P.s0[k])/L,0,1);
+  return[P.x0[k]+(P.x1[k]-P.x0[k])*f,P.z0[k]+(P.z1[k]-P.z0[k])*f,P.y0[k]+(P.y1[k]-P.y0[k])*f,Math.atan2(P.x1[k]-P.x0[k],P.z1[k]-P.z0[k])];
+}
+function ntrLimit(ei,x,z){
+  var e=NET.E[ei],L=e.cls===0?120:e.cls===1?(e.ow?100:85):e.link?55:e.cls<=3?80:65;
+  if(e.cls>=2)for(var k=0;k<NET.towns.length;k++){var t=NET.towns[k];if(t.c<1)continue;var dx=t.x-x,dz=t.z-z;if(Math.abs(dx)<t.r&&Math.abs(dz)<t.r&&Math.hypot(dx,dz)<t.r*.75){L=45;break;}}
+  return L/3.6*(.85+Math.random()*.2);
+}
+function ntrLane(t){var e=NET.E[t.ei];if(e.ow){if(e.lanes>1)return(t.ln-(e.lanes-1)/2)*3.4;return 0;}return Math.min(1.9,e.half*.5);}
+function ntrOk(ei,dir){var e=NET.E[ei];if(e.tu)return true;return !(e.ow===1&&dir<0)&&!(e.ow===-1&&dir>0);}
+function ntrSpawn(){
+  var ang=Math.random()*Math.PI*2,d=170+Math.random()*380,x=car.x+Math.sin(ang)*d,z=car.z+Math.cos(ang)*d;
+  var a=NET.grid.get(nk(Math.floor(x/NG),Math.floor(z/NG)));if(!a||!a.length)return false;
+  var p=a[Math.floor(Math.random()*a.length)],ei=NET.P.e[p],e=NET.E[ei];
+  if(e.len<25||e.tu)return false;
+  var dir=e.ow===1?1:e.ow===-1?-1:(Math.random()<.5?1:-1),s=NET.P.s0[p];
+  for(var k=0;k<NTR.length;k++){var u=NTR[k];if(u.ei===ei&&u.dir===dir&&Math.abs(u.s-s)<40)return false;}
+  var x2=Math.random(),type=e.cls<=1?(x2<.25?'truck':x2<.4?'van':'car'):(x2<.08?'truck':x2<.22?'van':'car');
+  var t={ei:ei,dir:dir,s:s,ln:e.lanes>1?Math.floor(Math.random()*e.lanes):0,type:type,len:type==='truck'?16.4:type==='van'?5.6:4.4,g:trafMesh(type,Math.floor(Math.random()*TCOL.length)),v:0,v0:0,y:0};
+  var q=ntrAt(ei,s);t.v0=ntrLimit(ei,q[0],q[1]);if(t.type==='truck')t.v0=Math.min(t.v0,22);t.v=t.v0;
+  trafG.add(t.g);NTR.push(t);return true;
+}
+function ntrNext(t){   /* all'incrocio: un'altra strada a caso fra quelle percorribili */
+  var e=NET.E[t.ei],node=t.dir>0?e.b:e.a,A=NET.adj[node],opts2=[];
+  for(var k=0;k<A.length;k++){var ei=A[k];if(ei===t.ei&&A.length>1)continue;var f=NET.E[ei],dir=f.a===node?1:-1;if(f.a===f.b)continue;if(!ntrOk(ei,dir))continue;if(f.cls===0&&e.cls!==0&&!f.link)continue;opts2.push([ei,dir]);}
+  if(!opts2.length)return false;
+  var o=opts2[Math.floor(Math.random()*opts2.length)],f2=NET.E[o[0]];
+  t.ei=o[0];t.dir=o[1];t.s=o[1]>0?0:f2.len;t.ln=f2.lanes>1?Math.floor(Math.random()*f2.lanes):0;
+  var q=ntrAt(t.ei,t.s);t.v0=ntrLimit(t.ei,q[0],q[1]);if(t.type==='truck')t.v0=Math.min(t.v0,22);
+  return true;
+}
+function ntrLamp(t){
+  if(tgn+4>TGN)return;
+  var Lg=TLG[t.type],ry=t.g.rotation.y,sn=Math.sin(ry),cs=Math.cos(ry),px=t.g.position.x,py=t.g.position.y,pz=t.g.position.z,P=trafGlow.geometry.attributes.position.array,C=trafGlow.geometry.attributes.color.array;
+  var dx=car.x-OX-px,dz=car.z-OZ-pz,dl=Math.hypot(dx,dz)||1,face=(sn*dx+cs*dz)/dl;
+  var hi=clamp(face*2.5+.25,0,1)*lerp(.3,1,LGT.dark),ti=clamp(-face*2.5+.25,0,1)*LGT.dark*.85,k,sd,o;
+  for(k=0;k<2;k++){sd=k?-1:1;o=tgn*3;
+    P[o]=px+sd*Lg[0]*cs+Lg[2]*sn;P[o+1]=py+Lg[1];P[o+2]=pz-sd*Lg[0]*sn+Lg[2]*cs;C[o]=hi;C[o+1]=hi*.95;C[o+2]=hi*.82;tgn++;
+    o=tgn*3;P[o]=px+sd*Lg[3]*cs+Lg[5]*sn;P[o+1]=py+Lg[4];P[o+2]=pz-sd*Lg[3]*sn+Lg[5]*cs;C[o]=ti;C[o+1]=ti*.07;C[o+2]=ti*.04;tgn++;}
+}
+function ntrClear(){while(NTR.length)trafG.remove(NTR.pop().g);tgn=0;trafLampEnd();}
+function ntrTick(dt){
+  if(world!=='net'||!NET){if(NTR.length)ntrClear();return;}
+  var want=NTRD[opts.traf]||0,k,j,t,u;
+  ntrT-=dt;if(ntrT<=0&&NTR.length<want){ntrT=.2;for(k=0;k<14&&NTR.length<want;k++)ntrSpawn();}
+  tgn=0;
+  for(k=NTR.length-1;k>=0;k--){
+    t=NTR[k];
+    /* distanza da chi sta davanti sullo stesso tratto e nello stesso senso */
+    var gap=1e9,lv=0;
+    for(j=0;j<NTR.length;j++){u=NTR[j];if(u===t||u.ei!==t.ei||u.dir!==t.dir||u.ln!==t.ln)continue;var g=(u.s-t.s)*t.dir-(u.len+t.len)/2;if(g>0&&g<gap){gap=g;lv=u.v;}}
+    var dxp=car.x-t.wx,dzp=car.z-t.wz,dp=Math.hypot(dxp,dzp);
+    if(t.wx!=null&&dp<40){var fw=(dxp*Math.sin(t.h)+dzp*Math.cos(t.h)),lat=Math.abs(-dxp*Math.cos(t.h)+dzp*Math.sin(t.h));
+      if(fw>0&&lat<2.6){var g2=fw-t.len/2-2.5;if(g2<gap){gap=g2;lv=Math.max(0,Math.hypot(car.vx,car.vz)*Math.cos(car.th-t.h));}}}
+    /* curve: più piano */
+    var qa=ntrAt(t.ei,t.s),qb=ntrAt(t.ei,t.s+t.dir*18),dh=Math.abs(Math.atan2(Math.sin(qb[3]-qa[3]),Math.cos(qb[3]-qa[3])))/DEG,vc=Math.max(7,t.v0-dh*.35);
+    var tv=gap<8+t.v*1.2?Math.min(vc,lv-(gap<4?2:0)):vc;
+    t.v=Math.max(0,t.v+clamp(tv-t.v,-8*dt,2.5*dt));t.s+=t.dir*t.v*dt;
+    var e=NET.E[t.ei];
+    if((t.dir>0&&t.s>e.len)||(t.dir<0&&t.s<0)){var over=t.dir>0?t.s-e.len:-t.s;if(!ntrNext(t)){trafG.remove(t.g);NTR.splice(k,1);continue;}t.s+=t.dir*over;e=NET.E[t.ei];}
+    var q=ntrAt(t.ei,t.s),h=t.dir>0?q[3]:q[3]+Math.PI,o=ntrLane(t),x=q[0]-Math.cos(h)*o,z=q[1]+Math.sin(h)*o;
+    t.wx=x;t.wz=z;t.h=h;
+    if(Math.hypot(x-car.x,z-car.z)>780){trafG.remove(t.g);NTR.splice(k,1);continue;}
+    t.g.position.set(x-OX,q[2],z-OZ);t.g.rotation.y=h;t.g.visible=true;ntrLamp(t);
+    /* urto con il giocatore */
+    var ddx=car.x-x,ddz=car.z-z,dd=Math.hypot(ddx,ddz),rr=t.type==='truck'?3.2:2.4;
+    if(dd<rr&&Math.abs((car.y||q[2])-q[2])<2.5){var pen=rr-dd,nx=ddx/(dd||1),nz=ddz/(dd||1);car.x+=nx*pen;car.z+=nz*pen;
+      var vn=car.vx*nx+car.vz*nz;if(vn<0){car.vx-=nx*vn*1.4;car.vz-=nz*vn*1.4;if(-vn>car.impact)car.impact=-vn;if(-vn>6)say('Incidente! Attenzione al traffico','warn',2200);}t.v=Math.min(t.v,2);}
+  }
+  trafLampEnd();
+}
+
+/* notte: il terreno si scurisce più dell'asfalto, così la strada resta leggibile */
+var _applyLight2=applyLight;applyLight=function(){_applyLight2();if(typeof netTerrM!=='undefined')netTerrM.color.setScalar(lerp(.42,1,clamp(LGT.dayF||0,0,1)));};
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -4907,7 +4987,7 @@ try{if(hot&&hot.snapshot)hot.snapshot(function(){return{car:opts.car,track:opts.
 if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
-window.__au={LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={NTR:NTR,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
