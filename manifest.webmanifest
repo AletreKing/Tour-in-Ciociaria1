@@ -1,0 +1,23 @@
+{
+ "name": "Ciociaria da scoprire",
+ "short_name": "Ciociaria",
+ "description": "Mappa e gioco di guida sui luoghi della provincia di Frosinone – ITE Ferentino",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#7b1e3a",
+ "theme_color": "#7b1e3a",
+ "lang": "it",
+ "icons": [
+  {
+   "src": "icona-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icona-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}

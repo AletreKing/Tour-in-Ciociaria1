@@ -6,6 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b111b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icona-32.png">
+<link rel="apple-touch-icon" href="icona-180.png">
 <meta name="robots" content="noindex,nofollow">
 <style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 </head>
@@ -227,6 +230,7 @@ button{font:inherit;color:inherit}
 .destrow{grid-column:1/-1;display:flex;align-items:center;gap:10px;font:500 11px var(--font-d);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 .destrow select,.mprow input{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);color-scheme:dark;border-radius:10px;padding:7px 12px;font:600 15px var(--font-b);min-height:38px;user-select:text;-webkit-user-select:text}
 .destrow select{flex:1;min-width:0;max-width:300px}
+#arrRow{flex-wrap:wrap}#arrRow label{white-space:nowrap}
 #cioRow select{max-width:220px}
 #tracks{grid-template-columns:repeat(4,minmax(0,1fr))}
 #tracks:disabled .car label,#tracks:disabled select{opacity:.6}
@@ -325,6 +329,7 @@ button{font:inherit;color:inherit}
         <div class="car"><input type="radio" name="trk" id="trk_cio" value="cio"><label for="trk_cio"><span class="nm">Ciociaria</span><span class="sp">Strade vere della provincia, da paese a paese</span></label></div>
         <div class="destrow" id="destRow" hidden><label for="selDest">Arrivo</label><select id="selDest"></select></div>
         <div class="destrow" id="cioRow" hidden><label for="selFrom">Partenza da</label><select id="selFrom"></select><label for="selTo" hidden>a</label><select id="selTo" hidden></select></div>
+        <div class="destrow" id="arrRow"><label for="selArr">Arrivo (facoltativo)</label><select id="selArr"></select></div>
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
@@ -764,7 +769,7 @@ function destInit(){
   RDEF.fi.exits.forEach(function(e){if(e.k&&e.k!=='fine')return;var o=document.createElement('option');o.value=e.s;o.textContent=(e.full||e.n)+' · '+Math.round(e.s/1000)+' km';sel.appendChild(o);});
   if(!destOk(opts.dest))opts.dest=RDEF.fi.len;
 }
-function destSync(){$('selDest').value=''+opts.dest;$('destRow').hidden=opts.track!=='fi';$('cioRow').hidden=opts.track!=='cio';if(cioDone){$('selFrom').value=opts.nfrom;$('selTo').value=opts.nto;}}
+function destSync(){$('selDest').value=''+opts.dest;$('destRow').hidden=opts.track!=='fi';$('cioRow').hidden=opts.track!=='cio';if($('arrRow'))$('arrRow').hidden=opts.track!=='cio';if(cioDone){$('selFrom').value=opts.nfrom;$('selTo').value=opts.nto;}}
 function biomeAt(sv){for(var k=0;k<BIOMES.length;k++){if(sv<BIOMES[k][0])return BIO[BIOMES[k][1]];}return BIO[BIOMES[BIOMES.length-1][1]];}
 function km(d){return (d/1000).toFixed(1).replace('.',',')+' km';}
 function setRoute(id){
@@ -5103,6 +5108,29 @@ function scNearTick(){
   document.addEventListener('visibilitychange',function(){if(!document.hidden&&AC&&AC.state==='suspended'&&opts.snd)AC.resume();});
 })();
 
+/* ================= MENU: punto di arrivo facoltativo (un luogo o un paese) ================= */
+function arrFill(){
+  var sel=$('selArr');if(!sel||sel.dataset.ok)return;sel.dataset.ok='1';
+  var h='<option value="">— nessuno: esplorazione libera —</option>';
+  Object.keys(CATN).forEach(function(c){var L=SC.pois.filter(function(p){return p.c===c;}).sort(function(a,b){return a.n.localeCompare(b.n,'it');});if(!L.length)return;
+    h+='<optgroup label="'+CATN[c]+'">'+L.map(function(p){return'<option value="p:'+p.pk.replace(/"/g,'&quot;')+'">'+p.n.replace(/</g,'&lt;')+(p.com?' ('+p.com+')':'')+'</option>';}).join('')+'</optgroup>';});
+  h+='<optgroup label="Paesi">'+NET.D.map(function(d){return d.n;}).sort(function(a,b){return a.localeCompare(b,'it');}).map(function(n){return'<option value="t:'+n+'">'+n+'</option>';}).join('')+'</optgroup>';
+  sel.innerHTML=h;sel.value=opts.arr||'';if(sel.value!==(opts.arr||''))opts.arr='';
+}
+function arrGo(){
+  var v=opts.arr||'';if(!v)return;
+  if(v.slice(0,2)==='p:'){var p=SC.pois.filter(function(q){return q.pk===v.slice(2);})[0];if(p){scGo(p);say('Destinazione: '+p.n+(nrun.route?', '+km(nrun.route.len):''),'good',4200);}return;}
+  var n=v.slice(2),D=NET.D.filter(function(d){return d.n===n;})[0];if(!D)return;
+  var town={n:n,x:NET.nx[D.node],z:NET.nz[D.node],node:D.node};
+  scGo(town,n);nrun.dst.poi=null;say('Destinazione: '+n+(nrun.route?', '+km(nrun.route.len):''),'good',4200);
+}
+var _scModes=scModes;scModes=function(){_scModes();arrFill();};
+var _scStart=scStart;scStart=function(){_scStart();if(opts.mode==="free"&&opts.arr)arrGo();};
+(function(){var s=$('selArr');if(!s)return;s.addEventListener('change',function(){opts.arr=this.value;store.set('arr',opts.arr);
+  if(opts.arr&&opts.mode!=='free'){opts.mode='free';store.set('mode','free');var r=$('mode_free');if(r)r.checked=true;}
+  if(state==='menu'){resetRace();drawHb();knobToGear();drawGate();hudC={};}});})();
+opts.arr=store.get('arr','');
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -5115,7 +5143,7 @@ try{if(hot&&hot.snapshot)hot.snapshot(function(){return{car:opts.car,track:opts.
 if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
-window.__au={cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
