@@ -1364,19 +1364,19 @@ function netOnOther(x,z,ei,m){
   return false;
 }
 function netGround(x,z){
-  var h=demH(x,z),G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.floor(z/NG),flat=1e9,soft=1e9,i,j,k,a,p;
+  var h=demH(x,z),G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.floor(z/NG),flat=1e9,soft=1e9,cap=1e9,i,j,k,a,p;
   for(i=-1;i<=1;i++)for(j=-1;j<=1;j++){
     a=G.get(nk(cx+i,cz+j));if(!a)continue;
     for(k=0;k<a.length;k++){
-      p=a[k];var e=NET.E[P.e[p]],w=e.half+26,w2=e.half+75,x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;
+      p=a[k];var e=NET.E[P.e[p]];if(e.br){var bx0=P.x0[p],bz0=P.z0[p],bdx=P.x1[p]-bx0,bdz=P.z1[p]-bz0,bL=bdx*bdx+bdz*bdz||1e-9,bt=((x-bx0)*bdx+(z-bz0)*bdz)/bL;bt=bt<0?0:bt>1?1:bt;var bex=bx0+bdx*bt-x,bez=bz0+bdz*bt-z;if(bex*bex+bez*bez<(e.half+24)*(e.half+24)){var by=P.y0[p]+(P.y1[p]-P.y0[p])*bt-1.8;if(by<cap)cap=by;}continue;}var w=e.half+26,w2=e.half+75,x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;
       t=t<0?0:t>1?1:t;var ex=x0+dx*t-x,ez=z0+dz*t-z,d=Math.sqrt(ex*ex+ez*ez);if(d>=w2)continue;
       var ry=P.y0[p]+(P.y1[p]-P.y0[p])*t-.4;
       if(d<=w){if(ry<flat)flat=ry;}
       else{var f=(d-w)/(w2-w);f=f*f*(3-2*f);var v=ry+(h-ry)*f;if(v<soft)soft=v;}
     }
   }
-  if(flat<1e9)return flat;
-  return soft<1e9?soft:h;
+  if(flat<1e9)return Math.min(flat,cap);
+  return Math.min(soft<1e9?soft:h,cap);
 }
 /* ostacoli solidi: case, alberi e colonne dei luoghi, raccolti per tassello */
 function netHit(px,pz,r){
@@ -1941,12 +1941,14 @@ function netTile(tx,tz){
           var fx=ex+vx*sk*w,fz=ez+vz*sk*w,fy=w?Math.min(netGround(fx+ox,fz+oz),cy2)-1:cy2;
           A.push([ex,cy2,ez],[fx,fy,fz]);
         }
-        if(overRoad){   /* impalcato del ponte: fianco in cemento e intradosso */
+        if(overRoad||e.br){   /* impalcato del ponte: fianco in cemento e intradosso */
           F.quad([A[0],A[2],[A[2][0],A[2][1]-1.5,A[2][2]],[A[0][0],A[0][1]-1.5,A[0][2]]],[ax*sk,0,az*sk],N4,HN.deck);
           if(sk>0)F.quad([[x0+ax*(h+1.8),py0-1.55,z0+az*(h+1.8)],[x1+bx*(h+1.8),py1-1.55,z1+bz*(h+1.8)],[x1-bx*(h+1.8),py1-1.55,z1-bz*(h+1.8)],[x0-ax*(h+1.8),py0-1.55,z0-az*(h+1.8)]],[0,-1,0],N4,HN.deckU);
         }
         else if(need)F.quad([A[0],A[2],A[3],A[1]],[ax*sk*.35,.94,az*sk*.35],N4,HN.bank);
       }
+      if(e.br){var pmx=(x0+x1)/2+ox,pmz=(z0+z1)/2+oz,pmy=(py0+py1)/2,gyb=netGround(pmx,pmz);
+        if(pmy-gyb>2.5&&!netOnOther(pmx,pmz,P.e[p],1.5)){var pw=Math.min(h*1.4,6);cbox(F,pmx-ox,(gyb-1+pmy-1.5)/2,pmz-oz,1.3,pmy-1.5-gyb+1,1.3,HN.deck);if(h>3.5){cbox(F,pmx-ox+az*pw*.5,(gyb-1+pmy-1.5)/2,pmz-oz-ax*pw*.5,1.1,pmy-1.5-gyb+1,1.1,HN.deck);}}}
       var s0=P.s0[p],s1=P.s1[p],L=(s1-s0)||1,lo=Math.max(s0,NET.rj[e.a]),hi=Math.min(s1,e.len-NET.rj[e.b]);
       if(hi<=lo)return;
       var t0=(lo-s0)/L,t1=(hi-s0)/L,cent=[];
