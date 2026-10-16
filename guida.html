@@ -1354,6 +1354,15 @@ function netRoadY(pr){var P=NET.P;return P.y0[pr.p]+(P.y1[pr.p]-P.y0[pr.p])*pr.t
 /* quota del terreno: vicino alle strade si abbassa o si alza fino al piano stradale (trincee e terrapieni) */
 /* Sotto e accanto a ogni strada il terreno sta al piano stradale (fascia piana di 26 m oltre il bordo),
    poi risale dolcemente verso la quota vera. Se ci sono più strade vince la più bassa: nessuna collina spunta sull'asfalto. */
+/* c'è l'asfalto di un'altra strada in (x,z)? (per non disegnarci sopra banchine e scarpate) */
+function netOnOther(x,z,ei,m){
+  var G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.floor(z/NG),i,j,k,a,p;
+  for(i=-1;i<=1;i++)for(j=-1;j<=1;j++){a=G.get(nk(cx+i,cz+j));if(!a)continue;
+    for(k=0;k<a.length;k++){p=a[k];if(P.e[p]===ei)continue;var e=NET.E[P.e[p]];if(e.tu)continue;
+      var x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;t=t<0?0:t>1?1:t;
+      var ex=x0+dx*t-x,ez=z0+dz*t-z;if(ex*ex+ez*ez<(e.half+m)*(e.half+m))return true;}}
+  return false;
+}
 function netGround(x,z){
   var h=demH(x,z),G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.floor(z/NG),flat=1e9,soft=1e9,i,j,k,a,p;
   for(i=-1;i<=1;i++)for(j=-1;j<=1;j++){
@@ -1917,7 +1926,9 @@ function netTile(tx,tz){
         var xa=x0+(x1-x0)*t0,za=z0+(z1-z0)*t0,xb=x0+(x1-x0)*t1,zb=z0+(z1-z0)*t1,oax=ax+(bx-ax)*t0,oaz=az+(bz-az)*t0,obx=ax+(bx-ax)*t1,obz=az+(bz-az)*t1,ya=py0+(py1-py0)*t0+y,yb=py0+(py1-py0)*t1+y;
         B.quad([[xa+oax*d0,ya,za+oaz*d0],[xa+oax*d1,ya,za+oaz*d1],[xb+obx*d1,yb,zb+obz*d1],[xb+obx*d0,yb,zb+obz*d0]],up,N4,col);
       }
-      Q(F,-h,h,0,HC.as,0,1);Q(F,h,h+1.8,-.05,HN.verge,0,1);Q(F,-h-1.8,-h,-.05,HN.verge,0,1);
+      Q(F,-h,h,0,HC.as,0,1);
+      [1,-1].forEach(function(sv){var hit=false;for(var q=0;q<=2&&!hit;q++){var tq=q/2,mx=x0+(x1-x0)*tq+(ax+(bx-ax)*tq)*sv*(h+1.2),mz=z0+(z1-z0)*tq+(az+(bz-az)*tq)*sv*(h+1.2);if(netOnOther(mx+ox,mz+oz,P.e[p],.3))hit=true;}
+        if(sv>0)Q(F,h,h+1.8,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);else Q(F,-h-1.8,-h,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);});
       for(var sk=-1;sk<=1;sk+=2){
         var A=[],need=false,overRoad=false;
         for(var te=0;te<=1;te++){
@@ -1925,7 +1936,8 @@ function netTile(tx,tz){
           var drop=cy2-netGround(ex+vx*sk*2.5+ox,ez+vz*sk*2.5+oz),w=0;
           if(netUnder(ex+ox,ez+oz,cy2,P.e[p],2.5))overRoad=true;
           if(drop>.5){need=true;w=Math.min(drop*.9+1,16);
-            for(var it=0;it<4;it++){var pq=netProbe(ex+vx*sk*w+ox,ez+vz*sk*w+oz);if((pq&&pq.e!==P.e[p]&&pq.d<NET.E[pq.e].half+.6)||netUnder(ex+vx*sk*w+ox,ez+vz*sk*w+oz,cy2,P.e[p],.6))w*=.5;else break;}}
+            for(var it=1;it<=6;it++){var dd=w*it/6;if(netOnOther(ex+vx*sk*dd+ox,ez+vz*sk*dd+oz,P.e[p],.8)||netUnder(ex+vx*sk*dd+ox,ez+vz*sk*dd+oz,cy2,P.e[p],.6)){w=Math.max(0,dd-w/6-.6);break;}}
+            if(w<1.2){w=0;need=false;}}
           var fx=ex+vx*sk*w,fz=ez+vz*sk*w,fy=w?Math.min(netGround(fx+ox,fz+oz),cy2)-1:cy2;
           A.push([ex,cy2,ez],[fx,fy,fz]);
         }
