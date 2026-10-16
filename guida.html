@@ -1885,7 +1885,7 @@ function nTree(F,r,x,z,y){
     else{nCone(F,x,z,.24,y,h*.42,HC.trunk);
     nCone(F,x,z,h*.39,y+h*.22,h*.55,leaf);nCone(F,x+h*.06,z-h*.03,h*.27,y+h*.48,h*.43,leaf);}}
 }
-var netTerrM=new THREE.MeshLambertMaterial({vertexColors:true,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:2});
+var netTerrM=new THREE.MeshLambertMaterial({vertexColors:true,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:6});
 var TCOLS=[[0,hc(0x52613a)],[350,hc(0x647044)],[700,hc(0x777653)],[1100,hc(0x8b8065)],[1600,hc(0x9a907b)]],TROCK=hc(0x777064),TCa=new THREE.Color();
 /* terreno del tassello: griglia di 20 m con le quote vere, colori per altitudine e pendenza */
 function netTerrain(ox,oz){
@@ -3919,7 +3919,7 @@ function cameraTick(dt){
     camera.fov=(aspect<1?78:60)+Math.min(16,sp*.2);
   }
   if(shake>0){shake-=dt;camera.position.x+=(Math.random()-.5)*shake*.5;camera.position.y+=(Math.random()-.5)*shake*.4;}
-  camera.updateProjectionMatrix();
+  camera.near=state==='menu'?.3:camMode===1?.1:.9;camera.updateProjectionMatrix();
   skyMesh.position.copy(camera.position);if(sunSpr.visible){var SD2=sunDir();sunSpr.position.set(camera.position.x+SD2.x*1000,camera.position.y+Math.max(SD2.y,-.03)*1000,camera.position.z+SD2.z*1000);}
   if(world!=='city')hwBack.position.set(camera.position.x,world==='net'?car.y:0,camera.position.z);
   skyG.position.y=world==='net'?car.y:0;
@@ -5040,7 +5040,7 @@ function ntrTick(dt){
     var q=ntrAt(t.ei,t.s),h=t.dir>0?q[3]:q[3]+Math.PI,o=ntrLane(t),x=q[0]-Math.cos(h)*o,z=q[1]+Math.sin(h)*o;
     t.wx=x;t.wz=z;t.h=h;
     if(Math.hypot(x-car.x,z-car.z)>780){trafG.remove(t.g);NTRF.splice(k,1);continue;}
-    t.g.position.set(x-OX,q[2],z-OZ);t.g.rotation.y=h;t.g.visible=true;ntrLamp(t);
+    t.g.position.set(x-OX,q[2],z-OZ);t.g.rotation.order='YXZ';t.g.rotation.y=h;var qf=ntrAt(t.ei,t.s+t.dir*2.2),qr=ntrAt(t.ei,t.s-t.dir*2.2);t.g.rotation.x=-Math.atan2(qf[2]-qr[2],4.4);t.g.visible=true;ntrLamp(t);
     /* urto con il giocatore */
     var ddx=car.x-x,ddz=car.z-z,dd=Math.hypot(ddx,ddz),rr=t.type==='truck'?3.2:2.4;
     if(dd<rr&&Math.abs((car.y||q[2])-q[2])<2.5){var pen=rr-dd,nx=ddx/(dd||1),nz=ddz/(dd||1);car.x+=nx*pen;car.z+=nz*pen;
