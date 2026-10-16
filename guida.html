@@ -2461,7 +2461,7 @@ $('cGo').addEventListener('click',function(){
   var c=SC.card;$('card').hidden=true;paused=false;SC.card=null;
   if(c&&c.opt.after)c.opt.after();
 });
-$('btnDisc').addEventListener('click',function(){if(SC.last)scCard(SC.last,{});});
+$('btnDisc').addEventListener('click',function(){var p=SC.last||SC.nearP;if(p){if(!SC.found[p.id])scFound(p,false);scCard(p,{});}});
 /* destinazione su un luogo: percorso calcolato dal punto in cui si è */
 function scGo(p,label){
   var node=scNode(p);
@@ -4393,7 +4393,7 @@ function frame(now){
     if(world==='hw')raceTickHw();else if(world==='net')netRace();else raceTick();
     if(world==='hw'){OX=car.x;OZ=car.z;trafTick(dt);}
     else if(world==='net'){OX=car.x;OZ=car.z;netTick(dt);}   /* origine aggiornata prima di disporre traffico e cielo */
-    tripTick(dt);skyTick(dt);natTick(dt);ntrTick(dt);warnTick(dt);hintTick(dt);hudTick();mapTick(dt);
+    tripTick(dt);skyTick(dt);natTick(dt);ntrTick(dt);scNearTick();warnTick(dt);hintTick(dt);hudTick();mapTick(dt);
     saveT-=dt;if(saveT<=0){saveT=5;saveRun();}
     if(camMode===1){gaugeDraw();navT-=dt;if(navT<=0){navT=.2;navDraw();}}
   }
@@ -5073,6 +5073,36 @@ function bldFill(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
   }
 }
 
+/* ================= SCHEDE: si aprono toccando il nome del luogo, o dal pulsante quando si è vicini ================= */
+(function(){
+  var el=$('view'),rc=new THREE.Raycaster(),v2=new THREE.Vector2(),dn=null;
+  el.addEventListener('pointerdown',function(e){dn={x:e.clientX,y:e.clientY,t:performance.now()};},true);
+  el.addEventListener('pointerup',function(e){
+    if(!dn||state!=='drive'||paused||world!=='net')return;
+    var mv=Math.hypot(e.clientX-dn.x,e.clientY-dn.y),dt=performance.now()-dn.t;dn=null;
+    if(mv>10||dt>450)return;
+    var R=renderer.domElement.getBoundingClientRect();v2.set((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1);
+    rc.setFromCamera(v2,camera);rc.camera=camera;
+    var hits=rc.intersectObjects(scG.children,true);
+    for(var k=0;k<hits.length;k++){var o=hits[k].object;while(o&&!(o.userData&&o.userData.p))o=o.parent;if(o){var p=o.userData.p;look.yaw=look.pitch=0;if(!SC.found[p.id])scFound(p,false);scCard(p,{});return;}}
+  },true);
+})();
+function scNearTick(){
+  if(world!=='net'||!SC.pois.length||state!=='drive')return;
+  if(SC.last&&gameT-SC.lastT<=10)return;
+  var best=null,bd=90;
+  for(var k in SC.markers){var p=SC.markers[k].userData.p,d=Math.hypot(p.x-car.x,p.z-car.z);if(d<bd){bd=d;best=p;}}
+  var b=$('btnDisc');
+  if(best){if(b.dataset.near!==String(best.id)){b.dataset.near=best.id;b.textContent='Scheda: '+(best.n.length>22?best.n.slice(0,21)+'…':best.n);}b.hidden=false;SC.nearP=best;}
+  else if(SC.nearP){SC.nearP=null;b.dataset.near='';b.hidden=true;}
+}
+/* audio: il browser lo sblocca solo dopo un tocco o un tasto; lo si riattiva a ogni gesto finché non parte */
+(function(){
+  function unlock(){try{if(!opts.snd)return;audioInit();if(AC&&AC.state!=='running')AC.resume();}catch(e){}}
+  ['pointerdown','touchend','keydown','click'].forEach(function(ev){window.addEventListener(ev,unlock,true);});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&AC&&AC.state==='suspended'&&opts.snd)AC.resume();});
+})();
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -5085,7 +5115,7 @@ try{if(hot&&hot.snapshot)hot.snapshot(function(){return{car:opts.car,track:opts.
 if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
-window.__au={BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
