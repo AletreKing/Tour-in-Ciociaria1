@@ -271,6 +271,25 @@ button{font:inherit;color:inherit}
   .how{font-size:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (max-width:430px){.cars{grid-template-columns:1fr}.how{grid-template-columns:1fr}#tracks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* guida: navigatore, nome della via, pulsante della scheda e messaggi in colonna a destra, il centro resta libero */
+#game.net #arrow{left:auto;right:calc(16px + env(safe-area-inset-right,0px));transform:none;top:calc(58px + env(safe-area-inset-top,0px))}
+#game.net #roadName{left:auto;right:calc(18px + env(safe-area-inset-right,0px));transform:none;top:calc(98px + env(safe-area-inset-top,0px));max-width:min(34%,300px);text-align:right;font-size:14px}
+#game.net #roadName.new{font-size:16px}
+#game.net #btnDisc{left:auto;right:calc(16px + env(safe-area-inset-right,0px));transform:none;top:calc(122px + env(safe-area-inset-top,0px));max-width:min(34%,300px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#game.net #hint:not(.town){left:auto;right:calc(16px + env(safe-area-inset-right,0px));transform:none;top:calc(162px + env(safe-area-inset-top,0px));bottom:auto;max-width:min(32%,260px);text-align:left;font-size:12.5px}
+@media (max-height:430px){
+  #game.net #arrow{top:54px;padding:3px 10px 3px 6px}
+  #game.net #roadName{top:88px;font-size:12px}
+  #game.net #btnDisc{top:106px;font-size:11px;padding:5px 10px;min-height:0}
+  #game.net #hint:not(.town){top:136px;font-size:11px;padding:4px 9px;max-width:min(30%,240px)}
+}
+@media (orientation:portrait){
+  #game.net #arrow{top:64px}
+  #game.net #roadName{top:104px;max-width:52%}
+  #game.net #btnDisc{top:128px;max-width:52%}
+  #game.net #hint:not(.town){top:170px;max-width:52%}
+}
 </style>
 
 <div id="game" class="menu">
