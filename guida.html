@@ -1347,6 +1347,46 @@ function netLoad(){
     for(q=0;q<=n;q++){var sq=ss[q],c=L<640?dA+(dB-dA)*sq/L:dA*Math.max(0,1-sq/Fd)+dB*Math.max(0,1-(L-sq)/Fd);sm[q]+=c;}
     for(q=0;q<n;q++){Y0[a+q]=sm[q];Y1[a+q]=sm[q+1];}
   });
+  (function(){
+    function cl(px,pz,x0,z0,x1,z1){var vx=x1-x0,vz=z1-z0,L=vx*vx+vz*vz||1e-9,t=Math.max(0,Math.min(1,((px-x0)*vx+(pz-z0)*vz)/L));return[Math.hypot(x0+vx*t-px,z0+vz*t-pz),t];}
+    function segd(ax,az,bx,bz,cx,cz,dx,dz){
+      var den=(bx-ax)*(dz-cz)-(bz-az)*(dx-cx);
+      if(Math.abs(den)>1e-9){var t=((cx-ax)*(dz-cz)-(cz-az)*(dx-cx))/den,u=((cx-ax)*(bz-az)-(cz-az)*(bx-ax))/den;if(t>=0&&t<=1&&u>=0&&u<=1)return[0,t,u];}
+      var c=[],r;r=cl(ax,az,cx,cz,dx,dz);c.push([r[0],0,r[1]]);r=cl(bx,bz,cx,cz,dx,dz);c.push([r[0],1,r[1]]);r=cl(cx,cz,ax,az,bx,bz);c.push([r[0],r[1],0]);r=cl(dx,dz,ax,az,bx,bz);c.push([r[0],r[1],1]);
+      c.sort(function(a,b){return a[0]-b[0];});return c[0];}
+    var pairs=[],q,o;
+    for(q=0;q<PE.length;q++){var ei=PE[q],e=E[ei];if(e.tu)continue;
+      var gx=Math.floor((X0[q]+X1[q])/2/NG),gz=Math.floor((Z0[q]+Z1[q])/2/NG);
+      for(var i2=-1;i2<=1;i2++)for(var j2=-1;j2<=1;j2++){var ga=grid.get(nk(gx+i2,gz+j2));if(!ga)continue;
+        for(var k2=0;k2<ga.length;k2++){o=ga[k2];if(o<=q)continue;var fi=PE[o],f=E[fi];if(fi===ei||f.tu)continue;
+          var r=segd(X0[q],Z0[q],X1[q],Z1[q],X0[o],Z0[o],X1[o],Z1[o]),gap=r[0]-(e.half+f.half);if(gap>5)continue;if((e.br||f.br)&&r[0]===0)continue;   /* il ponte che scavalca: ci pensa il passo dopo */
+          var sh=-1;[e.a,e.b].forEach(function(nd){if(nd===f.a||nd===f.b)sh=nd;});
+          if(sh>=0){var px=X0[q]+(X1[q]-X0[q])*r[1],pz=Z0[q]+(Z1[q]-Z0[q])*r[1];if(Math.hypot(nx[sh]-px,nz[sh]-pz)<(e.half+f.half)*1.6+10)continue;}
+          pairs.push([q,o,r[1],r[2],Math.max(0,gap)]);}}}
+    if(!pairs.length)return;
+    function yA(pp,t){return Y0[pp]+(Y1[pp]-Y0[pp])*t;}
+    var fixed=0;
+    for(var it=0;it<6;it++){
+      var C=new Map(),n2=0;
+      pairs.forEach(function(c){
+        var dy=yA(c[1],c[3])-yA(c[0],c[2]),ok=c[4]*.5;   /* tra due strade vicine, al massimo una scarpata di 1 su 2 */
+        if(Math.abs(dy)>5.5+ok||Math.abs(dy)<=ok+.12)return;   /* oltre 5,5 m è un vero sovrappasso */
+        var fx=(Math.abs(dy)-ok)/2*(dy>0?1:-1);n2++;
+        [[c[0],c[2],fx],[c[1],c[3],-fx]].forEach(function(v){var pp=v[0],ei=PE[pp],sv=S0[pp]+(S1[pp]-S0[pp])*v[1];if(!C.has(ei))C.set(ei,[]);C.get(ei).push([sv,v[2]]);});
+      });
+      if(!n2)break;fixed=Math.max(fixed,n2);
+      C.forEach(function(list,ei){
+        var e=E[ei],L=e.len||1;list.sort(function(a,b){return a[0]-b[0];});
+        /* punti di controllo: a ogni gruppo di 12 m la correzione più forte; ai capi del tratto zero, così gli incroci restano allineati */
+        var ctl=[[0,0]];list.forEach(function(v){var last=ctl[ctl.length-1];if(ctl.length>1&&v[0]-last[0]<12){if(Math.abs(v[1])>Math.abs(last[1]))last[1]=v[1];}else ctl.push([v[0],v[1]]);});
+        ctl.push([L,0]);
+        /* rampa dolce: la correzione si spegne in non meno di 60 m */
+        function at(sv){var best=0;for(var m=1;m<ctl.length-1;m++){var d=Math.abs(sv-ctl[m][0]),w=Math.max(0,1-d/Math.max(60,Math.abs(ctl[m][1])*25));var v=ctl[m][1]*w;var ed=Math.min(sv,L-sv),ce=Math.min(ctl[m][0],L-ctl[m][0]);if(ce>1)v*=Math.min(1,ed/ce);if(Math.abs(v)>Math.abs(best))best=v;}return best;}
+        for(var pp=e.p0;pp<e.p1;pp++){Y0[pp]+=at(S0[pp]);Y1[pp]+=at(S1[pp]);}
+      });
+    }
+    NETOV=fixed;
+  })();
   /* ponti: dove un tratto segnato come ponte scavalca un'altra strada, la carreggiata sale (5,5%) fino a 6,8 m sopra l'altra */
   (function(){
     var GR=.055,CL=6.8,cr=[],q,o,k2;
@@ -1407,7 +1447,7 @@ function netLoad(){
   MW.jn.forEach(function(j){var key=nk(Math.floor(j[0]/NT),Math.floor(j[1]/NT));if(!NET.jn.has(key))NET.jn.set(key,[]);NET.jn.get(key).push({x:j[0],z:j[1],n:j[2]});});
   return NET;
 }
-var NETBR=0;
+var NETBR=0,NETOV=0;
 function netRoadY(pr){var P=NET.P;return P.y0[pr.p]+(P.y1[pr.p]-P.y0[pr.p])*pr.t;}
 /* quota del terreno: vicino alle strade si abbassa o si alza fino al piano stradale (trincee e terrapieni) */
 /* Sotto e accanto a ogni strada il terreno sta al piano stradale (fascia piana di 26 m oltre il bordo),
