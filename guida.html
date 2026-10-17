@@ -1244,7 +1244,7 @@ function applyLight(){
   hemi.intensity=lerp(.43,1.08,dayF);hemi.color.setHex(0x5a6c9a).lerp(CU.setHex(0xcfe0ff),dayF);hemi.groundColor.setHex(0x1c1e25).lerp(CU.setHex(0x6b6252),dayF);
   sun.intensity=lerp(.18,1.08,dayF);sun.color.setHex(0x9db4ff).lerp(CU.setHex(0xfff1dc),dayF).lerp(CU.setHex(0xffc69a),duskF*.85);
   sun.position.set(SD.x||-.6,clamp(Math.sin(Math.max(el,6)*DEG),.12,1),SD.z||-.5);
-  cityMat.wall.emissiveIntensity=lerp(.1,1.15,dark);
+  cityMat.wall.emissiveIntensity=lerp(.1,1.15,dark);if(typeof ciocWall!=='undefined')ciocWall.emissiveIntensity=lerp(.05,1,dark);
   cityMat.bulb.color.setHex(0xffdca6).multiplyScalar(lerp(.35,1,dark));cityMat.pool.opacity=dark;
   var mk=lerp(1,.62,dark);cityMat.mark.color.setScalar(mk);hwMarkM.color.setScalar(mk);
   hwG.traverse(function(n){if(n.userData&&n.userData.own)n.material.color.setScalar(LGT.sign);});
@@ -2013,20 +2013,21 @@ function netTerrain(ox,oz){
   return new THREE.Mesh(g,netTerrM);
 }
 function netTile(tx,tz){
+  SELB=new GB();BWH=new GB();
   var obs=[],RF=new GB(),RG=RGcur=new GB(),T=NET.tiles.get(nk(tx,tz)),ox=tx*NT,oz=tz*NT,g=new THREE.Group(),F=new GB(),M=new GB(),W=new GB(),up=[0,1,0],r=rng(1000003+tx*7349+tz*3571),P=NET.P,k,i;
   var cmx=ox+NT/2,cmz=oz+NT/2,TW=NET.towns.filter(function(t){return Math.abs(t.x-cmx)<NT/2+t.r&&Math.abs(t.z-cmz)<NT/2+t.r;});
   function townAt(x,z){var f=0,c=0;for(var q=0;q<TW.length;q++){var t=TW[q],d=Math.hypot(x-t.x,z-t.z);if(d<t.r){var v=1-d/t.r;if(v>f){f=v;c=t.c;}}}return[f,c];}
   if(T){
     T.p.forEach(function(p){
       var e=NET.E[P.e[p]],h=e.half,x0=P.x0[p]-ox,z0=P.z0[p]-oz,x1=P.x1[p]-ox,z1=P.z1[p]-oz,ax=P.ax[p],az=P.az[p],bx=P.bx[p],bz=P.bz[p];
-      var py0=P.y0[p],py1=P.y1[p];
+      var py0=P.y0[p],py1=P.y1[p],twp=townAt((P.x0[p]+P.x1[p])/2,(P.z0[p]+P.z1[p])/2),core=!!SELB&&e.cls>=4&&!e.br&&!e.tu&&twp[0]>.5&&twp[1]>=1;   /* nei centri storici le strade minori sono in selciato */
       function Q(B,d0,d1,y,col,t0,t1){
         var xa=x0+(x1-x0)*t0,za=z0+(z1-z0)*t0,xb=x0+(x1-x0)*t1,zb=z0+(z1-z0)*t1,oax=ax+(bx-ax)*t0,oaz=az+(bz-az)*t0,obx=ax+(bx-ax)*t1,obz=az+(bz-az)*t1,ya=py0+(py1-py0)*t0+y,yb=py0+(py1-py0)*t1+y;
         B.quad([[xa+oax*d0,ya,za+oaz*d0],[xa+oax*d1,ya,za+oaz*d1],[xb+obx*d1,yb,zb+obz*d1],[xb+obx*d0,yb,zb+obz*d0]],up,N4,col);
       }
-      Q(F,-h,h,0,HC.as,0,1);
+      Q(core?SELB:F,-h,h,0,HC.as,0,1);
       [1,-1].forEach(function(sv){var hit=false;for(var q=0;q<=2&&!hit;q++){var tq=q/2,mx=x0+(x1-x0)*tq+(ax+(bx-ax)*tq)*sv*(h+1.2),mz=z0+(z1-z0)*tq+(az+(bz-az)*tq)*sv*(h+1.2);if(netOnOther(mx+ox,mz+oz,P.e[p],.3))hit=true;}
-        if(sv>0)Q(F,h,h+1.8,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);else Q(F,-h-1.8,-h,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);});
+        if(sv>0)Q(core?SELB:F,h,h+1.8,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);else Q(core?SELB:F,-h-1.8,-h,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);});
       for(var sk=-1;sk<=1;sk+=2){
         var A=[],need=false,overRoad=false;
         for(var te=0;te<=1;te++){
@@ -2187,8 +2188,8 @@ function netTile(tx,tz){
     if(ri>4)nTree(F,r,cx,cz,y+.2);
     obs.push([2,R2.x,R2.z,ri,y]);
   });
-  g.add(netTerrain(ox,oz));
-  if(F.i.length)g.add(F.mesh(hwFlatM));if(M.i.length)g.add(M.mesh(hwMarkM));if(RF.i.length)g.add(RF.mesh(reflM));if(RG.i.length)g.add(RG.mesh(reflGM));RGcur=null;if(W.i.length)g.add(W.mesh(cityMat.wall));
+  g.add(netTerrain(ox,oz));selTile(g,ox,oz,townAt);
+  if(F.i.length)g.add(F.mesh(hwFlatM));if(M.i.length)g.add(M.mesh(hwMarkM));if(RF.i.length)g.add(RF.mesh(reflM));if(RG.i.length)g.add(RG.mesh(reflGM));RGcur=null;if(W.i.length)g.add(W.mesh(cityMat.wall));if(BWH&&BWH.i.length)g.add(BWH.mesh(ciocWall));BWH=null;
   return{g:g,ox:ox,oz:oz,obs:obs};
 }
 function netClear(){for(var k in netTiles){netG.remove(netTiles[k].g);disposeChunk(netTiles[k].g);}netTiles={};}
@@ -5233,7 +5234,7 @@ function bldPlace(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
     h+=gc-gb;
     var hist=tw[0]>.55&&tw[1]>=1,col=kind===1?HN.church:kind===2?HN.modern[Math.floor(r()*HN.modern.length)]:hist?(r()<.5?HN.stoneWall:HN.casa[Math.floor(r()*HN.casa.length)]):tw[0]<.25&&r()<.6?HN.modern[Math.floor(r()*HN.modern.length)]:HN.casa[Math.floor(r()*HN.casa.length)];
     var flat=kind===2||(kind===3&&!hist&&r()<.6)||(!hist&&tw[0]<.25&&r()<.25);
-    nBoxLo(W,F,cx-ox,cz-oz,ux,uz,hw,hd,h,col,HN.roof[Math.floor(r()*3)],Math.floor(r()*16)/16,gb-.8,flat);
+    nBoxLo((BWH&&!flat&&kind!==2&&(hist||tw[0]>.35))?BWH:W,F,cx-ox,cz-oz,ux,uz,hw,hd,h,col,HN.roof[Math.floor(r()*3)],Math.floor(r()*16)/16,gb-.8,flat);
     if(kind===1&&hw>6){   /* chiesa: un campanile in fondo */
       var bx=cx-ux*(hw-1.6)+(-uz)*(hd+1.4),bz=cz-uz*(hw-1.6)+ux*(hd+1.4);
       if(netFree(bx,bz,ux,uz,1.6,1.6,.6)){nBoxLo(W,F,bx-ox,bz-oz,ux,uz,1.6,1.6,h+6,HN.stone,HN.roof[0],.2,gb-.8,false);obs.push([1,bx,bz,ux,uz,1.6,1.6]);}
@@ -5266,7 +5267,7 @@ function bldFill(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
     if(gt-gb>7)continue;
     var fl=core?2+Math.floor(r()*3):tw[0]>.2?1+Math.floor(r()*3):1+Math.floor(r()*2),h=fl*3+.8+(gc-gb);
     var col=core?(r()<.5?HN.stoneWall:HN.casa[Math.floor(r()*HN.casa.length)]):tw[0]<.25&&r()<.6?HN.modern[Math.floor(r()*HN.modern.length)]:HN.casa[Math.floor(r()*HN.casa.length)];
-    nBoxLo(W,F,cx-ox,cz-oz,ux,uz,hw,hd,h,col,HN.roof[Math.floor(r()*3)],Math.floor(r()*16)/16,gb-.8,!core&&tw[0]<.25&&r()<.3);
+    var flt=!core&&tw[0]<.25&&r()<.3;nBoxLo((BWH&&!flt&&(core||tw[0]>.35))?BWH:W,F,cx-ox,cz-oz,ux,uz,hw,hd,h,col,HN.roof[Math.floor(r()*3)],Math.floor(r()*16)/16,gb-.8,flt);
     var b=[1,cx,cz,ux,uz,hw,hd];obs.push(b);HB.push(b);
   }
 }
@@ -6179,6 +6180,84 @@ function eggTick(dt){
   },true);
 })();
 var eggTr0=trSync;trSync=function(dt){eggTr0(dt);eggTick(dt);};
+
+
+/* ================= CENTRI STORICI CIOCIARI: facciate in intonaco e pietra, persiane, portali ad arco; selciato tra le case ================= */
+function ciocTex(em){
+  var S=512,c=document.createElement('canvas');c.width=c.height=S;var x=c.getContext('2d'),r=rng(4242),FL=64;   /* 512 px = 24 m: piani da 3 m, quattro case da 6 m */
+  x.fillStyle=em?'#000':'#cfc6b6';x.fillRect(0,0,S,S);
+  var PL=['#dcc08a','#e6dac2','#ddb59c','#cfc7b8','#e4cd8e','#d6c9a8','#c9b08e'],SH=['#3f6b4a','#4f7a56','#6b4a2e','#7d9480','#5b6e7a'];
+  function stones(x0,y0,w,h,base){   /* muratura in pietra calcarea a corsi irregolari */
+    x.fillStyle='#8f877a';x.fillRect(x0,y0,w,h);
+    for(var yy=y0;yy<y0+h;){var rh=7+r()*7;for(var xx=x0-r()*14;xx<x0+w;){var rw=12+r()*20,g=150+Math.floor(r()*45),t=r()*14;
+      x.fillStyle='rgb('+(g+t)+','+(g+t-6)+','+(g-14)+')';x.fillRect(Math.max(x0,xx+1),yy+1,Math.min(rw-2,x0+w-xx-1),rh-2);xx+=rw;}yy+=rh;}
+  }
+  for(var s=0;s<4;s++){
+    var X=s*128,stone=r()<.3,pl=PL[Math.floor(r()*PL.length)],sh=SH[Math.floor(r()*SH.length)],nw=r()<.5?2:3,bal=r()<.45;
+    if(!em){
+      if(stone)stones(X,0,128,S);
+      else{x.fillStyle=pl;x.fillRect(X,0,128,S);
+        for(var k=0;k<260;k++){x.fillStyle='rgba('+(r()<.5?'90,70,50':'255,250,240')+','+(r()*.06)+')';x.fillRect(X+r()*128,r()*S,2+r()*14,2+r()*10);}
+        for(k=0;k<3;k++){var px=X+r()*100,py=r()*S;stones(px,py,14+r()*24,10+r()*16);}   /* intonaco caduto, la pietra riaffiora */
+        var gr=x.createLinearGradient(0,S-48,0,S);gr.addColorStop(0,'rgba(70,60,45,0)');gr.addColorStop(1,'rgba(70,60,45,.35)');x.fillStyle=gr;x.fillRect(X,S-48,128,48);}
+      x.fillStyle='rgba(40,30,20,.35)';x.fillRect(X+127,0,1,S);   /* giunto tra una casa e l'altra */
+    }
+    /* finestre ai piani, allineate nella stessa casa */
+    var cols=[];for(var q=0;q<nw;q++)cols.push(X+Math.round((q+.5)*128/nw-9+(r()-.5)*6));
+    for(var f=0;f<7;f++){
+      var y0=f*FL+14;
+      cols.forEach(function(cx){
+        var shut=r(),lit=r()<.22&&shut>.25;
+        if(em){if(lit){x.fillStyle=r()<.8?'#ffb866':'#ffd8a0';x.fillRect(cx+2,y0+2,14,24);}return;}
+        x.fillStyle='#e9e3d6';x.fillRect(cx-2,y0-2,22,32);x.fillStyle='#d8cfbd';x.fillRect(cx-4,y0+28,26,4);   /* cornice e davanzale in pietra */
+        if(shut<.25){x.fillStyle=sh;x.fillRect(cx,y0,18,28);x.fillStyle='rgba(0,0,0,.25)';for(var l=y0+2;l<y0+28;l+=3)x.fillRect(cx,l,18,1);x.fillRect(cx+8,y0,1,28);}
+        else{x.fillStyle=lit?'#ffd898':'#2a2f36';x.fillRect(cx+1,y0+1,16,26);x.fillStyle='rgba(230,230,220,.5)';x.fillRect(cx+8,y0+1,1,26);x.fillRect(cx+1,y0+12,16,1);
+          x.fillStyle=sh;x.fillRect(cx-9,y0,8,28);x.fillRect(cx+19,y0,8,28);x.fillStyle='rgba(0,0,0,.25)';for(l=y0+2;l<y0+28;l+=3){x.fillRect(cx-9,l,8,1);x.fillRect(cx+19,l,8,1);}}
+      });
+      if(!em&&bal&&f===6-1){x.fillStyle='#9a9286';x.fillRect(cols[0]-12,y0+30,44,4);x.fillStyle='#2b2b2b';for(var b2=cols[0]-11;b2<cols[0]+32;b2+=4)x.fillRect(b2,y0+16,1,14);x.fillRect(cols[0]-12,y0+15,44,2);}
+    }
+    if(!em){   /* piano terra: zoccolo, portone ad arco in pietra, porta della cantina */
+      var gy=S-FL;x.fillStyle='#e9e3d6';x.fillRect(X,gy,128,6);
+      var dx=X+20+Math.floor(r()*50);x.fillStyle='#cdc3b0';x.beginPath();x.moveTo(dx-5,S);x.lineTo(dx-5,S-46);x.arc(dx+14,S-46,19,Math.PI,0);x.lineTo(dx+33,S);x.fill();
+      x.fillStyle=r()<.5?'#3d5a46':'#5a3a22';x.beginPath();x.moveTo(dx,S);x.lineTo(dx,S-46);x.arc(dx+14,S-46,14,Math.PI,0);x.lineTo(dx+28,S);x.fill();
+      x.fillStyle='rgba(0,0,0,.25)';x.fillRect(dx+13,S-46,2,46);
+      if(r()<.7){var cx2=dx>X+60?X+10:X+90;x.fillStyle='#bfb5a2';x.beginPath();x.moveTo(cx2-3,S);x.lineTo(cx2-3,S-26);x.arc(cx2+9,S-26,12,Math.PI,0);x.lineTo(cx2+21,S);x.fill();x.fillStyle='#4a3a2a';x.fillRect(cx2,S-26,18,26);}
+    }
+  }
+  var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());return t;
+}
+var ciocWall=new THREE.MeshLambertMaterial({map:ciocTex(false),emissive:0xffffff,emissiveMap:ciocTex(true),emissiveIntensity:.9,side:THREE.DoubleSide});
+var BWH=null;
+/* selciato: sampietrini e selci di calcare grigio, 512 px = 2,5 m */
+function selTex(){
+  var S=512,c=document.createElement('canvas');c.width=c.height=S;var x=c.getContext('2d'),r=rng(909);
+  x.fillStyle='#4a463f';x.fillRect(0,0,S,S);
+  for(var y=0;y<S;y+=24+0){var off=r()*20;
+    for(var xx=-off;xx<S;){var w=20+r()*16,h=19+r()*4,g=92+Math.floor(r()*38),bl=r()*8;
+      [0,-S,S].forEach(function(dx){var X=xx+dx;if(X+w<0||X>S)return;
+        x.fillStyle='rgb('+(g)+','+(g-3)+','+Math.floor(g-8+bl)+')';x.beginPath();var rr=6;x.moveTo(X+2+rr,y+2);x.lineTo(X+w-2-rr,y+2);x.quadraticCurveTo(X+w-2,y+2,X+w-2,y+2+rr);x.lineTo(X+w-2,y+h-rr);x.quadraticCurveTo(X+w-2,y+h,X+w-2-rr,y+h);x.lineTo(X+2+rr,y+h);x.quadraticCurveTo(X+2,y+h,X+2,y+h-rr);x.lineTo(X+2,y+2+rr);x.quadraticCurveTo(X+2,y+2,X+2+rr,y+2);x.fill();
+        x.fillStyle='rgba(255,255,255,.06)';x.fillRect(X+5,y+4,w-12,3);x.fillStyle='rgba(0,0,0,.2)';x.fillRect(X+4,y+h-4,w-9,2);});
+      xx+=w+1;}
+  }
+  var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t;
+}
+var selM=new THREE.MeshLambertMaterial({map:selTex(),polygonOffset:true,polygonOffsetFactor:0,polygonOffsetUnits:-1});
+selM.color=netTerrM.color;
+var SELB=null;
+/* per ogni tassello: il suolo dei centri storici diventa selciato, seguendo esattamente il terreno */
+function selTile(g,ox,oz,townAt){
+  var B=SELB||new GB(),S=20,n=NT/S,i,j,up=[0,1,0],N0=[[0,0],[0,0],[0,0],[0,0]],c0=hc(0xffffff);
+  for(j=0;j<n;j++)for(i=0;i<n;i++){
+    var cx=ox+(i+.5)*S,cz=oz+(j+.5)*S,tw=townAt(cx,cz);if(!(tw[0]>.5&&tw[1]>=1))continue;
+    var lu=LU.ready?luAt(cx,cz):9;if(lu===1||lu===10)continue;
+    var x0=i*S,z0=j*S,a=[x0,netGround(ox+x0,oz+z0),z0],b=[x0,netGround(ox+x0,oz+z0+S),z0+S],c=[x0+S,netGround(ox+x0+S,oz+z0),z0],d=[x0+S,netGround(ox+x0+S,oz+z0+S),z0+S];
+    B.quad([b,d,c,a],up,N0,c0);
+  }
+  SELB=null;if(!B.i.length)return;
+  var m=B.mesh(selM),P=m.geometry.attributes.position.array,U=m.geometry.attributes.uv.array;
+  for(var k=0,q=0;k<P.length;k+=3,q+=2){U[q]=(P[k]+ox)/2.5;U[q+1]=(P[k+2]+oz)/2.5;}
+  m.geometry.attributes.uv.needsUpdate=true;g.add(m);
+}
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
