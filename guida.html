@@ -1470,7 +1470,7 @@ function netGround(x,z){
       p=a[k];var e=NET.E[P.e[p]];if(e.br){var bx0=P.x0[p],bz0=P.z0[p],bdx=P.x1[p]-bx0,bdz=P.z1[p]-bz0,bL=bdx*bdx+bdz*bdz||1e-9,bt=((x-bx0)*bdx+(z-bz0)*bdz)/bL;bt=bt<0?0:bt>1?1:bt;var bex=bx0+bdx*bt-x,bez=bz0+bdz*bt-z;if(bex*bex+bez*bez<(e.half+24)*(e.half+24)){var by=P.y0[p]+(P.y1[p]-P.y0[p])*bt-1.8;if(by<cap)cap=by;}continue;}var w=e.half+26,w2=e.half+75,x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;
       t=t<0?0:t>1?1:t;var ex=x0+dx*t-x,ez=z0+dz*t-z,d=Math.sqrt(ex*ex+ez*ez);if(d>=w2)continue;
       var ry=P.y0[p]+(P.y1[p]-P.y0[p])*t-.4;if(d<e.half+2.5)onR=true;
-      if(d<=w){if(ry<flat)flat=ry;var dd=d-e.half-.8;if(dd<0)dd=0;if(ry-dd*.35>lo)lo=ry-dd*.35;if(ry+dd*.35<hi)hi=ry+dd*.35;}
+      if(d<=w){if(ry<flat)flat=ry;var dd=d-e.half-.8;if(dd<0)dd=0;if(ry-dd*.35>lo)lo=ry-dd*.35;if(ry+dd*.2<hi)hi=ry+dd*.2;}
       else{var f=(d-w)/(w2-w);f=f*f*(3-2*f);var v=ry+(h-ry)*f;if(v<soft)soft=v;}
     }
   }
@@ -2122,7 +2122,7 @@ function netTile(tx,tz){
       var qx=P.x0[pp]+(P.x1[pp]-P.x0[pp])*pr.t,qz=P.z0[pp]+(P.z1[pp]-P.z0[pp])*pr.t,sd=((q.x-qx)*rdz-(q.z-qz)*rdx)>=0?1:-1,nx2=rdz*sd,nz2=-rdx*sd;   /* (nx2,nz2): dalla strada verso la chiesa */
       for(var tr=0;tr<5;tr++){var off=e.half+3+7+tr*2,sh=(tr%2?1:-1)*tr*4,ccx=qx+nx2*off+rdx*sh,ccz=qz+nz2*off+rdz*sh;
         if(!netFree(ccx,ccz,-nx2,-nz2,7.4,9,1.5))continue;
-        var CB=bldBase(ccx,ccz,-nx2,-nz2,7,4.6),gy=Math.max(terrH(ccx-nx2*8,ccz-nz2*8),CB[2]-3);
+        var CB=bldBase(ccx,ccz,-nx2,-nz2,9,12),gy=Math.max(terrH(ccx-nx2*8,ccz-nz2*8),CB[2]-3);
         nChurch2(F,ccx-ox,ccz-oz,-nx2,-nz2,7,4.6,CB[1]-.8,gy,r,false).forEach(function(o,i){obs.push([1,ccx-nx2*o[0]+nz2*o[1],ccz-nz2*o[0]-nx2*o[1],-nx2,-nz2,o[2],o[3],CB[1]-.8,gy+5,i===0?1:0]);});
         VPL.push([ccx,ccz,9]);
         q.mx=ccx-nx2*(7+1.6);q.mz=ccz-nz2*(7+1.6);q.gy=null;q.church=1;   /* la colonna del luogo davanti alla facciata */
@@ -6476,7 +6476,7 @@ function chPlace(F,cx,cz,ux,uz,hw,hd,gb,gt,ox,oz,obs,r){
   if(hd>hw){var t=ux;ux=-uz;uz=t;t=hw;hw=hd;hd=t;}
   var pa=netProbe(cx+ux*(hw+5),cz+uz*(hw+5)),pb=netProbe(cx-ux*(hw+5),cz-uz*(hw+5));
   if((pb?pb.d:1e9)<(pa?pa.d:1e9)){ux=-ux;uz=-uz;}
-  var small=hw*hd<40||hd<3.1,gf=terrH(cx+ux*(hw+1.2),cz+uz*(hw+1.2)),g0=Math.max(gf,gt-3.5);
+  var small=hw*hd<40||hd<3.1,gf=terrH(cx+ux*(hw+1.2),cz+uz*(hw+1.2)),g0=Math.max(gf,gt-3.5);gb=Math.min(gb,bldBase(cx,cz,ux,uz,hw+2,hd+(small?1.5:7.5))[1]);   /* abside e campanile escono dall'impronta: la base scende fin sotto anche loro */
   lmFros();var fros=Math.hypot(cx-LMF.x,cz-LMF.z)<70;
   var O=nChurch2(F,cx-ox,cz-oz,ux,uz,hw,hd,gb-.8,g0,r,small,fros);
   if(fros){var ta=-hw+4,tb=hd+4.3,tx2=cx+ux*ta-uz*tb,tz2=cz+uz*ta+ux*tb,TB=bldBase(tx2,tz2,ux,uz,3.8,3.8);   /* il campanile romanico di Frosinone */
@@ -6496,7 +6496,7 @@ function chPoi(F,tx,tz,ox,oz,obs,r){
     for(var k=0;k<14;k++){var a=k*2.4,rr=k?3+k*1.6:0,x=q.x+Math.cos(a)*rr,z=q.z+Math.sin(a)*rr,pr=netProbe(x,z),ux,uz;
       if(pr){var P=NET.P,p=pr.p,px=P.x0[p]+(P.x1[p]-P.x0[p])*pr.t,pz=P.z0[p]+(P.z1[p]-P.z0[p])*pr.t,L=Math.hypot(px-x,pz-z)||1;ux=(px-x)/L;uz=(pz-z)/L;if(pr.d>400){ux=Math.cos(a+1);uz=Math.sin(a+1);}}else{ux=1;uz=0;}
       if(!netFree(x,z,ux,uz,hw+1,hd+1,.8))continue;if(typeof trOn==='function'&&(trOn(x,z,hw+1.5)))continue;if(bldHit(obs,x,z,ux,uz,hw+1,hd+1))continue;
-      var BB=bldBase(x,z,ux,uz,hw,hd);if(BB[2]-BB[1]>(big?9:6))continue;
+      var BB=bldBase(x,z,ux,uz,hw,hd);if(BB[2]-BB[1]>(big?9:6))continue;BB[1]=Math.min(BB[1],bldBase(x,z,ux,uz,hw+2,hd+(big?7.5:1.5))[1]);
       var g0=Math.max(terrH(x+ux*(hw+1.2),z+uz*(hw+1.2)),BB[2]-3);
       var O=nChurch2(F,x-ox,z-oz,ux,uz,hw,hd,BB[1]-.8,g0,r,!big);
       O.forEach(function(o,i){obs.push([1,x+ux*o[0]-uz*o[1],z+uz*o[0]+ux*o[1],ux,uz,o[2],o[3],BB[1]-.8,g0+5,i===0?1:0]);});
@@ -6522,14 +6522,14 @@ function watInit(){
       var D=JSON.parse(t),C=WAT.C;
       D.riv.forEach(function(r,ri){var n=r[3].length,R={n:r[0],w:r[1],half:r[1]/2,k:r[2],x:new Float32Array(r[3]),z:new Float32Array(r[4]),y:new Float32Array(n),s:new Float32Array(n)};
         for(var i=0;i<n;i++){R.y[i]=r[5][i]/10;if(i)R.s[i]=R.s[i-1]+Math.hypot(R.x[i]-R.x[i-1],R.z[i]-R.z[i-1]);}
-        WAT.R.push(R);var m=R.half+16;
+        WAT.R.push(R);var m=R.half+26;
         for(i=0;i<n-1;i++){var x0=Math.min(R.x[i],R.x[i+1])-m,x1=Math.max(R.x[i],R.x[i+1])+m,z0=Math.min(R.z[i],R.z[i+1])-m,z1=Math.max(R.z[i],R.z[i+1])+m;
           for(var a=Math.floor(x0/C);a<=Math.floor(x1/C);a++)for(var b=Math.floor(z0/C);b<=Math.floor(z1/C);b++){var key=nk(a,b),L=WAT.g.get(key);if(!L)WAT.g.set(key,L=[]);L.push(ri,i);}}});
       D.lakes.forEach(function(l,li){var L={n:l.n,y:l.y,o:l.o,h:l.h||[],a:l.a},x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;
         l.o.forEach(function(p){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);});
         L.x0=x0-40;L.z0=z0-40;L.x1=x1+40;L.z1=z1+40;watLakeMask(L);WAT.L.push(L);
         for(var a=Math.floor(L.x0/C);a<=Math.floor(L.x1/C);a++)for(var b=Math.floor(L.z0/C);b<=Math.floor(L.z1/C);b++){var key=nk(a,b),Q=WAT.lg.get(key);if(!Q)WAT.lg.set(key,Q=[]);Q.push(li);}});
-      WAT.F=D.falls;WAT.S=D.springs;
+      WAT.F=D.falls;WAT.S=D.springs;WAT.F.forEach(function(f){f.H=f.top-f.bot;f.W=f.w/2+38;f.big=f.H>5;f.lit=/cascata grande/i.test(f.n);});
       D.springs.forEach(function(s,i){var key=nk(Math.floor(s[0]/NT),Math.floor(s[1]/NT)),Q=WAT.sp.get(key);if(!Q)WAT.sp.set(key,Q=[]);Q.push(i);});
       WAT.ready=true;
       if(world==='net'&&NET&&Object.keys(netTiles).length){netClear();netSync(true);}
@@ -6562,17 +6562,20 @@ function watNear(x,z){
 }
 /* il terreno attorno all'acqua: alveo piatto a filo d'acqua, sponde dolci, conca dei laghi */
 function watGround(x,z,g,road){
-  if(!WAT.ready)return g;var C=WAT.C,key=nk(Math.floor(x/C),Math.floor(z/C)),Q=WAT.g.get(key),k;
+  if(!WAT.ready)return g;var C=WAT.C,key=nk(Math.floor(x/C),Math.floor(z/C)),Q=WAT.g.get(key),k,bd=1e9,by=0;
   if(Q&&!road)for(k=0;k<Q.length;k+=2){var R=WAT.R[Q[k]],i=Q[k+1],x0=R.x[i],z0=R.z[i],dx=R.x[i+1]-x0,dz=R.z[i+1]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;t=t<0?0:t>1?1:t;
-    var d=Math.hypot(x0+dx*t-x,z0+dz*t-z)-R.half;if(d>16)continue;var ry=R.y[i]+(R.y[i+1]-R.y[i])*t-.15;
-    if(d<3){if(g>ry||d<0)g=Math.min(g,ry);if(g<ry-.1&&d<1)g=ry-.1;}else{var v=ry+Math.max(0,d-11)*.5;if(v<g)g=v;}}
+    var d=Math.hypot(x0+dx*t-x,z0+dz*t-z)-R.half;if(d<bd){bd=d;by=R.y[i]+(R.y[i+1]-R.y[i])*t-.3;}}
+  /* il fiume più vicino comanda: fondo sotto il pelo dell'acqua, sponde a filo, poi si raccorda al terreno */
+  if(bd<26){if(bd<-6)g=by-.1;else if(bd<13)g=by+.28;else{var lo=by+.28-(bd-13)*.35,hi=by+.28+(bd-13)*.3;g=g<lo?lo:g>hi?hi:g;}}
+  for(k=0;k<WAT.F.length;k++){var f=WAT.F[k];if(!f.big||Math.abs(x-f.x)>140||Math.abs(z-f.z)>140)continue;var fa=(x-f.x)*f.ux+(z-f.z)*f.uz,fl=Math.abs(-(x-f.x)*f.uz+(z-f.z)*f.ux);if(fl>f.W+22||fa<-70||fa>22)continue;
+    var wl=fl<f.W?1:1-(fl-f.W)/22;if(fa<-22){var wa=fa<-58?(fa+70)/12:1,tg=f.top+.25;if(g<tg&&!(bd<1))g+= (tg-g)*wl*wa;}else{var tb=f.bot-.25;if(g>tb)g+=(tb-g)*wl*(fa>12?1-(fa-12)/10:1);}}
   var LQ=WAT.lg.get(key);
   if(LQ)for(k=0;k<LQ.length;k++){var L=WAT.L[LQ[k]];if(x<L.x0||x>L.x1||z<L.z0||z>L.z1)continue;var sd=watLakeD(L,x,z);if(sd>40)continue;
-    var v2=sd<0?L.y-.4-Math.min(4,-sd*.12):L.y-.15+Math.max(0,sd-5)*.45;if(v2<g)g=v2;}
+    if(sd<0){var v2=sd>-6?L.y-.12:L.y-.12-Math.min(4,(-sd-6)*.12);if(v2<g||sd>-6)g=v2;}else if(sd<5){if(!road)g=L.y+.05;}else{var l2=L.y+.05-(sd-5)*.5,h3=L.y+.05+(sd-5)*.45;g=g<l2?l2:g>h3?h3:g;}}
   return g;
 }
 function wOn(x,z,m){
-  if(!WAT.ready)return false;var w=watNear(x,z);if(w&&w.d<m+1.5)return true;
+  if(!WAT.ready)return false;for(var fi=0;fi<WAT.F.length;fi++){var f=WAT.F[fi];if(!f.big)continue;var fa=(x-f.x)*f.ux+(z-f.z)*f.uz,fl=Math.abs(-(x-f.x)*f.uz+(z-f.z)*f.ux);if(fa>-24-m&&fa<1.5+m&&fl<f.W+1+m)return true;}var w=watNear(x,z);if(w&&w.d<m+1.5)return true;
   var LQ=WAT.lg.get(nk(Math.floor(x/WAT.C),Math.floor(z/WAT.C)));if(LQ)for(var k=0;k<LQ.length;k++){var L=WAT.L[LQ[k]];if(x>=L.x0&&x<=L.x1&&z>=L.z0&&z<=L.z1&&watLakeD(L,x,z)<m+2)return true;}
   return false;
 }
@@ -6595,15 +6598,20 @@ var foamM=new THREE.MeshLambertMaterial({map:foamTex,color:0xe6eef0,transparent:
 var watBankC=hc(0x6f6450);
 /* nel tassello: nastri d'acqua dei fiumi, sponde di ghiaia, cascate, sorgenti */
 function watTile(g,tx,tz,ox,oz,r,obs){
-  if(!WAT.ready)return;var WG=new GB(),FG=new GB(),F=new GB(),seen={},C=WAT.C;
+  if(!WAT.ready)return;var WG=new GB(),FG=new GB(),FL=new GB(),F=new GB(),seen={},C=WAT.C;
+  watCliffs(g,tx,tz,ox,oz,r,F);
   for(var a=Math.floor(ox/C);a<Math.ceil((ox+NT)/C);a++)for(var b=Math.floor(oz/C);b<Math.ceil((oz+NT)/C);b++){var Q=WAT.g.get(nk(a,b));if(!Q)continue;
     for(var k=0;k<Q.length;k+=2){var ri=Q[k],i=Q[k+1],id=ri*100000+i;if(seen[id])continue;seen[id]=1;var R=WAT.R[ri],mx=(R.x[i]+R.x[i+1])/2,mz=(R.z[i]+R.z[i+1])/2;
       if(mx<ox||mx>=ox+NT||mz<oz||mz>=oz+NT)continue;
       var n=R.x.length,ia=Math.max(0,i-1),ib=Math.min(n-1,i+2);
       function nrm(j){var j0=Math.max(0,j-1),j1=Math.min(n-1,j+1),dx=R.x[j1]-R.x[j0],dz=R.z[j1]-R.z[j0],L=Math.hypot(dx,dz)||1;return[-dz/L,dx/L];}
       var n0=nrm(i),n1=nrm(i+1),h=R.half,y0=R.y[i],y1=R.y[i+1],steep=(y0-y1)/Math.max(1,R.s[i+1]-R.s[i])>.35,x0=R.x[i]-ox,z0=R.z[i]-oz,x1=R.x[i+1]-ox,z1=R.z[i+1]-oz,v0=R.s[i]/(h*4+6),v1=R.s[i+1]/(h*4+6);
-      var B=steep?FG:WG;
-      B.quad([[x0-n0[0]*h,y0,z0-n0[1]*h],[x0+n0[0]*h,y0,z0+n0[1]*h],[x1+n1[0]*h,y1,z1+n1[1]*h],[x1-n1[0]*h,y1,z1-n1[1]*h]],[0,1,0],[[0,v0],[1,v0],[1,v1],[0,v1]],steep?hc(0xffffff):hc(0xffffff));
+      var B=steep?(watLitNear(mx,mz)?FL:FG):WG;
+      /* il pelo dell'acqua non va mai sotto il terreno disegnato (la maglia del rilievo è a 20 m, i torrenti sono stretti) */
+      function wy(xx,zz,yy){if(steep)return yy;var t2=terrH(xx+ox,zz+oz)+.06;return t2>yy&&t2<yy+1.2?t2:yy;}
+      var qa=[x0-n0[0]*h,z0-n0[1]*h],qb=[x0+n0[0]*h,z0+n0[1]*h],qc=[x1+n1[0]*h,z1+n1[1]*h],qd=[x1-n1[0]*h,z1-n1[1]*h],qm0=wy(x0,z0,y0),qm1=wy(x1,z1,y1);
+      var ya=Math.max(wy(qa[0],qa[1],y0),qm0),yb=Math.max(wy(qb[0],qb[1],y0),qm0),yc=Math.max(wy(qc[0],qc[1],y1),qm1),yd=Math.max(wy(qd[0],qd[1],y1),qm1);
+      B.quad([[qa[0],ya,qa[1]],[qb[0],yb,qb[1]],[qc[0],yc,qc[1]],[qd[0],yd,qd[1]]],[0,1,0],[[0,v0],[1,v0],[1,v1],[0,v1]],hc(0xffffff));
       [-1,1].forEach(function(s){var e0=h-.3,e1=h+1.4;F.quad([[x0+n0[0]*e0*s,y0-.12,z0+n0[1]*e0*s],[x0+n0[0]*e1*s,y0-.05,z0+n0[1]*e1*s],[x1+n1[0]*e1*s,y1-.05,z1+n1[1]*e1*s],[x1+n1[0]*e0*s,y1-.12,z1+n1[1]*e0*s]],[0,1,0],N4,watBankC);});
       if(steep&&!R.fx){R.fx=1;}
     }}
@@ -6619,7 +6627,7 @@ function watTile(g,tx,tz,ox,oz,r,obs){
     WG.quad([P(-.9,-.55,y+.42),P(.9,-.55,y+.42),P(.9,.55,y+.42),P(-.9,.55,y+.42)],[0,1,0],[[0,0],[1,0],[1,.6],[0,.6]],hc(0xffffff));
     FG.quad([P(-.03,.45,y+1.18),P(.03,.45,y+1.18),P(.03,.42,y+.42),P(-.03,.42,y+.42)],[-vx,0,-vz],[[0,0],[.1,0],[.1,1],[0,1]],hc(0xffffff));
     obs.push([1,x,z,ux,uz,1.3,1.15]);});
-  if(WG.i.length)g.add(WG.mesh(watM));if(FG.i.length)g.add(FG.mesh(foamM));if(F.i.length)g.add(F.mesh(hwFlatM));
+  if(FL.i.length)g.add(FL.mesh(foamLitM));if(WG.i.length)g.add(WG.mesh(watM));if(FG.i.length)g.add(FG.mesh(foamM));if(F.i.length)g.add(F.mesh(hwFlatM));
 }
 /* laghi: superfici intere, costruite quando sei vicino */
 function watLakes(){
@@ -6640,6 +6648,15 @@ var WFX={t:0,mist:[],snd:null,sg:null,cur:null};
 function watFx(dt){
   if(!WAT.ready||world!=='net')return;WFX.t+=dt;
   watTex.offset.y-=dt*.35;watLakeTex.offset.x+=dt*.004;watLakeTex.offset.y+=dt*.006;foamTex.offset.y+=dt*1.6;
+  /* di notte la Cascata Grande si accende: fari colorati che cambiano tinta piano piano */
+  var dk=LGT&&LGT.dayF!=null?Math.max(0,Math.min(1,1-LGT.dayF)):0,hue=(WFX.t*.045)%1,lc=new THREE.Color().setHSL(hue,.85,.55);
+  foamLitM.emissive.copy(lc).multiplyScalar(dk*.95);
+  WAT.F.forEach(function(f){if(!f.lit)return;var d=Math.hypot(f.x-car.x,f.z-car.z);
+    if(d<1500&&dk>.2&&!f.L&&typeof NWT!=='undefined'){f.L=[];for(var k=0;k<5;k++){var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:NWT.glow,color:0xffffff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false,opacity:0}));scene.add(sp);f.L.push(sp);}}
+    else if((d>1700||dk<=.15)&&f.L){f.L.forEach(function(sp){scene.remove(sp);sp.material.dispose();});f.L=null;}
+    if(f.L)f.L.forEach(function(sp,k){var lat=(k-2)*f.w*.22,hh=k===2?f.H*.55:f.H*(.2+.15*(k%2));
+      sp.position.set(f.x+f.ux*3.5+(-f.uz)*lat-OX,f.bot+hh,f.z+f.uz*3.5+f.ux*lat-OZ);var c=new THREE.Color().setHSL((hue+k*.07)%1,.9,.55);sp.material.color.copy(c);
+      var sc=k===2?f.H*1.5:f.H*.9;sp.scale.set(sc,sc*1.3,1);sp.material.opacity=dk*.55;});});
   /* la cascata più vicina */
   var best=null,bd=1e9;WAT.F.forEach(function(f){var d=Math.hypot(f.x-car.x,f.z-car.z);if(d<bd){bd=d;best=f;}});
   if(best&&bd<450){
@@ -6665,6 +6682,36 @@ function watSound(f,d,H){
 }
 var watTr0=trSync;trSync=function(dt){watTr0(dt);watLakes();watFx(dt);};
 var trOnW0=trOn;trOn=function(x,z,r){return trOnW0(x,z,r)||wOn(x,z,r);};
+
+/* la rupe delle grandi cascate: roccia coperta di verde, il fiume esce dal ciglio */
+var mossTex=(function(){var c=document.createElement('canvas');c.width=c.height=256;var x=c.getContext('2d');x.fillStyle='#4b5a34';x.fillRect(0,0,256,256);
+  for(var k=0;k<140;k++){x.fillStyle='rgba('+(110+Math.random()*40|0)+','+(105+Math.random()*30|0)+','+(90+Math.random()*25|0)+','+(.5+Math.random()*.4)+')';var a=Math.random()*256,b=Math.random()*256,w=8+Math.random()*30,h=5+Math.random()*16;x.fillRect(a,b,w,h);}
+  for(k=0;k<900;k++){var g=60+Math.random()*70|0;x.fillStyle='rgba('+(g*.55|0)+','+g+','+(g*.35|0)+','+(.35+Math.random()*.5)+')';x.beginPath();x.arc(Math.random()*256,Math.random()*256,2+Math.random()*7,0,7);x.fill();}
+  for(k=0;k<60;k++){x.strokeStyle='rgba(40,70,25,.6)';x.lineWidth=1.5;var a2=Math.random()*256,b2=Math.random()*200;x.beginPath();x.moveTo(a2,b2);x.lineTo(a2+(Math.random()-.5)*6,b2+20+Math.random()*40);x.stroke();}
+  var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;})();
+var mossM=new THREE.MeshLambertMaterial({map:mossTex,color:0xffffff});
+var foamLitM=new THREE.MeshLambertMaterial({map:foamTex,color:0xe6eef0,transparent:true,opacity:.95,side:THREE.DoubleSide,emissive:0x000000,emissiveMap:foamTex});
+function watLitNear(x,z){for(var i=0;i<WAT.F.length;i++){var f=WAT.F[i];if(f.lit&&Math.abs(x-f.x)<12&&Math.abs(z-f.z)<12)return true;}return false;}
+function watCliffs(g,tx,tz,ox,oz,r,F){
+  WAT.F.forEach(function(f){if(!f.big||f.x<ox||f.x>=ox+NT||f.z<oz||f.z>=oz+NT)return;
+    var ux=f.ux,uz=f.uz,vx=-uz,vz=ux,W=f.W,A0=-25,A1=.6,y0=f.bot-1.5,yt=f.top+.25,yc=f.top-.45,h=f.w/2+.4,M=new GB(),wc=hc(0xffffff);
+    function P(a,b,y){return[f.x-ox+ux*a+vx*b,y,f.z-oz+uz*a+vz*b];}
+    function Q(p,n,uv){M.quad(p,n,uv,wc);}
+    function uvv(a,b,y0_,y1_){return[[a/9,y0_/9],[b/9,y0_/9],[b/9,y1_/9],[a/9,y1_/9]];}
+    /* fronte della rupe: due ali ai lati della cascata, un po' irregolari */
+    var N=10;[[-W,-h],[h,W]].forEach(function(S){for(var k=0;k<N;k++){var b0=S[0]+(S[1]-S[0])*k/N,b1=S[0]+(S[1]-S[0])*(k+1)/N,j0=Math.sin(b0*.7+f.x)*1.6,j1=Math.sin(b1*.7+f.x)*1.6,t0=yt+Math.sin(b0*.31)*1.2,t1=yt+Math.sin(b1*.31)*1.2;
+      Q([P(A1+j0,b0,y0),P(A1+j1,b1,y0),P(A1+j1*.5,b1,t1),P(A1+j0*.5,b0,t0)],[ux,0,uz],uvv(b0,b1,y0,t0));
+      Q([P(A1+j0*.5,b0,t0),P(A1+j1*.5,b1,t1),P(A0,b1,t1),P(A0,b0,t0)],[0,1,0],[[b0/9,0],[b1/9,0],[b1/9,4],[b0/9,4]]);}});
+    /* sotto il fiume, il ciglio: la lastra d'acqua scorre sopra */
+    Q([P(A1-.4,-h,y0),P(A1-.4,h,y0),P(A1-.4,h,yc),P(A1-.4,-h,yc)],[ux,0,uz],uvv(-h,h,y0,yc));Q([P(A1-.4,-h,yc),P(A1-.4,h,yc),P(A0,h,yc),P(A0,-h,yc)],[0,1,0],N4);
+    /* fianchi e retro */
+    [-W,W].forEach(function(b,i){Q([P(A0,b,y0),P(A1,b,y0),P(A1,b,yt),P(A0,b,yt)],i?[vx,0,vz]:[-vx,0,-vz],uvv(A0,A1,y0,yt));});
+    Q([P(A0,-W,y0),P(A0,W,y0),P(A0,W,yt),P(A0,-W,yt)],[-ux,0,-uz],uvv(-W,W,y0,yt));
+    g.add(M.mesh(mossM));
+    /* alberi sul ciglio */
+    for(var k=0;k<14;k++){var b=(r()<.5?-1:1)*(h+3+r()*(W-h-4)),a=-2-r()*18,x=f.x+ux*a+vx*b,z=f.z+uz*a+vz*b;nTree(F,r,x-ox,z-oz,yt-.3);}
+  });
+}
 
 watInit();
 /* ================= MONUMENTI: torri e campanili, castelli, porte e archi, mura poligonali, anfiteatri, rovine, abbazie ================= */
@@ -6854,13 +6901,13 @@ function lmTile(F,tx,tz,ox,oz,obs,VPL,r){
     if(pr&&pr.d<NET.E[pr.e].half+2&&!fp)return;
     if(!fp){   /* senza impronta: un posto libero accanto al punto */
       var ok=false;for(var t=0;t<10&&!ok;t++){var a=t*2.3,rr=t?4+t*3:0,xx=q.x+Math.cos(a)*rr,zz=q.z+Math.sin(a)*rr;if(netFree(xx,zz,ux,uz,hw+1,hd+1,1)&&!bldHit(obs,xx,zz,ux,uz,hw,hd)){x=xx;z=zz;ok=true;}}if(!ok)return;}
-    var BB=bldBase(x,z,ux,uz,hw,hd),y=BB[1]-1,g0=Math.max(BB[0],BB[2]-4),lx=x-ox,lz=z-oz;
-    if(k==='tower'){var s=Math.max(2.2,Math.min(4.5,Math.min(hw,hd)));lmTower(F,lx,lz,ux,uz,s,18+r()*6,y,g0,'def');obs.push([1,x,z,ux,uz,s,s,y,g0+20]);VPL.push([x,z,s+1]);}
-    else if(k==='castle'){if(!fp){hw=14;hd=11;}hw=Math.max(hw,7);hd=Math.max(hd,6);lmCastle(F,lx,lz,ux,uz,hw,hd,y,g0,r);obs.push([1,x,z,ux,uz,hw,hd,y,g0+10]);VPL.push([x,z,Math.max(hw,hd)]);}
-    else if(k==='arena'||k==='theatre'){var R1=Math.max(18,Math.min(40,Math.max(hw,hd)));lmArena(F,lx,lz,ux,uz,R1,R1*.45,y,g0,k==='theatre',r,obs);obs[obs.length-1][1]=x;obs[obs.length-1][2]=z;VPL.push([x,z,R1]);}
-    else if(k==='walls'){lmWalls(F,lx,lz,ux,uz,Math.max(24,hw*2),y,g0,obs);var ob=obs[obs.length-1];ob[1]=x;ob[2]=z;VPL.push([x,z,6]);}
-    else if(k==='ruin'){hw=Math.max(5,Math.min(hw,14));hd=Math.max(4,Math.min(hd,10));lmRuin(F,lx,lz,ux,uz,hw,hd,y,g0,r,obs);var ob2=obs[obs.length-1];ob2[1]=x;ob2[2]=z;VPL.push([x,z,Math.max(hw,hd)]);}
-    else if(k==='abbey'){var big=/montecassino|casamari|trisulti/i.test(q.n);if(!fp||hw<12){hw=big?40:22;hd=big?30:17;}lmAbbey(F,lx,lz,ux,uz,hw,hd,y,g0,r,obs,ox,oz,big);var ob3=obs[obs.length-1];ob3[1]=x+(-uz)*0;ob3[2]=z;VPL.push([x,z,Math.max(hw,hd)]);}
+    var y,g0,lx=x-ox,lz=z-oz;function B2(a,b){var Q=bldBase(x,z,ux,uz,a,b);y=Q[1]-1;g0=Math.max(Q[0],Q[2]-4);}
+    if(k==='tower'){var s=Math.max(2.2,Math.min(4.5,Math.min(hw,hd)));B2(s+.4,s+.4);lmTower(F,lx,lz,ux,uz,s,18+r()*6,y,g0,'def');obs.push([1,x,z,ux,uz,s,s,y,g0+20]);VPL.push([x,z,s+1]);}
+    else if(k==='castle'){if(!fp){hw=14;hd=11;}hw=Math.max(hw,7);hd=Math.max(hd,6);B2(hw+1.5,hd+1.5);lmCastle(F,lx,lz,ux,uz,hw,hd,y,g0,r);obs.push([1,x,z,ux,uz,hw,hd,y,g0+10]);VPL.push([x,z,Math.max(hw,hd)]);}
+    else if(k==='arena'||k==='theatre'){var R1=Math.max(18,Math.min(40,Math.max(hw,hd)));B2(R1+.5,R1*.8+.5);lmArena(F,lx,lz,ux,uz,R1,R1*.45,y,g0,k==='theatre',r,obs);obs[obs.length-1][1]=x;obs[obs.length-1][2]=z;VPL.push([x,z,R1]);}
+    else if(k==='walls'){B2(2,Math.max(24,hw*2)/2+.5);lmWalls(F,lx,lz,ux,uz,Math.max(24,hw*2),y,g0,obs);var ob=obs[obs.length-1];ob[1]=x;ob[2]=z;VPL.push([x,z,6]);}
+    else if(k==='ruin'){hw=Math.max(5,Math.min(hw,14));hd=Math.max(4,Math.min(hd,10));B2(hw+.5,hd+.5);lmRuin(F,lx,lz,ux,uz,hw,hd,y,g0,r,obs);var ob2=obs[obs.length-1];ob2[1]=x;ob2[2]=z;VPL.push([x,z,Math.max(hw,hd)]);}
+    else if(k==='abbey'){var big=/montecassino|casamari|trisulti/i.test(q.n);if(!fp||hw<12){hw=big?40:22;hd=big?30:17;}B2(hw+1,hd+1);lmAbbey(F,lx,lz,ux,uz,hw,hd,y,g0,r,obs,ox,oz,big);var ob3=obs[obs.length-1];ob3[1]=x+(-uz)*0;ob3[2]=z;VPL.push([x,z,Math.max(hw,hd)]);}
     q.lm=k;q.church=q.church||(k==='abbey'?1:0);
   });
 }
@@ -6871,7 +6918,7 @@ function lmOsm(F,kind,cx,cz,ux,uz,hw,hd,lv,gb,gt,ox,oz,obs,r){
     lmFros();var fros=false;
     if(fros){H=Math.max(H,44);s=Math.max(s,3.6);}
     var bell=fros||chNear(cx,cz,45);lmTower(F,lx,lz,ux,uz,s,H,y,g0,fros?'fros':bell?'bell':'def');obs.push([1,cx,cz,ux,uz,s,s,y,g0+H]);return;}
-  if(kind===5){lmCastle(F,lx,lz,ux,uz,Math.max(hw,5),Math.max(hd,5),y,g0,r);obs.push([1,cx,cz,ux,uz,hw,hd,y,g0+10]);return;}
+  if(kind===5){var QB=bldBase(cx,cz,ux,uz,Math.max(hw,5)+1.5,Math.max(hd,5)+1.5);y=Math.min(y,QB[1]-1);lmCastle(F,lx,lz,ux,uz,Math.max(hw,5),Math.max(hd,5),y,g0,r);obs.push([1,cx,cz,ux,uz,hw,hd,y,g0+10]);return;}
   if(kind===6){lmRuin(F,lx,lz,ux,uz,hw,hd,y,g0,r,obs);var ob=obs[obs.length-1];ob[1]=cx;ob[2]=cz;return;}
   if(kind===7){lmGate(F,lx,lz,ux,uz,Math.max(3.5,Math.min(hw,hd)*1.2),y,g0,false,obs,ox,oz);return;}
 }
