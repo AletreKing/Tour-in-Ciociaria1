@@ -5210,6 +5210,23 @@ function nBoxLo(W,F,cx,cz,ux,uz,hw,hd,h,col,roof,u0,y,flat){
   F.quad([P(a,b,Y),P(a,-b,Y),P(r,0,Y+H),P(r,0,Y+H)],[ux,.8,uz],N4,roof);
   F.quad([P(-a,-b,Y),P(-a,b,Y),P(-r,0,Y+H),P(-r,0,Y+H)],[-ux,.8,-uz],N4,roof);
 }
+
+/* edifici: base sotto il punto più basso del terreno disegnato (niente case sospese) e nessuna sovrapposizione */
+function bldBase(cx,cz,ux,uz,hw,hd){
+  var gc=netGround(cx,cz),gb=gc,gt=gc;
+  for(var a=-1;a<=1;a+=.5)for(var b=-1;b<=1;b+=.5){var x=cx+ux*hw*a-uz*hd*b,z=cz+uz*hw*a+ux*hd*b,v=Math.min(netGround(x,z),terrH(x,z));if(v<gb)gb=v;if(v>gt)gt=v;}
+  return[gc,gb,gt];
+}
+function bldHit(obs,cx,cz,ux,uz,hw,hd){
+  var A=[[1,1],[1,-1],[-1,-1],[-1,1]].map(function(q){return[cx+ux*hw*q[0]-uz*hd*q[1],cz+uz*hw*q[0]+ux*hd*q[1]];}),R=Math.hypot(hw,hd);
+  for(var i=0;i<obs.length;i++){var o=obs[i];if(o[0]!==1)continue;if(Math.hypot(o[1]-cx,o[2]-cz)>R+Math.hypot(o[5],o[6]))continue;
+    var B=[[1,1],[1,-1],[-1,-1],[-1,1]].map(function(q){return[o[1]+o[3]*o[5]*q[0]-o[4]*o[6]*q[1],o[2]+o[4]*o[5]*q[0]+o[3]*o[6]*q[1]];}),sep=false;
+    [A,B].forEach(function(P){for(var k=0;k<4&&!sep;k++){var p=P[k],n=P[(k+1)%4],nx=n[1]-p[1],nz=p[0]-n[0],L=Math.hypot(nx,nz)||1,a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
+      A.forEach(function(v){var d=(v[0]*nx+v[1]*nz)/L;if(d<a0)a0=d;if(d>a1)a1=d;});B.forEach(function(v){var d=(v[0]*nx+v[1]*nz)/L;if(d<b0)b0=d;if(d>b1)b1=d;});
+      if(Math.min(a1,b1)-Math.max(a0,b0)<.3)sep=true;}});
+    if(!sep)return true;}
+  return false;
+}
 function bldPlace(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
   var R=BLD.ready&&BLD.t.get(nk(tx,tz));if(!R)return false;
   var dv=BLD.dv,o=R.o,i,VP=VPL||[];
@@ -5222,6 +5239,7 @@ function bldPlace(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
     /* niente muri sull'asfalto: se tocca la strada si riduce, altrimenti si salta */
     for(var t2=0;t2<3&&!ok;t2++){s=[1,.82,.66][t2];ok=netFree(cx,cz,ux,uz,hw*s,hd*s,.6);}
     if(!ok)continue;hw*=s;hd*=s;if(hw<1.6||hd<1.6)continue;
+    if(bldHit(obs,cx,cz,ux,uz,hw,hd))continue;
     var tw=townAt(cx,cz),fl;
     if(lv)fl=lv;
     else if(kind===2)fl=0;
@@ -5230,8 +5248,7 @@ function bldPlace(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
     else if(tw[0]>.2)fl=1+Math.floor(r()*3);
     else fl=1+Math.floor(r()*2);
     var h=kind===2?5.5+r()*3:kind===1?Math.max(9,fl*3.6):fl*3+.8;
-    var gc=netGround(cx,cz),gb=gc;
-    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(function(q2){var v=netGround(cx+ux*hw*q2[0]-uz*hd*q2[1],cz+uz*hw*q2[0]+ux*hd*q2[1]);if(v<gb)gb=v;});
+    var BB=bldBase(cx,cz,ux,uz,hw,hd),gc=BB[0],gb=BB[1];if(BB[2]-gb>12)continue;
     h+=gc-gb;
     var hist=tw[0]>.55&&tw[1]>=1,col=kind===1?HN.church:kind===2?HN.modern[Math.floor(r()*HN.modern.length)]:hist?(r()<.5?HN.stoneWall:HN.casa[Math.floor(r()*HN.casa.length)]):tw[0]<.25&&r()<.6?HN.modern[Math.floor(r()*HN.modern.length)]:HN.casa[Math.floor(r()*HN.casa.length)];
     var flat=kind===2||(kind===3&&!hist&&r()<.6)||(!hist&&tw[0]<.25&&r()<.25);
@@ -5240,7 +5257,7 @@ function bldPlace(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
       var bx=cx-ux*(hw-1.6)+(-uz)*(hd+1.4),bz=cz-uz*(hw-1.6)+ux*(hd+1.4);
       if(netFree(bx,bz,ux,uz,1.6,1.6,.6)){nBoxLo(W,F,bx-ox,bz-oz,ux,uz,1.6,1.6,h+6,HN.stone,HN.roof[0],.2,gb-.8,false);obs.push([1,bx,bz,ux,uz,1.6,1.6]);}
     }
-    obs.push([1,cx,cz,ux,uz,hw,hd]);
+    obs.push([1,cx,cz,ux,uz,hw,hd,gb-.8]);
   }
   return true;
 }
@@ -5263,13 +5280,13 @@ function bldFill(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
     for(q=0;q<HB.length&&!bad;q++){var o=HB[q];if(Math.hypot(o[1]-cx,o[2]-cz)<Math.max(hw,hd)+Math.max(o[5],o[6])+1.2)bad=true;}
     for(q=0;q<VP.length&&!bad;q++)if(Math.hypot(VP[q][0]-cx,VP[q][1]-cz)<Math.max(hw,hd)+VP[q][2]+2)bad=true;
     if(bad)continue;
-    var gc=netGround(cx,cz),gb=gc,gt=gc;
-    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(function(q2){var v=netGround(cx+ux*hw*q2[0]-uz*hd*q2[1],cz+uz*hw*q2[0]+ux*hd*q2[1]);if(v<gb)gb=v;if(v>gt)gt=v;});
+    if(bldHit(obs,cx,cz,ux,uz,hw+.5,hd+.5))continue;
+    var BB=bldBase(cx,cz,ux,uz,hw,hd),gc=BB[0],gb=BB[1],gt=BB[2];
     if(gt-gb>7)continue;
     var fl=core?2+Math.floor(r()*3):tw[0]>.2?1+Math.floor(r()*3):1+Math.floor(r()*2),h=fl*3+.8+(gc-gb);
     var col=core?(r()<.5?HN.stoneWall:HN.casa[Math.floor(r()*HN.casa.length)]):tw[0]<.25&&r()<.6?HN.modern[Math.floor(r()*HN.modern.length)]:HN.casa[Math.floor(r()*HN.casa.length)];
     var flt=!core&&tw[0]<.25&&r()<.3;nBoxLo((BWH&&!flt&&(core||tw[0]>.35))?BWH:W,F,cx-ox,cz-oz,ux,uz,hw,hd,h,col,HN.roof[Math.floor(r()*3)],Math.floor(r()*16)/16,gb-.8,flt);
-    var b=[1,cx,cz,ux,uz,hw,hd];obs.push(b);HB.push(b);
+    var b=[1,cx,cz,ux,uz,hw,hd,gb-.8];obs.push(b);HB.push(b);
   }
 }
 
@@ -6309,7 +6326,7 @@ function musMesh(){
   /* tetto in coppi, con un po' di gronda */
   var R=new GB(),rc=hc(0xa4573e),o=.5,pa=[[-W/2-o,He-.25,L/2+o],[0,Hr+.15,L/2+o],[0,Hr+.15,-L/2-o],[-W/2-o,He-.25,-L/2-o]],pb=[[W/2+o,He-.25,L/2+o],[0,Hr+.15,L/2+o],[0,Hr+.15,-L/2-o],[W/2+o,He-.25,-L/2-o]];
   R.quad(pa,[-.4,1,0],[[0,0],[0,0],[0,0],[0,0]],rc);R.quad(pb,[.4,1,0],[[0,0],[0,0],[0,0],[0,0]],rc);
-  cbox(R,0,-.6,0,W,1.2,L,hc(0xa8a296));   /* basamento sotto il livello del terreno */
+  cbox(R,0,-1.5,0,W,3,L,hc(0xa8a296));   /* basamento sotto il livello del terreno */
   /* cancellata in ferro davanti */
   var dk=hc(0x1e1e1e);for(var xx=-W/2-1;xx<=W/2+1;xx+=.22)cbox(R,xx,.65,L/2+3.2,.035,1.3,.035,dk);cbox(R,0,1.28,L/2+3.2,W+2,.05,.05,dk);cbox(R,0,.12,L/2+3.2,W+2,.05,.05,dk);
   g.add(R.mesh(hwFlatM));
@@ -6321,7 +6338,7 @@ function musTick(){
   var d=Math.hypot(MUS.c[0]-car.x,MUS.c[1]-car.z);
   if(!MUS.pos&&d<2000){   /* la facciata con gli archi guarda la strada */
     var u=MUS.u,v=MUS.v,h=MUS.L/2,pa=netProbe(MUS.c[0]+v[0]*h,MUS.c[1]+v[1]*h),pb=netProbe(MUS.c[0]-v[0]*h,MUS.c[1]-v[1]*h),f=(pa?pa.d:1e9)<=(pb?pb.d:1e9)?1:-1,fx=v[0]*f,fz=v[1]*f,y=1e9;
-    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(function(q){y=Math.min(y,netGround(MUS.c[0]+u[0]*MUS.W/2*q[0]+v[0]*h*q[1],MUS.c[1]+u[1]*MUS.W/2*q[0]+v[1]*h*q[1]));});
+    for(var qa=-1;qa<=1;qa+=.25)for(var qb=-1;qb<=1;qb+=.25){var qx=MUS.c[0]+u[0]*MUS.W/2*qa+v[0]*h*qb,qz=MUS.c[1]+u[1]*MUS.W/2*qa+v[1]*h*qb;y=Math.min(y,netGround(qx,qz),terrH(qx,qz));}
     MUS.pos={y:y,r:Math.atan2(fx,fz)};
   }
   if(d<1400&&!MUS.g&&MUS.pos){MUS.g=musMesh();MUS.g.rotation.y=MUS.pos.r;scG.add(MUS.g);}
@@ -6342,7 +6359,7 @@ try{if(hot&&hot.snapshot)hot.snapshot(function(){return{car:opts.car,track:opts.
 if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
-window.__au={MUS:MUS,EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
