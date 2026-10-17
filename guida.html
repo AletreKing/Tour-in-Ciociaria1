@@ -5214,7 +5214,7 @@ function nBoxLo(W,F,cx,cz,ux,uz,hw,hd,h,col,roof,u0,y,flat){
 /* edifici: base sotto il punto più basso del terreno disegnato (niente case sospese) e nessuna sovrapposizione */
 function bldBase(cx,cz,ux,uz,hw,hd){
   var gc=netGround(cx,cz),gb=gc,gt=gc;
-  for(var a=-1;a<=1;a+=.5)for(var b=-1;b<=1;b+=.5){var x=cx+ux*hw*a-uz*hd*b,z=cz+uz*hw*a+ux*hd*b,v=Math.min(netGround(x,z),terrH(x,z));if(v<gb)gb=v;if(v>gt)gt=v;}
+  for(var a=-1;a<=1.01;a+=.25)for(var b=-1;b<=1.01;b+=.25){var x=cx+ux*hw*a-uz*hd*b,z=cz+uz*hw*a+ux*hd*b,n=netGround(x,z),t=terrH(x,z),v=Math.min(n,t),w=Math.max(n,t);if(v<gb)gb=v;if(w>gt)gt=w;}
   return[gc,gb,gt];
 }
 function bldHit(obs,cx,cz,ux,uz,hw,hd){
@@ -5249,7 +5249,7 @@ function bldPlace(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
     else fl=1+Math.floor(r()*2);
     var h=kind===2?5.5+r()*3:kind===1?Math.max(9,fl*3.6):fl*3+.8;
     var BB=bldBase(cx,cz,ux,uz,hw,hd),gc=BB[0],gb=BB[1];if(BB[2]-gb>12)continue;
-    h+=gc-gb;
+    h+=BB[2]-gb;
     var hist=tw[0]>.55&&tw[1]>=1,col=kind===1?HN.church:kind===2?HN.modern[Math.floor(r()*HN.modern.length)]:hist?(r()<.5?HN.stoneWall:HN.casa[Math.floor(r()*HN.casa.length)]):tw[0]<.25&&r()<.6?HN.modern[Math.floor(r()*HN.modern.length)]:HN.casa[Math.floor(r()*HN.casa.length)];
     var flat=kind===2||(kind===3&&!hist&&r()<.6)||(!hist&&tw[0]<.25&&r()<.25);
     nBoxLo((BWH&&!flat&&kind!==2&&(hist||tw[0]>.35))?BWH:W,F,cx-ox,cz-oz,ux,uz,hw,hd,h,col,HN.roof[Math.floor(r()*3)],Math.floor(r()*16)/16,gb-.8,flat);
@@ -5257,7 +5257,7 @@ function bldPlace(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
       var bx=cx-ux*(hw-1.6)+(-uz)*(hd+1.4),bz=cz-uz*(hw-1.6)+ux*(hd+1.4);
       if(netFree(bx,bz,ux,uz,1.6,1.6,.6)){nBoxLo(W,F,bx-ox,bz-oz,ux,uz,1.6,1.6,h+6,HN.stone,HN.roof[0],.2,gb-.8,false);obs.push([1,bx,bz,ux,uz,1.6,1.6]);}
     }
-    obs.push([1,cx,cz,ux,uz,hw,hd,gb-.8]);
+    obs.push([1,cx,cz,ux,uz,hw,hd,gb-.8,gb-.8+h]);
   }
   return true;
 }
@@ -5283,10 +5283,10 @@ function bldFill(W,F,tx,tz,ox,oz,obs,VPL,townAt,r){
     if(bldHit(obs,cx,cz,ux,uz,hw+.5,hd+.5))continue;
     var BB=bldBase(cx,cz,ux,uz,hw,hd),gc=BB[0],gb=BB[1],gt=BB[2];
     if(gt-gb>7)continue;
-    var fl=core?2+Math.floor(r()*3):tw[0]>.2?1+Math.floor(r()*3):1+Math.floor(r()*2),h=fl*3+.8+(gc-gb);
+    var fl=core?2+Math.floor(r()*3):tw[0]>.2?1+Math.floor(r()*3):1+Math.floor(r()*2),h=fl*3+.8+(gt-gb);
     var col=core?(r()<.5?HN.stoneWall:HN.casa[Math.floor(r()*HN.casa.length)]):tw[0]<.25&&r()<.6?HN.modern[Math.floor(r()*HN.modern.length)]:HN.casa[Math.floor(r()*HN.casa.length)];
     var flt=!core&&tw[0]<.25&&r()<.3;nBoxLo((BWH&&!flt&&(core||tw[0]>.35))?BWH:W,F,cx-ox,cz-oz,ux,uz,hw,hd,h,col,HN.roof[Math.floor(r()*3)],Math.floor(r()*16)/16,gb-.8,flt);
-    var b=[1,cx,cz,ux,uz,hw,hd,gb-.8];obs.push(b);HB.push(b);
+    var b=[1,cx,cz,ux,uz,hw,hd,gb-.8,gb-.8+h];obs.push(b);HB.push(b);
   }
 }
 
