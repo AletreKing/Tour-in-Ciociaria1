@@ -1470,12 +1470,12 @@ function netGround(x,z){
       p=a[k];var e=NET.E[P.e[p]];if(e.br){var bx0=P.x0[p],bz0=P.z0[p],bdx=P.x1[p]-bx0,bdz=P.z1[p]-bz0,bL=bdx*bdx+bdz*bdz||1e-9,bt=((x-bx0)*bdx+(z-bz0)*bdz)/bL;bt=bt<0?0:bt>1?1:bt;var bex=bx0+bdx*bt-x,bez=bz0+bdz*bt-z;if(bex*bex+bez*bez<(e.half+24)*(e.half+24)){var by=P.y0[p]+(P.y1[p]-P.y0[p])*bt-1.8;if(by<cap)cap=by;}continue;}var w=e.half+26,w2=e.half+75,x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;
       t=t<0?0:t>1?1:t;var ex=x0+dx*t-x,ez=z0+dz*t-z,d=Math.sqrt(ex*ex+ez*ez);if(d>=w2)continue;
       var ry=P.y0[p]+(P.y1[p]-P.y0[p])*t-.4;if(d<e.half+2.5)onR=true;
-      if(d<=w){if(ry<flat)flat=ry;var dd=d-e.half-.8;if(dd<0)dd=0;if(ry-dd*.35>lo)lo=ry-dd*.35;if(ry+dd*.2<hi)hi=ry+dd*.2;}
+      if(d<=w){if(ry<flat)flat=ry;var dd=d-e.half-.8;if(dd<0)dd=0;if(ry-dd*.35>lo)lo=ry-dd*.35;var hh=ry+(dd<6?dd*.06:.36+(dd-6)*.25);if(hh<hi)hi=hh;}
       else{var f=(d-w)/(w2-w);f=f*f*(3-2*f);var v=ry+(h-ry)*f;if(v<soft)soft=v;}
     }
   }
   var rr=flat<1e9?flat:soft<1e9?soft:h;if(lo>rr)rr=lo;if(rr>hi)rr=hi;
-  return watGround(x,z,Math.min(rr,cap),onR);
+  return Math.min(watGround(x,z,Math.min(rr,cap),onR),hi);
 }
 /* ostacoli solidi: case, alberi e colonne dei luoghi, raccolti per tassello */
 function netHit(px,pz,r){
