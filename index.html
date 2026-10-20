@@ -2,6 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#7b1e3a">
 <link rel="manifest" href="manifest.webmanifest">
@@ -60,6 +62,9 @@ button{font:inherit;color:inherit}
 .stage{position:relative;display:grid;grid-template-columns:1fr minmax(320px,400px);min-height:0}
 .mapwrap{position:relative;min-width:0;min-height:0;background:var(--out)}
 #map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;display:block}
+#goHere{position:absolute;z-index:4;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:var(--panel);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;transform:translate(-50%,calc(-100% - 12px));white-space:nowrap}
+#goHere[hidden]{display:none}
+#goHere button{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:inherit;padding:0 2px}
 .mapbtns{position:absolute;right:12px;top:12px;display:grid;gap:6px}
 .mapbtns button{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow);font-size:20px;cursor:pointer;display:grid;place-items:center}
 .attr{position:absolute;left:10px;bottom:6px;margin:0;font-size:11px;color:var(--dim);background:color-mix(in srgb,var(--panel) 70%,transparent);padding:1px 6px;border-radius:6px}
@@ -191,6 +196,7 @@ button{font:inherit;color:inherit}
         <button type="button" id="zout" aria-label="Rimpicciolisci">−</button>
         <button type="button" id="zall" aria-label="Tutta la provincia">⌂</button>
       </div>
+      <div id="goHere" hidden><span>Vuoi andare qui in auto?</span><a class="btn pri" id="goHereA" href="guida.html">Guida fin qui</a><button type="button" id="goHereX" aria-label="Chiudi">×</button></div>
       <p class="attr">Mappa © OpenStreetMap contributors</p>
     </div>
     <aside class="panel" id="panel">
@@ -209,7 +215,10 @@ button{font:inherit;color:inherit}
 <script>/* ===== Galleria fotografica di un luogo: prima le foto della scuola, poi quelle di Wikimedia Commons (con autore e licenza) ===== */
 var CDSG=(function(){
   var cache={};
-  function strip(h){var d=document.createElement('div');d.innerHTML=h||'';return(d.textContent||'').replace(/\s+/g,' ').trim();}
+  /* testo semplice da un frammento HTML (autore, licenza da Commons): letto con DOMParser, che non esegue nulla */
+  function strip(h){try{return(new DOMParser().parseFromString(String(h||''),'text/html').body.textContent||'').replace(/\s+/g,' ').trim();}catch(e){return'';}}
+  function okUrl(u){return /^https?:\/\//i.test(String(u||''));}
+  function okSrc(u){return okUrl(u)||/^foto\/[\w.\-]+$/.test(String(u||''));}
   function api(host,params){
     var q=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k]);}).join('&');
     var ctl=window.AbortController?new AbortController():null,t=setTimeout(function(){if(ctl)ctl.abort();},9000);
@@ -249,14 +258,14 @@ var CDSG=(function(){
   /* el: contenitore; poi: {n, wd}; own: foto della scuola [{src, autore, licenza}] */
   function render(el,poi,own){
     el.innerHTML='<figure class="gal-main"><div class="gal-empty">Carico le foto…</div></figure><figcaption class="gal-cap"></figcaption><div class="gal-thumbs" role="list"></div>';
-    var main=el.querySelector('.gal-main'),cap=el.querySelector('.gal-cap'),th=el.querySelector('.gal-thumbs'),mine=(own||[]).map(function(o){return{src:o.src,autore:o.autore||'',licenza:o.licenza||'',fonte:o.fonte||'',page:o.page||''};});
+    var main=el.querySelector('.gal-main'),cap=el.querySelector('.gal-cap'),th=el.querySelector('.gal-thumbs'),mine=(own||[]).filter(function(o){return okSrc(o.src);}).map(function(o){return{src:o.src,autore:o.autore||'',licenza:o.licenza||'',fonte:o.fonte||'',page:o.page||''};});
     function show(list,note){
       if(!list.length){main.innerHTML='<div class="gal-empty">'+(note||'Nessuna foto per ora: si possono aggiungere quelle scattate dalla classe.')+'</div>';cap.textContent='';th.innerHTML='';return;}
       function pick(i){
         var f=list[i];main.innerHTML='';var img=document.createElement('img');img.alt=poi.n;img.src=f.src;img.decoding='async';
         img.onerror=function(){main.innerHTML='<div class="gal-empty">Questa foto non si riesce a caricare.</div>';};main.appendChild(img);
         cap.textContent='';var t=document.createTextNode('Foto: '+(f.autore||'')+(f.licenza?' · '+f.licenza:'')+(f.fonte?' · ':''));cap.appendChild(t);
-        if(f.fonte){if(f.page){var a=document.createElement('a');a.href=f.page;a.target='_blank';a.rel='noopener';a.textContent=f.fonte;cap.appendChild(a);}else cap.appendChild(document.createTextNode(f.fonte));}
+        if(f.fonte){if(f.page&&okUrl(f.page)){var a=document.createElement('a');a.href=f.page;a.target='_blank';a.rel='noopener';a.textContent=f.fonte;cap.appendChild(a);}else cap.appendChild(document.createTextNode(f.fonte));}
         th.querySelectorAll('button').forEach(function(b,k){b.setAttribute('aria-current',k===i?'true':'false');});
       }
       th.innerHTML='';
@@ -329,11 +338,12 @@ var CDSG=(function(){
     (poi.video||[]).forEach(function(v){
       if(v.titolo)h(v.titolo);var e=vEmbed(v.url||''),box=document.createElement('div');box.className='vid';
       if(e){var f=document.createElement('iframe');f.src=e;f.loading='lazy';f.allow='encrypted-media; picture-in-picture; fullscreen';f.title=v.titolo||'Video';box.appendChild(f);}
+      else if(!okUrl(v.url)){return;}
       else if(/\.(mp4|webm)(\?|$)/i.test(v.url||'')){var vd=document.createElement('video');vd.src=v.url;vd.controls=true;vd.preload='none';box.appendChild(vd);}
       else{var a=document.createElement('a');a.href=v.url;a.target='_blank';a.rel='noopener';a.textContent='Guarda il video';box.appendChild(a);}
       el.appendChild(box);
     });
-    if((poi.link||[]).length){h('Per saperne di più');var ul=document.createElement('ul');ul.className='xl';poi.link.forEach(function(l){var li=document.createElement('li'),a=document.createElement('a');a.href=l.url;a.target='_blank';a.rel='noopener';a.textContent=l.titolo||l.url;li.appendChild(a);ul.appendChild(li);});el.appendChild(ul);}
+    if((poi.link||[]).length){h('Per saperne di più');var ul=document.createElement('ul');ul.className='xl';poi.link.forEach(function(l){if(!okUrl(l.url))return;var li=document.createElement('li'),a=document.createElement('a');a.href=l.url;a.target='_blank';a.rel='noopener';a.textContent=l.titolo||l.url;li.appendChild(a);ul.appendChild(li);});el.appendChild(ul);}
   }
   return{render:render,text:text,loadSchede:loadSchede,apply:apply,extras:extras,vEmbed:vEmbed};
 })();
@@ -642,10 +652,15 @@ function zoom(fk,sx,sy){if(sx==null){sx=S.W/2;sy=S.H/2;}var wx=S.cx-(sx-S.W/2)/S
 var ptr={},moved=0,tap=false;
 cv.addEventListener('pointerdown',function(e){try{cv.setPointerCapture(e.pointerId);}catch(er){}ptr[e.pointerId]=[e.offsetX,e.offsetY];moved=0;tap=Object.keys(ptr).length===1;cv.style.cursor='grabbing';});
 cv.addEventListener('pointermove',function(e){var p=ptr[e.pointerId];if(!p)return;var ids=Object.keys(ptr);
-  if(ids.length===1){var dx=e.offsetX-p[0],dy=e.offsetY-p[1];S.cx+=dx/S.k;S.cz+=dy/S.k;moved+=Math.abs(dx)+Math.abs(dy);draw();}
+  if(ids.length===1){var dx=e.offsetX-p[0],dy=e.offsetY-p[1];S.cx+=dx/S.k;S.cz+=dy/S.k;moved+=Math.abs(dx)+Math.abs(dy);draw();if(moved>8)$('goHere').hidden=true;}
   else if(ids.length===2){var o=ptr[ids[0]==e.pointerId?ids[1]:ids[0]],d0=Math.hypot(p[0]-o[0],p[1]-o[1]),d1=Math.hypot(e.offsetX-o[0],e.offsetY-o[1]);if(d0>10)zoom(d1/d0,(e.offsetX+o[0])/2,(e.offsetY+o[1])/2);tap=false;}
   ptr[e.pointerId]=[e.offsetX,e.offsetY];});
-function up(e){var t=tap&&moved<8&&ptr[e.pointerId]&&e.type==='pointerup';delete ptr[e.pointerId];cv.style.cursor='grab';if(t)pick(e.offsetX,e.offsetY);tap=false;}
+var lastUp=0,lux=0,luy=0;
+function goHere(sx,sy){var wx=S.cx-(sx-S.W/2)/S.k,wz=S.cz-(sy-S.H/2)/S.k,g=$('goHere');$('goHereA').href='guida.html#vai-xy-'+Math.round(wx)+'-'+Math.round(wz);g.style.left=Math.max(120,Math.min(S.W-120,sx))+'px';g.style.top=Math.max(70,sy)+'px';g.hidden=false;}
+$('goHereX').addEventListener('click',function(){$('goHere').hidden=true;});
+function up(e){var t=tap&&moved<8&&ptr[e.pointerId]&&e.type==='pointerup';delete ptr[e.pointerId];cv.style.cursor='grab';
+  if(t){var now=performance.now();if(now-lastUp<380&&Math.abs(e.offsetX-lux)<24&&Math.abs(e.offsetY-luy)<24){lastUp=0;goHere(e.offsetX,e.offsetY);}else{lastUp=now;lux=e.offsetX;luy=e.offsetY;$('goHere').hidden=true;pick(e.offsetX,e.offsetY);}}
+  tap=false;}
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',function(e){e.preventDefault();zoom(Math.exp(-e.deltaY*.0015),e.offsetX,e.offsetY);},{passive:false});
 function pick(sx,sy){

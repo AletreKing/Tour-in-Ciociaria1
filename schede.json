@@ -1,1 +1,7 @@
-{"versione":1,"schede":{}}
+{
+ "versione": 1,
+ "impostazioni": {
+  "radio": true
+ },
+ "schede": {}
+}
