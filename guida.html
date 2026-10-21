@@ -505,7 +505,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       <p><span class="draft" id="cDraft">Bozza da verificare</span></p>
       <div id="cQuiz"></div>
       <p class="tot" id="cPts"></p>
-      <div class="acts"><a class="chip" id="cWiki" target="_blank" rel="noopener">Wikipedia</a><a class="chip" id="cMap" href="index.html">Torna alla mappa</a></div>
+      <div class="acts"><a class="chip" id="cWiki" target="_blank" rel="noopener">Wikipedia</a><a class="chip" id="cMap" href="index.html">Torna alla mappa</a><button class="chip" id="cProp" type="button" hidden>Proponi foto, testo o 3D</button></div>
       <button class="go" id="cGo" type="button">Continua</button>
     </div>
   </div>
@@ -2210,7 +2210,7 @@ function netTile(tx,tz){
       });
     }
   }
-  if(!T){VPL=[];lmTile(F,tx,tz,ox,oz,obs,VPL,r);}lmpTile(g,tx,tz,ox,oz,obs);bldPlace(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);chPoi(F,tx,tz,ox,oz,obs,r);bldFill(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);rowFill(W,F,tx,tz,ox,oz,obs,townAt,r);p3Tile(g,tx,tz,ox,oz,obs);venDeco(g,tx,tz,ox,oz,obs);
+  if(!T){VPL=[];lmTile(F,tx,tz,ox,oz,obs,VPL,r);}lmpTile(g,tx,tz,ox,oz,obs);bldPlace(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);chPoi(F,tx,tz,ox,oz,obs,r);bldFill(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);rowFill(W,F,tx,tz,ox,oz,obs,townAt,r);p3Tile(g,tx,tz,ox,oz,obs);mod3Tile(g,tx,tz,ox,oz,obs);venDeco(g,tx,tz,ox,oz,obs);
   /* alberi e campagna, lontano dall'asfalto */
   var nt=LU.ready?0:26+Math.floor(r()*36);if(LU.ready)luTrees(F,r,ox,oz,obs,townAt);
   for(k=0;k<nt;k++){
@@ -2585,7 +2585,7 @@ function scLoad(){
   netLoad();netExtras();
   var raw=JSON.parse($('scData').textContent),KX=Math.cos(41.62*Math.PI/180)*111320,KZ=110574;
   SC.pois=raw.poi.map(function(o,i){var t=raw.testi[o.n]||null;return{id:i,key:o.n,pk:o.n+'|'+(o.com||''),n:t&&t.nome||o.n,c:CATN[o.c]?o.c:'alt',com:o.com,lat:o.lat,lon:o.lon,x:-(o.lon-13.5)*KX,z:(o.lat-41.62)*KZ,w:o.w,wd:o.wd||'',foto:t&&t.foto||[],foto0:t&&t.foto||[],t:t?t.t:'',bozza:t?!!t.bozza:false,node:-1,hid:!!o.h};});
-  CDSG.loadSchede().then(function(m){SC.pois.forEach(function(p){CDSG.apply(p,m[p.pk]);});});
+  CDSG.loadSchede().then(function(m){SC.pois.forEach(function(p){CDSG.apply(p,m[p.pk]);var M=m[p.pk]&&m[p.pk].modello;p.modello=M&&M.src&&/^modelli\/[\w.-]+\.glb$/.test(M.src)?M:null;});if(typeof mod3Refresh==='function')mod3Refresh();});
   SC.pois.forEach(function(p){if(!SC.byKey[p.key])SC.byKey[p.key]=p;});
   SC.perc=raw.percorsi.map(function(pc){return{id:pc.id,titolo:pc.titolo,tema:pc.tema,intro:pc.intro,tappe:pc.tappe.map(function(k){return SC.byKey[k];}).filter(Boolean),quiz:pc.quiz||[]};});
   try{SC.passport=store.get('passport',{})||{};}catch(e){SC.passport={};}
@@ -2683,6 +2683,7 @@ function scCard(p,opt){
     var h=document.createElement('p');h.className='qd';h.textContent=q.d;box.appendChild(h);
     q.r.forEach(function(r,ri){var b=document.createElement('button');b.type='button';b.className='qa';b.textContent=r;b.dataset.r=ri;box.appendChild(b);});
   }
+  $('cProp').hidden=!PROP.on;
   $('cGo').textContent=opt.next||'Continua';
   paused=true;$('card').hidden=false;inp.kbGas=inp.kbBrake=inp.kbL=inp.kbR=false;inp.syncPedals();
 }
@@ -2692,6 +2693,7 @@ $('cQuiz').addEventListener('click',function(e){
   if(ri===q.ok){SC.quizOk++;SC.score+=5;$('cPts').textContent=($('cPts').textContent?$('cPts').textContent+' · ':'')+'risposta giusta, +5';}
   else $('cPts').textContent=($('cPts').textContent?$('cPts').textContent+' · ':'')+'la risposta giusta è evidenziata';
 });
+$('cProp').addEventListener('click',function(){if(SC.card)propOpen(SC.card.p);});
 $('cGo').addEventListener('click',function(){
   var c=SC.card;$('card').hidden=true;paused=false;SC.card=null;
   if(c&&c.opt.after)c.opt.after();
@@ -6557,7 +6559,7 @@ function chPlace(F,cx,cz,ux,uz,hw,hd,gb,gt,ox,oz,obs,r){
 function chPoi(F,tx,tz,ox,oz,obs,r){
   if(typeof SC==='undefined'||!SC.pois)return;
   SC.pois.forEach(function(q){
-    if(lmpNear(q.x,q.z))return;if(q.c!=='fede'||q.church||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
+    if(q.modello||lmpNear(q.x,q.z))return;if(q.c!=='fede'||q.church||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
     if(/museo/i.test(q.n))return;
     for(var i=0;i<obs.length;i++){var o=obs[i];if(o[0]!==1)continue;var d=Math.hypot(o[1]-q.x,o[2]-q.z);if((o[9]===1&&d<45)||d<Math.max(o[5],o[6])+6)return;}
     if(chNear(q.x,q.z,45))return;
@@ -6958,7 +6960,7 @@ function lmKind(q){
 function lmTile(F,tx,tz,ox,oz,obs,VPL,r){
   if(typeof SC==='undefined'||!SC.pois)return;
   SC.pois.forEach(function(q){
-    if(q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;var k=lmKind(q);if(!k)return;if(k!=='gate'&&(lmpNear(q.x,q.z)||lmpNear(q.x+20,q.z)||lmpNear(q.x-20,q.z)||lmpNear(q.x,q.z+20)||lmpNear(q.x,q.z-20))){q.lm=k;return;}
+    if(q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;if(q.modello){q.lm='mod';return;}var k=lmKind(q);if(!k)return;if(k!=='gate'&&(lmpNear(q.x,q.z)||lmpNear(q.x+20,q.z)||lmpNear(q.x-20,q.z)||lmpNear(q.x,q.z+20)||lmpNear(q.x,q.z-20))){q.lm=k;return;}
     var fp=lmFoot(q.x,q.z,k==='gate'?6:25),x=q.x,z=q.z,ux=1,uz=0,hw=8,hd=6;
     if(fp&&k!=='gate'){x=fp.x;z=fp.z;ux=fp.ux;uz=fp.uz;hw=Math.max(fp.hw,3);hd=Math.max(fp.hd,3);}
     var pr=netProbe(x,z);
@@ -8049,12 +8051,127 @@ function p3Tile(g,tx,tz,ox,oz,obs){
   if(typeof SC==='undefined'||!SC.pois)return;
   SC.pois.forEach(function(q){
     if(q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
-    if(q.lm||q.church||(typeof lmpNear==='function'&&lmpNear(q.x,q.z)))return;
+    if(q.modello||q.lm||q.church||(typeof lmpNear==='function'&&lmpNear(q.x,q.z)))return;
     /* c'è già un edificio vero sul posto (museo in un palazzo, chiesa, casa natale…): basta quello */
     var k=p3Kind(q);if(k!=='peak'&&k!=='view'&&k!=='cross'&&k!=='board'&&k!=='fall'&&k!=='cave'&&k!=='spring'&&bldHit(obs,q.x,q.z,1,0,12,12))return;
     if((k==='museum'||!k)&&bldHit(obs,q.x,q.z,1,0,30,30))return;
     try{p3Build(g,q,ox,oz,obs);}catch(e){}
   });
+}
+
+
+/* ================= PROPOSTE DEI RAGAZZI: foto, video, testo e modello 3D di un luogo, da far approvare a un docente ================= */
+var PROP={on:false,me:null,p:null,busy:false};
+(function(){
+  if(location.protocol!=='https:'&&location.hostname!=='localhost')return;
+  fetch('/api/config',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(c){
+    if(!c||!c.on)return;PROP.on=true;
+    return fetch('/api/me',{cache:'no-store',credentials:'same-origin'}).then(function(r){return r.ok?r.json():null;}).then(function(m){PROP.me=m&&m.email?m:null;});
+  }).catch(function(){});
+})();
+function propBox(){
+  if($('propOv'))return $('propOv');
+  var d=document.createElement('div');d.id='propOv';d.hidden=true;
+  d.innerHTML='<div class="box" role="dialog" aria-modal="true" aria-labelledby="prH">'+
+    '<h2 id="prH">Proponi per questo luogo</h2><p class="note" id="prLuogo"></p>'+
+    '<p class="note">Quello che mandi lo vede prima un docente: se va bene, finisce nella scheda e nel gioco con il tuo nome.</p>'+
+    '<label>Nome e cognome<input id="prAut" maxlength="80" autocomplete="name"></label>'+
+    '<label>Classe<input id="prCl" maxlength="20" placeholder="es. 3A AFM"></label>'+
+    '<label>Titolo<input id="prTit" maxlength="160" placeholder="es. La leggenda della porta"></label>'+
+    '<label>Testo<textarea id="prTxt" rows="5" maxlength="6000" placeholder="Racconta il luogo con parole tue: storia, curiosità, come arrivarci"></textarea></label>'+
+    '<label>Video (link YouTube o Vimeo)<input id="prVid" inputmode="url" placeholder="https://www.youtube.com/watch?v=…"></label>'+
+    '<label>Foto (fino a 6)<input id="prFoto" type="file" accept="image/*" multiple></label>'+
+    '<label>Modello 3D fatto con Tinkercad (file .glb, al massimo 3 MB)<input id="prMod" type="file" accept=".glb,model/gltf-binary"></label>'+
+    '<label class="chk"><input type="checkbox" id="prOk"> Le foto sono mie e non mostrano persone riconoscibili; il testo è scritto da me</label>'+
+    '<p class="tot" id="prMsg" role="status" aria-live="polite"></p>'+
+    '<div class="acts"><button class="chip" id="prNo" type="button">Annulla</button><button class="go" id="prGo" type="button">Invia al docente</button></div></div>';
+  $('game').appendChild(d);
+  var st=document.createElement('style');st.textContent='#propOv{position:absolute;inset:0;z-index:7;overflow-y:auto;display:grid;place-items:center;background:rgba(11,17,27,.86);padding:16px}#propOv .box{display:grid;gap:10px;width:min(100%,560px);padding:16px;border-radius:14px;background:var(--night);border:1px solid var(--line)}#propOv h2{margin:0;font-size:20px}#propOv label{display:grid;gap:4px;font-size:13px;color:var(--dim)}#propOv input,#propOv textarea{font:inherit;font-size:15px;color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;padding:8px}#propOv label.chk{display:flex;gap:8px;align-items:flex-start}#propOv .acts{display:flex;gap:8px;justify-content:flex-end}';
+  document.head.appendChild(st);
+  $('prNo').addEventListener('click',function(){if(!PROP.busy)d.hidden=true;});
+  $('prGo').addEventListener('click',propSend);
+  return d;
+}
+function propOpen(p){
+  if(!PROP.me){location.href='/login.html?next='+encodeURIComponent(location.pathname);return;}
+  var d=propBox();PROP.p=p;$('prLuogo').textContent=p.n+(p.com?' · '+p.com:'');
+  if(!$('prAut').value)$('prAut').value=PROP.me.name||'';
+  try{var mm=JSON.parse(localStorage.getItem('cds_prop')||'{}');if(mm.cl&&!$('prCl').value)$('prCl').value=mm.cl;}catch(e){}
+  ['prTit','prTxt','prVid'].forEach(function(k){$(k).value='';});$('prFoto').value='';$('prMod').value='';$('prOk').checked=false;$('prMsg').textContent='';
+  d.hidden=false;
+}
+/* foto ridotte a 1600 px, in JPEG: leggere da caricare anche con il telefono */
+function propJpeg(file){
+  return new Promise(function(ok,ko){
+    var url=URL.createObjectURL(file),im=new Image();
+    im.onload=function(){var s=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(url);
+      var q=.85,out=c.toDataURL('image/jpeg',q);while(out.length>1900000&&q>.5){q-=.1;out=c.toDataURL('image/jpeg',q);}ok(out.split(',')[1]);};
+    im.onerror=function(){URL.revokeObjectURL(url);ko(new Error('Non riesco a leggere la foto '+file.name));};im.src=url;});
+}
+function propB64(file){return new Promise(function(ok,ko){var r=new FileReader();r.onload=function(){ok(String(r.result).split(',')[1]);};r.onerror=function(){ko(new Error('Non riesco a leggere '+file.name));};r.readAsDataURL(file);});}
+function propPost(o){return fetch('/api/proposta',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)}).then(function(r){return r.json().catch(function(){return{};}).then(function(j){if(!r.ok)throw new Error(j.error||('errore '+r.status));return j;});});}
+function propSend(){
+  if(PROP.busy)return;var msg=$('prMsg'),p=PROP.p;
+  var fotos=[].slice.call($('prFoto').files||[]).slice(0,6),mod=($('prMod').files||[])[0],txt=$('prTxt').value.trim(),vid=$('prVid').value.trim();
+  if(!$('prAut').value.trim()){msg.textContent='Scrivi il tuo nome e cognome.';return;}
+  if(!txt&&!vid&&!fotos.length&&!mod){msg.textContent='Aggiungi almeno un testo, un video, una foto o un modello.';return;}
+  if(!$('prOk').checked){msg.textContent='Conferma che foto e testo sono tuoi.';return;}
+  if(mod&&(!/\.glb$/i.test(mod.name)||mod.size>3000000)){msg.textContent='Il modello deve essere un file .glb di al massimo 3 MB (in Tinkercad: Esporta → .GLB).';return;}
+  try{localStorage.setItem('cds_prop',JSON.stringify({cl:$('prCl').value.trim()}));}catch(e){}
+  PROP.busy=true;$('prGo').disabled=true;msg.textContent='Invio la proposta…';
+  propPost({op:'new',luogo:p.pk,nomeLuogo:p.n,autore:$('prAut').value.trim(),classe:$('prCl').value.trim(),titolo:$('prTit').value.trim(),testo:txt,video:vid})
+  .then(function(j){
+    var chain=Promise.resolve();
+    fotos.forEach(function(f,i){chain=chain.then(function(){msg.textContent='Carico la foto '+(i+1)+' di '+fotos.length+'…';return propJpeg(f).then(function(b){return propPost({op:'file',id:j.id,tok:j.tok,name:'foto-'+(i+1)+'.jpg',b64:b});});});});
+    if(mod)chain=chain.then(function(){msg.textContent='Carico il modello 3D…';return propB64(mod).then(function(b){return propPost({op:'file',id:j.id,tok:j.tok,name:'modello.glb',b64:b});});});
+    return chain;
+  })
+  .then(function(){msg.textContent='Fatto! La proposta è arrivata ai docenti. Grazie.';setTimeout(function(){$('propOv').hidden=true;},2200);})
+  .catch(function(e){msg.textContent='Non riesco a inviare: '+(e&&e.message||e);})
+  .then(function(){PROP.busy=false;$('prGo').disabled=false;});
+}
+
+
+/* ================= MODELLI 3D DEI RAGAZZI (approvati dai docenti): sostituiscono il modello automatico del luogo ================= */
+var MOD3={lib:null,cache:{},wait:[]};
+function mod3Lib(cb){
+  if(window.THREE&&THREE.GLTFLoader){cb();return;}
+  MOD3.wait.push(cb);if(MOD3.lib)return;
+  MOD3.lib=document.createElement('script');MOD3.lib.src='GLTFLoader.js';
+  MOD3.lib.onload=function(){var w=MOD3.wait;MOD3.wait=[];w.forEach(function(f){try{f();}catch(e){}});};
+  document.head.appendChild(MOD3.lib);
+}
+function mod3Get(src,cb){
+  var c=MOD3.cache[src];if(c&&c.scene){cb(c.scene);return;}if(c&&c.cbs){c.cbs.push(cb);return;}
+  MOD3.cache[src]={cbs:[cb]};
+  mod3Lib(function(){new THREE.GLTFLoader().load(src,function(g){var C=MOD3.cache[src];C.scene=g.scene;var L=C.cbs;C.cbs=null;L.forEach(function(f){f(g.scene);});},undefined,function(){MOD3.cache[src]={fail:true};});});
+}
+/* posiziona il modello: centrato sul luogo, appoggiato al terreno; misure in metri come in Tinkercad (millimetri → metri se serve) */
+function mod3Place(g,q,ox,oz,obs){
+  var M=q.modello;if(!M||!M.src)return;
+  mod3Get(M.src,function(sc){
+    var o=sc.clone(true),box=new THREE.Box3().setFromObject(o),sz=new THREE.Vector3();box.getSize(sz);
+    var auto=Math.max(sz.x,sz.y,sz.z)>400?.001:1;   /* Tinkercad esporta in millimetri */
+    var s=(+M.scala||1)*auto;o.scale.setScalar(s);o.rotation.y=(+M.rot||0)*Math.PI/180;
+    box.setFromObject(o);var c=new THREE.Vector3();box.getCenter(c);
+    var x=q.x+(+M.dx||0),z=q.z+(+M.dz||0),gy=gndY(x,z);
+    o.position.set(x-ox-c.x,gy-box.min.y+(+M.dy||0),z-oz-c.z);
+    o.traverse(function(n){if(n.isMesh){n.castShadow=false;n.receiveShadow=false;if(n.material&&n.material.isMeshStandardMaterial){n.material.metalness=Math.min(n.material.metalness,.2);}}});
+    g.add(o);
+    box.setFromObject(o);var hw=(box.max.x-box.min.x)/2,hd=(box.max.z-box.min.z)/2;
+    if(hw>.3&&hd>.3)obs.push([1,(box.min.x+box.max.x)/2+ox,(box.min.z+box.max.z)/2+oz,1,0,hw,hd,box.min.y,box.max.y]);
+  });
+}
+function mod3Tile(g,tx,tz,ox,oz,obs){
+  if(typeof SC==='undefined'||!SC.pois)return;
+  SC.pois.forEach(function(q){if(!q.modello||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;mod3Place(g,q,ox,oz,obs);});
+}
+/* quando arrivano le schede, i tasselli già costruiti con un luogo che ha il modello vanno rifatti */
+function mod3Refresh(){
+  if(typeof netTiles==='undefined')return;var keys={};
+  SC.pois.forEach(function(q){if(q.modello)keys[nk(Math.floor(q.x/NT),Math.floor(q.z/NT))]=1;});
+  Object.keys(keys).forEach(function(k){var T=netTiles[k];if(!T)return;netG.remove(T.g);disposeChunk(T.g);delete netTiles[k];});
 }
 
 function start(saved){
@@ -8070,7 +8187,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 

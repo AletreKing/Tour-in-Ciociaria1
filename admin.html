@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' blob: https: wss:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#7b1e3a">
@@ -95,6 +95,7 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
 #ghBox input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--bg);color:var(--ink)}
 #ghBox .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 #ghBox small{opacity:.8}
+#propBox{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.45)}#propBox[hidden]{display:none}#propBox .in{background:var(--bg);color:var(--ink);border-radius:14px;padding:18px;display:grid;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.35)}#propBox .row{display:flex;gap:8px;justify-content:flex-end;align-items:center}
 </style>
 
 <header class="top">
@@ -105,6 +106,7 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
     <button class="btn" type="button" id="expMine">Scarica le mie modifiche</button>
     <button class="btn pri" type="button" id="expAll">Scarica per il sito</button>
     <label class="btn" title="Vale per tutti quando il pacchetto viene caricato sul sito"><input type="checkbox" id="setRadio"> Radio nel gioco</label>
+    <button class="btn" type="button" id="propBtn" title="Foto, testi, video e modelli 3D mandati dai ragazzi dal gioco">Proposte dei ragazzi</button>
     <button class="btn pri" type="button" id="pubGh" title="Solo per il responsabile del sito: serve la chiave di GitHub">Pubblica sul sito</button>
   </div>
 </header>
@@ -116,6 +118,13 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
   <small>La chiave si crea su github.com → Settings → Developer settings → Fine-grained tokens: solo questo repository, permesso «Contents: Read and write».</small>
   <p id="ghMsg" style="margin:0"></p>
   <div class="row"><button class="btn" type="button" id="ghForget">Dimentica la chiave</button><button class="btn" type="button" id="ghCancel">Chiudi</button><button class="btn pri" type="button" id="ghGo">Pubblica ora</button></div>
+</div></div>
+<div id="propBox" hidden><div class="in" style="max-width:860px;width:100%;max-height:90vh;overflow:auto">
+  <h2 style="margin:0">Proposte dei ragazzi</h2>
+  <p style="margin:0" class="note">Arrivano dal gioco (pulsante «Proponi» nella scheda di un luogo). Guarda, scegli cosa tenere e aggiungilo alla scheda: poi «Pubblica sul sito». Serve la chiave di GitHub del responsabile.</p>
+  <p id="propMsg" style="margin:0"></p>
+  <div id="propList" style="display:grid;gap:12px"></div>
+  <div class="row"><button class="btn" type="button" id="propReload">Aggiorna</button><button class="btn" type="button" id="propClose">Chiudi</button></div>
 </div></div>
 <div class="wrap">
   <aside class="side">
@@ -226,9 +235,11 @@ function edit(){
   h+='<fieldset><legend>Approfondimenti (si vedono all’arrivo)</legend>'+(s.extra||[]).map(function(x,i){return'<div class="item"><label class="f">Titolo<input data-xi="'+i+'" data-xf="titolo" value="'+esc(x.titolo)+'"></label><label class="f">Testo<textarea data-xi="'+i+'" data-xf="testo">'+esc(x.testo)+'</textarea></label><div class="row"><button class="btn sm del" type="button" data-a="xdel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="xadd">Aggiungi un approfondimento</button></div></fieldset>';
   /* link */
   h+='<fieldset><legend>Link e documenti</legend>'+(s.link||[]).map(function(l,i){return'<div class="item"><label class="f">Titolo<input data-li="'+i+'" data-lf="titolo" value="'+esc(l.titolo)+'"></label><label class="f">Indirizzo<input data-li="'+i+'" data-lf="url" value="'+esc(l.url)+'"></label><div class="row"><button class="btn sm del" type="button" data-a="ldel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="ladd">Aggiungi un link</button></div></fieldset>';
+  if(s.modello){var M=s.modello;h+='<fieldset><legend>Modello 3D</legend><p class="note">'+esc(M.src)+(M.autore?' · di '+esc(M.autore):'')+'</p><div class="row">'+[['rot','Rotazione (gradi)',5],['scala','Scala',.05],['dx','Sposta est-ovest (m)',.5],['dz','Sposta nord-sud (m)',.5],['dy','Alza/abbassa (m)',.1]].map(function(f){return'<label class="f" style="flex:1;min-width:120px">'+f[1]+'<input type="number" step="'+f[2]+'" data-m="'+f[0]+'" value="'+(M[f[0]]!=null?M[f[0]]:(f[0]==='scala'?1:0))+'"></label>';}).join('')+'</div><canvas id="mprev" width="640" height="300" style="width:100%;max-width:640px;border-radius:10px;background:#1b2433"></canvas><p class="note">Anteprima: la griglia ha quadretti di 1 metro, la sagoma rossa è una persona di 1,80 m. Il modello si appoggia da solo al terreno, al centro del luogo.</p><div class="row"><button class="btn sm del" type="button" data-a="mdel">Togli il modello</button></div></fieldset>';}
   if(S.loc[p.k])h+='<div class="row"><button class="btn del" type="button" data-a="undo">Annulla le mie modifiche a questa scheda</button></div>';
   el.innerHTML=h;
   el.querySelectorAll('img[data-src]').forEach(function(i){imgURL(i.dataset.src,i);});
+  if(s.modello)mPrev(s.modello);
 }
 function help(){
   return'<h2>Come si lavora</h2><div class="help"><ol>'+
@@ -250,6 +261,7 @@ ED.addEventListener('input',function(e){
   else if(d.vi!=null)s.video[+d.vi][d.vf]=t.value;
   else if(d.xi!=null)s.extra[+d.xi][d.xf]=t.value;
   else if(d.li!=null)s.link[+d.li][d.lf]=t.value;
+  else if(d.m!=null&&s.modello){s.modello[d.m]=+t.value||0;mPrev(s.modello);}
   else return;
   clearTimeout(ED._t);ED._t=setTimeout(function(){touch(k);},400);
 });
@@ -269,6 +281,7 @@ ED.addEventListener('click',function(e){
   else if(a==='xdel')s.extra.splice(i,1);
   else if(a==='ladd')(s.link=s.link||[]).push({titolo:'',url:''});
   else if(a==='ldel')s.link.splice(i,1);
+  else if(a==='mdel')delete s.modello;
   touch(k);edit();
 });
 function wsearch(q){
@@ -297,7 +310,7 @@ function upload(files){
 function pack(keys,name){
   if(!window.JSZip){toast('Serve la rete per preparare il pacchetto');return;}
   var out={},z=new JSZip(),need={};
-  keys.forEach(function(k){var s=cur(k);if(!s)return;out[k]=s;(s.foto||[]).forEach(function(f){if(/^foto\//.test(f.src))need[f.src]=1;});});
+  keys.forEach(function(k){var s=cur(k);if(!s)return;out[k]=s;(s.foto||[]).forEach(function(f){if(/^foto\//.test(f.src))need[f.src]=1;});if(s.modello&&/^modelli\//.test(s.modello.src))need[s.modello.src]=1;});
   z.file('schede.json',JSON.stringify({versione:1,aggiornato:new Date().toISOString(),impostazioni:S.imp,schede:out},null,1));
   Promise.all(Object.keys(need).map(function(n){return getImg(n).then(function(b){if(b)z.file(n,b);});}))
     .then(function(){return z.generateAsync({type:'blob'});})
@@ -315,7 +328,7 @@ function txt64(t){return btoa(unescape(encodeURIComponent(t)));}
 function ghPublish(){
   var c=ghCfg();if(!c.tok){$('ghMsg').textContent='Inserisci la chiave di GitHub.';return;}
   var keys={};Object.keys(S.base).concat(Object.keys(S.loc)).forEach(function(x){keys[x]=1;});
-  var out={},need={};Object.keys(keys).forEach(function(k){var s=cur(k);if(!s)return;out[k]=s;(s.foto||[]).forEach(function(f){if(/^foto\//.test(f.src))need[f.src]=1;});});
+  var out={},need={};Object.keys(keys).forEach(function(k){var s=cur(k);if(!s)return;out[k]=s;(s.foto||[]).forEach(function(f){if(/^foto\//.test(f.src))need[f.src]=1;});if(s.modello&&/^modelli\//.test(s.modello.src))need[s.modello.src]=1;});
   var names=Object.keys(need),done=0,who=$('who').value.trim()||'amministratori';$('ghGo').disabled=true;
   function msg(t){$('ghMsg').textContent=t;}
   msg('Controllo la chiave…');
@@ -335,7 +348,7 @@ $('expAll').addEventListener('click',function(){var k={};Object.keys(S.base).con
 $('imp').addEventListener('change',function(){
   var f=this.files[0];this.value='';if(!f)return;
   var job=/\.zip$/i.test(f.name)&&window.JSZip?JSZip.loadAsync(f).then(function(z){
-      var tasks=[];z.forEach(function(path,ent){if(/^foto\/.+\.(jpe?g|png|webp)$/i.test(path))tasks.push(ent.async('blob').then(function(b){return putImg(path,b);}));});
+      var tasks=[];z.forEach(function(path,ent){if(/^foto\/.+\.(jpe?g|png|webp)$/i.test(path)||/^modelli\/.+\.glb$/i.test(path))tasks.push(ent.async('blob').then(function(b){return putImg(path,b);}));});
       return Promise.all(tasks).then(function(){return z.file('schede.json').async('string');});
     }):f.text();
   job.then(function(txt){
@@ -346,6 +359,97 @@ $('imp').addEventListener('change',function(){
   }).catch(function(){toast('Il file non è un pacchetto di schede');});
 });
 
+/* ---------- proposte dei ragazzi: ramo «proposte» del repository ---------- */
+var PR={list:[]};
+function ghReq(c,path,opt,raw){opt=opt||{};opt.headers={'Authorization':'Bearer '+c.tok,'Accept':raw?'application/vnd.github.raw':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+  return fetch('https://api.github.com/repos/'+c.repo+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+(opt.method&&opt.method!=='GET'?'':'?ref=proposte'),opt);}
+function prMsg(t){$('propMsg').textContent=t;}
+function prLoad(){
+  var c=ghCfg();if(!c.tok){prMsg('Prima inserisci la chiave di GitHub con «Pubblica sul sito» (si salva su questo computer).');return;}
+  prMsg('Cerco le proposte…');$('propList').innerHTML='';
+  ghReq(c,'proposte').then(function(r){if(r.status===404)return[];if(!r.ok)throw new Error('GitHub risponde '+r.status);return r.json();})
+  .then(function(dirs){
+    dirs=(dirs||[]).filter(function(d){return d.type==='dir';}).sort(function(a,b){return a.name<b.name?1:-1;});
+    if(!dirs.length){prMsg('Nessuna proposta in attesa.');PR.list=[];return;}
+    prMsg(dirs.length+' proposte in attesa.');
+    return Promise.all(dirs.map(function(d){return ghReq(c,'proposte/'+d.name).then(function(r){return r.json();}).then(function(files){
+      var mf=files.filter(function(f){return f.name==='meta.json';})[0];
+      return(mf?ghReq(c,mf.path,null,true).then(function(r){return r.json();}):Promise.resolve({id:d.name})).then(function(m){m.files=files;return m;});});}))
+    .then(function(L){PR.list=L;prDraw();});
+  }).catch(function(e){prMsg('Non riesco a leggere le proposte: '+(e&&e.message||e));});
+}
+function prDraw(){
+  $('propList').innerHTML=PR.list.map(function(m,i){
+    var p=BYK[m.luogo],fotos=m.files.filter(function(f){return /^foto-\d\.jpg$/.test(f.name);}),mod=m.files.some(function(f){return f.name==='modello.glb';});
+    return'<div class="item" style="display:grid;gap:6px;border:1px solid var(--line);border-radius:10px;padding:10px">'+
+      '<b>'+esc(m.nomeLuogo||m.luogo||'?')+'</b><span class="note">'+esc(m.autore||'?')+(m.classe?' · '+esc(m.classe):'')+' · '+esc(m.email||'')+' · '+(m.quando?new Date(m.quando).toLocaleString('it-IT'):'')+(p?'':' · <span class="no">luogo non trovato nelle schede</span>')+'</span>'+
+      (m.titolo?'<i>'+esc(m.titolo)+'</i>':'')+(m.testo?'<div style="white-space:pre-wrap;max-height:180px;overflow:auto;background:rgba(255,255,255,.04);padding:8px;border-radius:8px">'+esc(m.testo)+'</div>':'')+
+      (m.video?'<span>Video: <a target="_blank" rel="noopener" href="'+esc(m.video)+'">'+esc(m.video)+'</a></span>':'')+
+      (fotos.length?'<div class="thumbs">'+fotos.map(function(f){return'<div class="th"><img alt="" data-pr="'+esc(f.path)+'"></div>';}).join('')+'</div>':'')+
+      (mod?'<span>Modello 3D: <b>modello.glb</b> (dopo l’approvazione lo sistemi e lo vedi in anteprima nella scheda)</span>':'')+
+      '<div class="row" style="flex-wrap:wrap;gap:10px">'+
+      (m.testo?'<label><input type="checkbox" data-pc="testo" data-i="'+i+'" checked> testo come approfondimento</label><label><input type="checkbox" data-pc="desc" data-i="'+i+'"> anche come descrizione della scheda</label>':'')+
+      (fotos.length?'<label><input type="checkbox" data-pc="foto" data-i="'+i+'" checked> foto</label>':'')+(m.video?'<label><input type="checkbox" data-pc="video" data-i="'+i+'" checked> video</label>':'')+(mod?'<label><input type="checkbox" data-pc="mod" data-i="'+i+'" checked> modello 3D</label>':'')+
+      '</div><div class="row"><button class="btn del" type="button" data-pa="no" data-i="'+i+'">Scarta</button>'+(p?'<button class="btn pri" type="button" data-pa="ok" data-i="'+i+'">Aggiungi alla scheda</button>':'')+'</div></div>';
+  }).join('');
+  var c=ghCfg();
+  $('propList').querySelectorAll('img[data-pr]').forEach(function(im){ghReq(c,im.dataset.pr,null,true).then(function(r){return r.blob();}).then(function(b){im.src=URL.createObjectURL(b);}).catch(function(){});});
+}
+function prDel(c,m){
+  var chain=Promise.resolve();
+  m.files.forEach(function(f){chain=chain.then(function(){return ghReq(c,f.path,{method:'DELETE',body:JSON.stringify({message:'Proposta '+m.id+' chiusa',sha:f.sha,branch:'proposte'})});});});
+  return chain;
+}
+function prOk(i){
+  var m=PR.list[i],c=ghCfg(),p=BYK[m.luogo];if(!p)return;
+  var want={};$('propList').querySelectorAll('[data-i="'+i+'"][data-pc]').forEach(function(x){want[x.dataset.pc]=x.checked;});
+  var k=p.k,s=work(k),who=(m.autore||'')+(m.classe?' ('+m.classe+')':''),base=slug(p.n)+'-'+m.id.slice(-6);
+  prMsg('Aggiungo alla scheda «'+p.n+'»…');
+  var chain=Promise.resolve();
+  if(want.testo&&m.testo){(s.extra=s.extra||[]).push({titolo:m.titolo||('Il lavoro di '+(m.autore||'una classe')),testo:m.testo+'\n— '+who});}
+  if(want.desc&&m.testo){s.t=m.testo;}
+  if(want.video&&m.video){(s.video=s.video||[]).push({titolo:m.titolo||('Video di '+who),url:m.video});}
+  if(want.foto)m.files.filter(function(f){return /^foto-\d\.jpg$/.test(f.name);}).forEach(function(f,j){chain=chain.then(function(){return ghReq(c,f.path,null,true).then(function(r){if(!r.ok)throw new Error('foto non scaricata');return r.blob();}).then(function(b){var name='foto/'+base+'-'+(j+1)+'.jpg';return putImg(name,b).then(function(){(s.foto=s.foto||[]).push({src:name,autore:who,licenza:'Per gentile concessione'});});});});});
+  if(want.mod){var mf=m.files.filter(function(f){return f.name==='modello.glb';})[0];if(mf)chain=chain.then(function(){return ghReq(c,mf.path,null,true).then(function(r){if(!r.ok)throw new Error('modello non scaricato');return r.blob();}).then(function(b){var name='modelli/'+base+'.glb';return putImg(name,b).then(function(){s.modello={src:name,rot:0,scala:1,dx:0,dz:0,dy:0,autore:who};});});});}
+  chain.then(function(){touch(k);return prDel(c,m);})
+  .then(function(){PR.list.splice(i,1);prDraw();S.sel=k;draw();edit();prMsg('Aggiunto alla scheda «'+p.n+'». Controlla e poi premi «Pubblica sul sito».');toast('Aggiunto alla scheda «'+p.n+'»: controllala e poi «Pubblica sul sito»');if(!PR.list.length)$('propBox').hidden=true;})
+  .catch(function(e){prMsg('Qualcosa non va: '+(e&&e.message||e));});
+}
+$('propBtn').addEventListener('click',function(){$('propBox').hidden=false;prLoad();});
+$('propClose').addEventListener('click',function(){$('propBox').hidden=true;});
+$('propReload').addEventListener('click',prLoad);
+$('propList').addEventListener('click',function(e){var b=e.target.closest('[data-pa]');if(!b)return;var i=+b.dataset.i,m=PR.list[i];
+  if(b.dataset.pa==='ok')prOk(i);
+  else if(confirm('Scartare la proposta di '+(m.autore||'?')+'? Verrà cancellata.')){prMsg('Scarto…');prDel(ghCfg(),m).then(function(){PR.list.splice(i,1);prDraw();prMsg('Proposta scartata.');}).catch(function(){prMsg('Non riesco a scartarla.');});}
+});
+/* ---------- anteprima del modello 3D ---------- */
+var MP={r:null,lib:0,cb:[]};
+function mLibs(cb){
+  if(window.THREE&&THREE.GLTFLoader){cb();return;}MP.cb.push(cb);if(MP.lib)return;MP.lib=1;
+  var a=document.createElement('script');a.src='three.min.js';a.onload=function(){var b=document.createElement('script');b.src='GLTFLoader.js';b.onload=function(){MP.cb.forEach(function(f){f();});MP.cb=[];};document.head.appendChild(b);};document.head.appendChild(a);
+}
+function mPrev(M){
+  var cv=$('mprev');if(!cv)return;
+  getImg(M.src).then(function(b){
+    var url=b?URL.createObjectURL(b):M.src;
+    mLibs(function(){
+      if(!MP.r){MP.r=new THREE.WebGLRenderer({antialias:true});}
+      var R=MP.r;R.setSize(cv.width,cv.height,false);
+      new THREE.GLTFLoader().load(url,function(g){
+        var sc=new THREE.Scene();sc.background=new THREE.Color(0x1b2433);sc.add(new THREE.HemisphereLight(0xffffff,0x445566,.9));var dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(5,10,7);sc.add(dl);
+        var o=g.scene,box=new THREE.Box3().setFromObject(o),sz=new THREE.Vector3();box.getSize(sz);var auto=Math.max(sz.x,sz.y,sz.z)>400?.001:1;
+        o.scale.setScalar((+M.scala||1)*auto);o.rotation.y=(+M.rot||0)*Math.PI/180;box.setFromObject(o);var c=new THREE.Vector3();box.getCenter(c);
+        o.position.set(-c.x+(+M.dx||0),-box.min.y+(+M.dy||0),-c.z+(+M.dz||0));sc.add(o);
+        box.setFromObject(o);box.getSize(sz);var span=Math.max(6,sz.x,sz.z,sz.y)*1.25;
+        sc.add(new THREE.GridHelper(Math.ceil(span/2)*2+4,Math.ceil(span/2)*2+4,0x8899aa,0x3a4658));
+        var man=new THREE.Mesh(new THREE.BoxGeometry(.5,1.8,.3),new THREE.MeshLambertMaterial({color:0xd04040}));man.position.set(box.max.x+1.2,.9,0);sc.add(man);
+        var cam=new THREE.PerspectiveCamera(40,cv.width/cv.height,.1,2000);cam.position.set(span*.9,span*.6,span*1.1);cam.lookAt(0,sz.y/2,0);
+        R.render(sc,cam);var ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(R.domElement,0,0);
+        if(b)URL.revokeObjectURL(url);
+      },undefined,function(){var ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.font='16px sans-serif';ctx.fillText('Il modello non si apre: è un file .glb valido?',20,40);});
+    });
+  });
+}
 /* ---------- avvio ---------- */
 db().then(function(){return idb('kv','readonly',function(s){return s.get('loc');});}).then(function(v){S.loc=v||{};}).catch(function(){S.loc={};})
   .then(function(){return fetch('schede.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():{};}).catch(function(){return{};});})
@@ -354,7 +458,7 @@ db().then(function(){return idb('kv','readonly',function(s){return s.get('loc');
 function impDraw(){$('setRadio').checked=!!S.imp.radio;}
 $('setRadio').addEventListener('change',function(){S.imp.radio=this.checked;ls('imp',S.imp);toast(this.checked?'Radio accesa nel gioco: vale per tutti dopo «Scarica per il sito» e il caricamento':'Radio tolta dal gioco: vale per tutti dopo «Scarica per il sito» e il caricamento');});
 draw();edit();
-window.__adm={S:S,BYK:BYK,putImg:putImg};
+window.__adm={S:S,BYK:BYK,putImg:putImg,getImg:getImg,PR:PR,mPrev:mPrev};
 })();
 </script>
 

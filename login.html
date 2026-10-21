@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; frame-src https://accounts.google.com/; connect-src 'self' https://accounts.google.com/gsi/; img-src 'self' data: https:; object-src 'none'; base-uri 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Accesso · Ciociaria da scoprire</title>
+<link rel="icon" href="icona-32.png">
+<style>
+:root{--ink:#eef2f6;--dim:#a9b3c1;--night:#0b111b;--panel:#121a27;--line:rgba(238,242,246,.14);--amber:#ffa02e}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:radial-gradient(ellipse at top,#1c2a40,#0b111b 70%);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;padding:16px}
+.box{width:min(100%,420px);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 22px;display:grid;gap:14px;text-align:center}
+h1{margin:0;font-size:22px}p{margin:0;color:var(--dim);font-size:14px}
+#gbtn{display:flex;justify-content:center;min-height:44px}
+#msg{min-height:1.4em;font-size:14px;color:var(--amber)}
+img{width:72px;height:72px;margin:0 auto;border-radius:16px}
+a{color:var(--amber)}
+</style></head>
+<body><main class="box">
+<img src="icona-192.png" alt="">
+<h1>Ciociaria da scoprire</h1>
+<p>Il gioco è riservato a studenti e docenti dell'IIS «Martino Filetico». Entra con l'account della scuola.</p>
+<div id="gbtn"></div>
+<div id="msg" role="status" aria-live="polite"></div>
+<p><a href="index.html">Torna al sito</a></p>
+</main>
+<script>
+(function(){
+  var msg=document.getElementById('msg');
+  function next(){var n=new URLSearchParams(location.search).get('next')||'/guida.html';return /^\/[^\/\\]/.test(n)?n:'/guida.html';}
+  fetch('/api/config',{cache:'no-store'}).then(function(r){return r.json();}).then(function(c){
+    if(!c.on){location.replace(next());return;}
+    window.__dom=c.domain;
+    var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;
+    s.onload=function(){
+      google.accounts.id.initialize({client_id:c.clientId,hd:c.domain,ux_mode:'popup',callback:function(resp){
+        msg.textContent='Controllo l’account…';
+        fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})})
+          .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+          .then(function(x){if(x.ok)location.replace(next());else msg.textContent=x.j.error||'Accesso non riuscito';})
+          .catch(function(){msg.textContent='Rete non raggiungibile, riprova.';});
+      }});
+      google.accounts.id.renderButton(document.getElementById('gbtn'),{theme:'filled_black',size:'large',text:'signin_with',shape:'pill',locale:'it'});
+    };
+    s.onerror=function(){msg.textContent='Non riesco a caricare l’accesso di Google.';};
+    document.head.appendChild(s);
+  }).catch(function(){msg.textContent='Rete non raggiungibile, riprova.';});
+})();
+</script>
+</body></html>
