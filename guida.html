@@ -2210,7 +2210,7 @@ function netTile(tx,tz){
       });
     }
   }
-  lmpTile(g,tx,tz,ox,oz,obs);bldPlace(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);chPoi(F,tx,tz,ox,oz,obs,r);bldFill(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);rowFill(W,F,tx,tz,ox,oz,obs,townAt,r);venDeco(g,tx,tz,ox,oz,obs);
+  if(!T){VPL=[];lmTile(F,tx,tz,ox,oz,obs,VPL,r);}lmpTile(g,tx,tz,ox,oz,obs);bldPlace(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);chPoi(F,tx,tz,ox,oz,obs,r);bldFill(W,F,tx,tz,ox,oz,obs,typeof VPL!=='undefined'?VPL:null,townAt,r);rowFill(W,F,tx,tz,ox,oz,obs,townAt,r);p3Tile(g,tx,tz,ox,oz,obs);venDeco(g,tx,tz,ox,oz,obs);
   /* alberi e campagna, lontano dall'asfalto */
   var nt=LU.ready?0:26+Math.floor(r()*36);if(LU.ready)luTrees(F,r,ox,oz,obs,townAt);
   for(k=0;k<nt;k++){
@@ -7834,17 +7834,22 @@ function lampFree(x,z,ei){var G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.flo
   return true;}
 function hudGuard(){
   var nav=$('nav'),tb=$('topbtns'),ba=$('btnAuto'),bs=$('btnSkip');if(!nav||!tb)return;
-  nav.style.top='';tb.style.flexWrap='';
   function R(e){return e.getBoundingClientRect();}
-  function ov(a,b){return a.width>0&&b.width>0&&a.left<b.right-2&&b.left<a.right-2&&a.top<b.bottom-2&&b.top<a.bottom-2;}
-  var rn=R(nav),rt=R(tb);
-  if(ov(rn,rt)){tb.style.flexWrap='wrap';tb.style.justifyContent='flex-end';rt=R(tb);nav.style.top=Math.round(rt.bottom+8)+'px';rn=R(nav);}
-  [ba,bs].forEach(function(b){if(!b)return;b.style.left='';b.style.bottom='';b.style.top='';b.style.marginLeft='';b.style.marginBottom='';
-    var rb=R(b);if(ov(rb,rn)){b.style.left='100%';b.style.bottom='auto';b.style.top='0';b.style.marginLeft='calc(var(--s)*8)';b.style.marginBottom='0';
-      rb=R(b);if(ov(rb,rn)||rb.right>innerWidth){b.style.left='0';b.style.top='auto';b.style.bottom='100%';b.style.marginLeft='0';var sc=Math.max(.6,(rn.bottom+6<rb.top?1:.75));b.style.transform='scale('+sc+')';b.style.transformOrigin='left bottom';}}});
+  function ov(a,b){return a.width>0&&b.width>0&&a.left<b.right+3&&b.left<a.right+3&&a.top<b.bottom+3&&b.top<a.bottom+3;}
+  nav.style.top='';tb.style.transform='';tb.style.flexWrap='';tb.style.justifyContent='';
+  [ba,bs].forEach(function(b){if(!b)return;b.style.left=b.style.top=b.style.bottom=b.style.marginLeft=b.style.marginBottom=b.style.transform='';});
+  /* 1. pulsanti in alto contro mappina: prima si rimpiccioliscono, poi (in verticale) la mappina scende */
+  if(ov(R(nav),R(tb))){var sc=1;while(sc>.7&&ov(R(nav),R(tb))){sc-=.05;tb.style.transformOrigin='top right';tb.style.transform='scale('+sc.toFixed(2)+')';}
+    if(ov(R(nav),R(tb))){tb.style.transform='';tb.style.flexWrap='wrap';tb.style.justifyContent='flex-end';nav.style.top=Math.round(R(tb).bottom+8)+'px';}}
+  /* 2. AUTO e SALTA: se toccano la mappina vanno accanto ai pedali, uno a fianco dell'altro */
+  var rn=R(nav),moved=false;
+  [ba,bs].forEach(function(b){if(b&&ov(R(b),rn))moved=true;});
+  if(moved){[ba,bs].forEach(function(b){if(!b)return;b.style.left='100%';b.style.bottom='auto';b.style.top='0';b.style.marginLeft='calc(var(--s)*8)';b.style.marginBottom='0';});
+    var a=R(ba),k=R(bs);if(a.width&&k.width&&ov(a,k))bs.style.transform='translateX('+Math.round(a.right+8-k.left)+'px)';}
+  else if(ba&&bs){var a2=R(ba),k2=R(bs);if(a2.width&&k2.width&&ov(a2,k2))bs.style.transform='translateY('+Math.round(-(k2.bottom-a2.top)-6)+'px)';}
 }
 addEventListener('resize',function(){setTimeout(hudGuard,60);});addEventListener('orientationchange',function(){setTimeout(hudGuard,300);});
-setInterval(hudGuard,1500);
+setInterval(function(){hudGuard();},1500);
 
 /* ================= GRANDI COMPLESSI STORICI CON L'IMPRONTA VERA: abbazie, conventi, castelli, palazzi (cortili compresi) ================= */
 var LMP={L:null,t:new Map(),tex:{}};
@@ -7931,6 +7936,127 @@ function lmpPave(g,o,tx,tz,ox,oz){
 }
 function lmpTile(g,tx,tz,ox,oz,obs){lmpLoad();var A=LMP.t.get(nk(tx,tz));if(!A)return;A.forEach(function(o){lmpBuild(g,o,tx,tz,ox,oz,obs);lmpPave(g,o,tx,tz,ox,oz);});}
 
+
+/* ================= OGNI LUOGO DELLE SCHEDE HA QUALCOSA DA VEDERE: modello scelto dal tipo di luogo, alle misure vere ================= */
+function p3Kind(q){
+  var n=q.n||'';
+  if(/^(sacco|liri)$/i.test(n)||/^lago/i.test(n))return 'water';
+  if(/cascat|cascad/i.test(n))return 'fall';
+  if(/grott|cuccetto|valle dell.inferno/i.test(n))return 'cave';
+  if(/belvedere|bel vedere|panoram|^vista|balcone/i.test(n))return 'view';
+  if(/^croce/i.test(n))return 'cross';
+  if(/madonn/i.test(n))return 'statue';
+  if(/ponte/i.test(n))return 'bridge';
+  if(/sorgent|pozzo|fonte/i.test(n))return 'spring';
+  if(/^aia/i.test(n))return 'aia';
+  if(/trono|peschio|rocca altiera|^rava/i.test(n))return 'rock';
+  if(/testamento|fasti|bocca del lupo/i.test(n))return 'stele';
+  if(/^(monte|colle|pizzo|serra|monna|montecassino)/i.test(n))return 'peak';
+  if(q.c==='muse'||q.c==='cast'||q.c==='alt')return 'museum';
+  if(q.c==='fede')return 'chapel';
+  if(q.c==='nat')return 'board';
+  return null;
+}
+var P3M={};
+function p3Mat(k,c){var key=k+c;if(!P3M[key])P3M[key]=new THREE.MeshLambertMaterial({color:c,flatShading:true});return P3M[key];}
+/* roccia irregolare: un poliedro deformato */
+function p3Rock(F,x,y,z,sx,sy,sz,col,r){
+  var g=new THREE.IcosahedronGeometry(1,2),P=g.attributes.position,ph=r()*6;
+  g=THREE.BufferGeometryUtils&&THREE.BufferGeometryUtils.mergeVertices?THREE.BufferGeometryUtils.mergeVertices(g):g;P=g.attributes.position;
+  for(var i=0;i<P.count;i++){var k=.88+.12*Math.sin(P.getX(i)*2.3+ph)*Math.cos(P.getZ(i)*1.9-ph)+r()*.06;P.setXYZ(i,P.getX(i)*sx*k+x,Math.max(-.2,P.getY(i))*sy*k+y,P.getZ(i)*sz*k+z);}
+  g.computeVertexNormals();var c=new THREE.Color(col),C=new Float32Array(P.count*3);for(i=0;i<P.count;i++){var v=.85+r()*.25;C[i*3]=c.r*v;C[i*3+1]=c.g*v;C[i*3+2]=c.b*v;}
+  g.setAttribute('color',new THREE.BufferAttribute(C,3));return g;
+}
+function p3Place(q){
+  var x=q.x,z=q.z,pr=netProbe(x,z);
+  if(pr&&pr.d<NET.E[pr.e].half+4){var P=NET.P,p=pr.p,qx=P.x0[p]+(P.x1[p]-P.x0[p])*pr.t,qz=P.z0[p]+(P.z1[p]-P.z0[p])*pr.t,dx=x-qx,dz=z-qz,L=Math.hypot(dx,dz);
+    if(L<.5){var L2=Math.hypot(P.x1[p]-P.x0[p],P.z1[p]-P.z0[p])||1;dx=-(P.z1[p]-P.z0[p])/L2;dz=(P.x1[p]-P.x0[p])/L2;L=1;}
+    var off=NET.E[pr.e].half+4.5;x=qx+dx/L*off;z=qz+dz/L*off;}
+  return{x:x,z:z};
+}
+function p3Peak(q){   /* la cima vera: il punto più alto nei dintorni */
+  var bx=q.x,bz=q.z,by=terrH(bx,bz);
+  for(var r=10;r<=60;r+=10)for(var a=0;a<12;a++){var x=q.x+Math.cos(a/12*Math.PI*2)*r,z=q.z+Math.sin(a/12*Math.PI*2)*r,y=terrH(x,z);if(y>by){by=y;bx=x;bz=z;}}
+  return{x:bx,z:bz};
+}
+function p3Build(g,q,ox,oz,obs){
+  var k=p3Kind(q);if(!k)return;
+  if(k==='water')return;   /* fiumi e laghi sono già disegnati */
+  if(k==='fall'&&typeof WAT!=='undefined'&&WAT.ready&&WAT.F.some(function(f){return Math.hypot(f.x-q.x,f.z-q.z)<160;}))return;
+  var r=rng(9100+q.id*31),B=new GB(),G=[],pos=k==='peak'?p3Peak(q):p3Place(q),x=pos.x,z=pos.z,y=gndY(x,z),lx=x-ox,lz=z-oz;
+  var stone=hc(0xb8b0a2),dk=hc(0x4a4540),wood=hc(0x7a5634),iron=hc(0x3a3d42),white=hc(0xeeeae2);
+  if(k==='peak'){   /* croce di vetta in ferro su un ometto di pietre */
+    G.push(p3Rock(F0,lx,y-.3,lz,1.6,1,1.6,0x857f75,r));
+    cbox(B,lx,y+.8+2.2,lz,.22,4.6,.22,iron);cbox(B,lx,y+.8+3.5,lz,2.2,.2,.2,iron);
+    cbox(B,lx+1.3,y+.25,lz+.6,.12,.9,.12,wood);cbox(B,lx+1.3,y+.75,lz+.6,.9,.5,.06,white);   /* targa con il nome della cima */
+    obs.push([2,x,z,.9,y]);}
+  else if(k==='cross'){cbox(B,lx,y+.4,lz,1.4,.8,1.4,stone);cbox(B,lx,y+.8+3,lz,.35,6,.35,white);cbox(B,lx,y+.8+4.6,lz,3,.35,.35,white);obs.push([2,x,z,1,y]);}
+  else if(k==='statue'){   /* la Madonnina su un piedistallo */
+    cbox(B,lx,y+1.1,lz,1.4,2.2,1.4,stone);cbox(B,lx,y+2.4,lz,1.6,.3,1.6,stone);
+    var bl=hc(0x6f8fc9),wh=hc(0xf2efe6);cbox(B,lx,y+3.3,lz,.7,1.6,.55,bl);cbox(B,lx,y+3.2,lz,.5,1.7,.4,wh);cbox(B,lx,y+4.3,lz,.32,.36,.32,hc(0xe6c9a8));cbox(B,lx,y+4.5,lz,.42,.2,.42,bl);
+    obs.push([2,x,z,.9,y]);}
+  else if(k==='view'){   /* terrazza panoramica: muretto, panchina, cannocchiale */
+    var h=0,hx=0,hz=1;for(var a=0;a<16;a++){var dx=Math.cos(a/16*Math.PI*2),dz=Math.sin(a/16*Math.PI*2),d=y-terrH(x+dx*40,z+dz*40);if(d>h){h=d;hx=dx;hz=dz;}}
+    var ux=-hz,uz=hx;for(var s=-3;s<=3;s+=.5)cbox(B,lx+hx*2+ux*s,y+.45,lz+hz*2+uz*s,.6,.9,.6,stone);
+    cbox(B,lx-hx*.4+ux*1.5,y+.45,lz-hz*.4+uz*1.5,.5,.1,.5,wood);cbox(B,lx-hx*.4-ux*1.5,y+.45,lz-hz*.4-uz*1.5,.5,.1,.5,wood);cbox(B,lx-hx*.4,y+.5,lz-hz*.4,Math.abs(ux)*3.4+.5,.08,Math.abs(uz)*3.4+.5,wood);
+    cbox(B,lx+hx*1.2+ux*-2.4,y+.6,lz+hz*1.2+uz*-2.4,.12,1.2,.12,iron);cbox(B,lx+hx*1.2+ux*-2.4,y+1.3,lz+hz*1.2+uz*-2.4,.25,.25,.5,iron);
+    obs.push([1,x+hx*2,z+hz*2,ux,uz,3.3,.35,y-.5,y+.9]);}
+  else if(k==='cave'){   /* parete di roccia con l'imbocco buio della grotta */
+    var hx=1,hz=0,prc=netProbe(x,z);if(prc){var Pc=NET.P,pc=prc.p,qx=Pc.x0[pc]+(Pc.x1[pc]-Pc.x0[pc])*prc.t,qz=Pc.z0[pc]+(Pc.z1[pc]-Pc.z0[pc])*prc.t,Lc=Math.hypot(qx-x,qz-z)||1;hx=(qx-x)/Lc;hz=(qz-z)/Lc;}
+    G.push(p3Rock(F0,lx,y-1,lz,7,6,7,0x77716a,r));
+    var m=new THREE.Mesh(new THREE.CircleGeometry(2.6,16,0,Math.PI),new THREE.MeshBasicMaterial({color:0x0b0b0d,side:THREE.DoubleSide}));m.position.set(lx+hx*6.4,y-.3,lz+hz*6.4);m.rotation.y=Math.atan2(hx,hz);m.renderOrder=2;g.add(m);
+    obs.push([2,x,z,5,y]);}
+  else if(k==='rock'){G.push(p3Rock(F0,lx,y-.5,lz,4+r()*3,4+r()*3,4+r()*2,0x857f75,r));if(/trono/i.test(q.n)){cbox(B,lx+5,y+.4,lz,1.4,.8,1,stone);cbox(B,lx+5.55,y+1.2,lz,.3,1.6,1,stone);}obs.push([2,x,z,4,y]);}
+  else if(k==='fall'){   /* salto d'acqua su una rupe, con la pozza */
+    var hx=car.x-x,hz=car.z-z,L=Math.hypot(hx,hz)||1;hx/=L;hz/=L;var H=8+r()*6;
+    G.push(p3Rock(F0,lx-hx*3,y-1,lz-hz*3,7,H/1.6,4,0x6f6a62,r));
+    var wm=typeof foamM!=='undefined'?foamM:new THREE.MeshBasicMaterial({color:0xe8f4ff,transparent:true,opacity:.85});
+    var wf=new THREE.Mesh(new THREE.PlaneGeometry(2.2,H),wm);wf.position.set(lx+hx*.6,y+H/2-.3,lz+hz*.6);wf.rotation.y=Math.atan2(hx,hz);g.add(wf);
+    var pool=new THREE.Mesh(new THREE.CircleGeometry(3.4,20),new THREE.MeshLambertMaterial({color:0x3f6f8a,transparent:true,opacity:.85}));pool.rotation.x=-Math.PI/2;pool.position.set(lx+hx*2.6,y+.08,lz+hz*2.6);g.add(pool);
+    obs.push([2,x-hx*3,z-hz*3,4.5,y]);}
+  else if(k==='spring'){   /* fontanile in pietra con la vasca */
+    cbox(B,lx,y+.4,lz,3.2,.8,1.4,stone);cbox(B,lx,y+.82,lz,2.8,.04,1,hc(0x4f7f99));cbox(B,lx,y+1.2,lz-.8,1.2,2.4,.4,stone);cbox(B,lx,y+1.5,lz-.5,.12,.12,.5,iron);
+    obs.push([1,x,z,1,0,1.6,.9,y-.5,y+1.2]);}
+  else if(k==='aia'){   /* aia: cerchio lastricato con il bordo di pietre */
+    var ag=new THREE.Mesh(new THREE.CircleGeometry(9,28),new THREE.MeshLambertMaterial({color:0xb7ad98}));ag.rotation.x=-Math.PI/2;ag.position.set(lx,y+.07,lz);g.add(ag);
+    for(var a=0;a<28;a++)cbox(B,lx+Math.cos(a/28*Math.PI*2)*9,y+.2,lz+Math.sin(a/28*Math.PI*2)*9,1,.4,1,stone);}
+  else if(k==='bridge'){   /* ponte di pietra a schiena d'asino */
+    var ux=1,uz=0,pr=netProbe(x,z);if(typeof WAT!=='undefined'&&WAT.ready){var bR=null,bi=0,bd=1e9;WAT.R.forEach(function(R){for(var i=0;i<R.x.length;i+=2){var d=Math.hypot(R.x[i]-x,R.z[i]-z);if(d<bd){bd=d;bR=R;bi=i;}}});
+      if(bR&&bd<80){var j=Math.min(bR.x.length-1,bi+1),i0=Math.max(0,bi-1),dx=bR.x[j]-bR.x[i0],dz=bR.z[j]-bR.z[i0],L=Math.hypot(dx,dz)||1;ux=-dz/L;uz=dx/L;x=bR.x[bi];z=bR.z[bi];lx=x-ox;lz=z-oz;y=gndY(x,z);}}
+    var vx=-uz,vz=ux;for(var s=-9;s<=9;s+=1){var hgt=2.6*Math.cos(s/9*Math.PI/2),xx=lx+ux*s,zz=lz+uz*s;cbox(B,xx,y+hgt-.2,zz,1.1,.6,1.1,stone);cbox(B,xx+vx*1.6,y+hgt+.3,zz+vz*1.6,1.1,.8,.4,stone);cbox(B,xx-vx*1.6,y+hgt+.3,zz-vz*1.6,1.1,.8,.4,stone);
+      cbox(B,xx,y+hgt-.3,zz+0,Math.abs(vx)*3+.6,.4,Math.abs(vz)*3+.6,stone);}
+    obs.push([2,x+ux*9,z+uz*9,1.2,y],[2,x-ux*9,z-uz*9,1.2,y]);}
+  else if(k==='stele'){   /* lapide antica con l'iscrizione */
+    cbox(B,lx,y+.3,lz,1.8,.6,1,stone);cbox(B,lx,y+1.6,lz,1.3,2.2,.45,hc(0xd8d1c2));for(var t=0;t<5;t++)cbox(B,lx,y+2.2-t*.3,lz+.24,.9,.06,.02,dk);obs.push([2,x,z,1,y]);}
+  else if(k==='museum'){   /* piccolo palazzo del museo, con lo stendardo */
+    var hw=7,hd=5;if(netFree(x,z,1,0,hw,hd,.8)&&!bldHit(obs,x,z,1,0,hw,hd)){var BB=bldBase(x,z,1,0,hw,hd);nBoxLo(F0,F0,lx,lz,1,0,hw,hd,9+(BB[2]-BB[1]),HN.casa[0],HN.roof[0],.3,BB[1]-.8,false);
+      cbox(B,lx+hw+.1,BB[1]+6,lz,.1,3,1.4,hc(0x9b1e24));obs.push([1,x,z,1,0,hw,hd,BB[1]-.8,BB[1]+9]);}}
+  else if(k==='chapel'){   /* eremo o chiesetta: cappella in pietra, anche su un pendio */
+    var ux=1,uz=0,pr2=netProbe(x,z);if(pr2){var P=NET.P,p=pr2.p,qx=P.x0[p]+(P.x1[p]-P.x0[p])*pr2.t,qz=P.z0[p]+(P.z1[p]-P.z0[p])*pr2.t,L=Math.hypot(qx-x,qz-z)||1;if(L<400){ux=(qx-x)/L;uz=(qz-z)/L;}}
+    var big=/santuario|cattedrale/i.test(q.n),hw=big?9:4.4,hd=big?5.6:2.9,BB=bldBase(x,z,ux,uz,hw+1,hd+1),g0=Math.max(terrH(x+ux*(hw+1.2),z+uz*(hw+1.2)),BB[2]-3);
+    var O=nChurch2(F0,lx,lz,ux,uz,hw,hd,BB[1]-.8,g0,r,!big);
+    O.forEach(function(o,i){obs.push([1,x+ux*o[0]-uz*o[1],z+uz*o[0]+ux*o[1],ux,uz,o[2],o[3],BB[1]-.8,g0+5,i===0?1:0]);});
+    q.mx=x+ux*(hw+3);q.mz=z+uz*(hw+3);q.gy=null;q.church=1;}
+  else if(k==='board'){   /* tabella del sentiero con il nome del luogo */
+    cbox(B,lx-.7,y+.9,lz,.14,1.8,.14,wood);cbox(B,lx+.7,y+.9,lz,.14,1.8,.14,wood);cbox(B,lx,y+1.5,lz,1.8,.9,.1,wood);cbox(B,lx,y+1.5,lz+.06,1.6,.7,.02,hc(0xe8dcc0));obs.push([2,x,z,.9,y]);}
+  if(B.i.length)g.add(B.mesh(hwFlatM));
+  if(F0.i.length){g.add(F0.mesh(hwFlatM));F0=new GB();}
+  G.forEach(function(geo){g.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true})));});
+  q.p3=k;
+}
+var F0=new GB();
+function p3Tile(g,tx,tz,ox,oz,obs){
+  if(typeof SC==='undefined'||!SC.pois)return;
+  SC.pois.forEach(function(q){
+    if(q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
+    if(q.lm||q.church||(typeof lmpNear==='function'&&lmpNear(q.x,q.z)))return;
+    /* c'è già un edificio vero sul posto (museo in un palazzo, chiesa, casa natale…): basta quello */
+    var k=p3Kind(q);if(k!=='peak'&&k!=='view'&&k!=='cross'&&k!=='board'&&k!=='fall'&&k!=='cave'&&k!=='spring'&&bldHit(obs,q.x,q.z,1,0,12,12))return;
+    if((k==='museum'||!k)&&bldHit(obs,q.x,q.z,1,0,30,30))return;
+    try{p3Build(g,q,ox,oz,obs);}catch(e){}
+  });
+}
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -7944,7 +8070,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
