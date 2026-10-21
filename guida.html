@@ -5213,7 +5213,7 @@ function ntrTick(dt){
     var e=NET.E[t.ei];
     if((t.dir>0&&t.s>e.len)||(t.dir<0&&t.s<0)){var over=t.dir>0?t.s-e.len:-t.s;if(!ntrNext(t)){trafG.remove(t.g);NTRF.splice(k,1);continue;}t.s+=t.dir*over;e=NET.E[t.ei];}
     var q=ntrAt(t.ei,t.s),wb=Math.min(t.len*.35,3.5),qf=ntrAt(t.ei,t.s+t.dir*wb),qr=ntrAt(t.ei,t.s-t.dir*wb),ht=Math.atan2(qf[0]-qr[0],qf[1]-qr[1])*1;
-    if(t.dir<0)ht+=Math.PI;if(Math.hypot(qf[0]-qr[0],qf[1]-qr[1])<.5)ht=t.dir>0?q[3]:q[3]+Math.PI;
+    if(Math.hypot(qf[0]-qr[0],qf[1]-qr[1])<.5)ht=t.dir>0?q[3]:q[3]+Math.PI;
     /* lo sterzo non scatta: la direzione segue quella della strada con la velocità di un'auto vera (passo, velocità, sterzata massima) */
     if(t.hs==null)t.hs=ht;else{var dh2=Math.atan2(Math.sin(ht-t.hs),Math.cos(ht-t.hs)),mx2=Math.max(.6,t.v)*dt/Math.max(2.6,t.len*.55)*1.1+dt*.15;t.hs+=clamp(dh2,-mx2,mx2);if(Math.abs(dh2)>1.6)t.hs=ht;}
     var h=t.hs,o=ntrLane(t),hl=t.dir>0?q[3]:q[3]+Math.PI,x=q[0]-Math.cos(hl)*o,z=q[1]+Math.sin(hl)*o;
