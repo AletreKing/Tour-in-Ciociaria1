@@ -416,7 +416,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="index.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 22.10 19:01</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="index.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 22.10 20:23</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -450,6 +450,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       <div class="opt"><span>Autovelox</span><div class="seg" id="segCam"><button type="button" data-v="1">Attivi</button><button type="button" data-v="0">Spenti</button></div></div>
       <div class="opt"><span>Esame per riavere la patente</span><div class="seg" id="segQuiz"><button type="button" data-v="1">Sì, quiz</button><button type="button" data-v="0">No</button></div></div>
       <div class="opt"><span>Suono del motore</span><div class="seg" id="segSnd"><button type="button" id="snd1" data-v="1">Acceso</button><button type="button" id="snd0" data-v="0">Spento</button></div></div>
+      <div class="opt"><span>Feste di paese</span><div class="seg" id="segFesta"><button type="button" data-v="real">Nei giorni veri</button><button type="button" data-v="rand">A sorpresa</button><button type="button" data-v="off">Spente</button></div></div>
       <div class="opt"><span>Traffico</span><div class="seg" id="segTraf"><button type="button" id="trf0" data-v="0">Nessuno</button><button type="button" id="trf1" data-v="1">Poco</button><button type="button" id="trf2" data-v="2">Normale</button></div></div>
       <div class="opt"><span>Specchietti</span><div class="seg" id="segMir"><button type="button" id="mir1" data-v="1">Riflettono</button><button type="button" id="mir0" data-v="0">Spenti</button></div></div>
       <div class="opt"><span>Luce</span><div class="seg" id="segLight"><button type="button" id="lgtReal" data-v="real">Ora reale</button><button type="button" id="lgtDay" data-v="day">Giorno</button><button type="button" id="lgtDusk" data-v="dusk">Tramonto</button><button type="button" id="lgtNight" data-v="night">Notte</button></div></div>
@@ -619,6 +620,7 @@ function carIdx(id){for(var k=0;k<CARS.length;k++)if(CARS[k].id===id)return k;re
 var opts={car:Math.max(0,carIdx(store.get('carId','u'))),gear:store.get('gear2',store.get('gear','auto')),sens:store.get('sens',1),inv:store.get('inv',0),snd:store.get('snd',1),track:store.get('track','city'),light:store.get('light','real'),traf:store.get('traf',1),mir:store.get('mir',1),dest:store.get('dest',322600),nfrom:store.get('nfrom','Frosinone'),nto:store.get('nto','Sora'),mode:store.get('mode','free')};
 opts.track='cio';
 if([0,1,2].indexOf(opts.traf)<0)opts.traf=1;
+opts.festa=store.get('festa','real');if(['real','rand','off'].indexOf(opts.festa)<0)opts.festa='real';
 if(['real','day','dusk','night'].indexOf(opts.light)<0)opts.light='real';
 if(['city','hw','fi','cio'].indexOf(opts.track)<0)opts.track='city';
 if(!(opts.car>=0&&opts.car<CARS.length))opts.car=0;
@@ -4252,7 +4254,7 @@ function buildCarCards(){
 }
 function pickCar(k){opts.car=k;store.set('carId',CARS[k].id);spec=CARS[k];buildCar();drawTach();resetRace();drawHb();knobToGear();drawGate();hudC={};mpCfgSend();}
 function segSync(){
-  [['segGear',opts.gear],['segSens',''+opts.sens],['segInv',''+opts.inv],['segSnd',''+opts.snd],['segLight',opts.light],['segWx',opts.wx||'real'],['segSeas',opts.season||'real'],['segTraf',''+opts.traf],['segMir',''+(opts.mir?1:0)]].forEach(function(p){
+  [['segGear',opts.gear],['segSens',''+opts.sens],['segInv',''+opts.inv],['segSnd',''+opts.snd],['segLight',opts.light],['segWx',opts.wx||'real'],['segSeas',opts.season||'real'],['segTraf',''+opts.traf],['segFesta',opts.festa||'real'],['segMir',''+(opts.mir?1:0)]].forEach(function(p){
     var bs=$(p[0]).querySelectorAll('button');for(var k=0;k<bs.length;k++)bs[k].setAttribute('aria-pressed',bs[k].dataset.v===p[1]?'true':'false');
   });
 }
@@ -4265,6 +4267,7 @@ seg('segLight',function(v){opts.light=v;store.set('light',v);applyLight();});
 seg('segMir',function(v){opts.mir=+v;store.set('mir',opts.mir);});
 seg('segWx',function(v){var g0=WX.ground;opts.wx=v;store.set('wx',v);if(v==='real'){WX.src='';WX.t=0;wxSet(0,0,null,0);wxFetch();}else wxManual(v);wxAfter(g0);});
 seg('segSeas',function(v){opts.season=v;store.set('season',v);natRebuild();});
+seg('segFesta',function(v){opts.festa=v;store.set('festa',v);FST.chk=0;FST.said={};});
 seg('segTraf',function(v){opts.traf=+v;store.set('traf',opts.traf);trafClear();ntrClear();trafFill=true;});
 function openOpts(o){if(o)saveRun();paused=o;$('opts').hidden=!o;inp.kbGas=inp.kbBrake=inp.kbL=inp.kbR=false;inp.syncPedals();}
 $('btnOpt').addEventListener('click',function(){openOpts(true);});
@@ -5462,7 +5465,7 @@ opts.arr=store.get('arr','');
 /* ================= STEMMA DEL FILETICO: sul tetto, dietro fra le luci, al centro del volante (clacson) ================= */
 var STEMMA=(function(){var im=new Image(),t=new THREE.Texture(im);im.onload=function(){t.needsUpdate=true;};im.src='data:image/jpeg;base64,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';return t;})();
 var stemmaM=new THREE.MeshBasicMaterial({map:STEMMA}),stemmaL=new THREE.MeshLambertMaterial({map:STEMMA});
-var hornDisc=null;
+var hornDisc=null,STEMD=[];
 function stemmaDisc(r,lit){var g=new THREE.CircleGeometry(r,28);return new THREE.Mesh(g,lit?stemmaL:stemmaM);}
 function stemmaAdd(){
   try{
@@ -5470,14 +5473,14 @@ function stemmaAdd(){
     /* cofano: un po' dietro il muso */
     var rl=s.roof[1]-s.roof[0]+.12,hr=Math.min(s.W*.8/2,rl/2)*.86;
     stemmaL.polygonOffset=true;stemmaL.polygonOffsetFactor=-2;stemmaL.polygonOffsetUnits=-2;
-    var d1=stemmaDisc(hr,true);d1.rotation.x=-Math.PI/2;d1.rotation.z=Math.PI;d1.position.set(0,s.roof[2]+.07+.006,(s.roof[0]+s.roof[1])/2);d1.name='stemmaTetto';ext.add(d1);
+    STEMD=[];var d1=stemmaDisc(hr,true);STEMD.push(d1);d1.rotation.x=-Math.PI/2;d1.rotation.z=Math.PI;d1.position.set(0,s.roof[2]+.07+.006,(s.roof[0]+s.roof[1])/2);d1.name='stemmaTetto';ext.add(d1);
     var tc=document.createElement('canvas');tc.width=1024;tc.height=160;var tx=tc.getContext('2d');tx.font='800 104px "Saira Semi Condensed","Arial Narrow",Arial,sans-serif';tx.textAlign='center';tx.textBaseline='middle';
     tx.lineJoin='round';tx.lineWidth=14;tx.strokeStyle='rgba(10,20,40,.9)';tx.strokeText('ITE Ferentino',512,84);tx.fillStyle='#ffffff';tx.fillText('ITE Ferentino',512,84);
     var tt=new THREE.CanvasTexture(tc);tt.anisotropy=4;var tm=new THREE.MeshLambertMaterial({map:tt,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
     var Lz=Math.min(2.1,(s.axF-s.axR)*.95),belt=Math.min(s.glass[0][1],s.glass[3][1]),dy=.3+(belt-.3)*.5;
     [1,-1].forEach(function(sd){var pl=new THREE.Mesh(new THREE.PlaneGeometry(Lz,Lz*160/1024),tm);pl.rotation.y=sd*Math.PI/2;pl.position.set(sd*(s.W/2+.016),dy,(s.axF+s.axR)/2);ext.add(pl);});
     /* dietro: in mezzo alle luci di posizione */
-    var ty=s.id==='r8'?.77:s.id==='m3'?.85:.87,d2=stemmaDisc(.065,true);d2.rotation.y=Math.PI;d2.position.set(0,ty,rz(ty)-.02);ext.add(d2);
+    var ty=s.id==='r8'?.77:s.id==='m3'?.85:.87,d2=stemmaDisc(.065,true);STEMD.push(d2);d2.rotation.y=Math.PI;d2.position.set(0,ty,rz(ty)-.02);ext.add(d2);
     /* volante: il clacson */
     if(swheel){hornDisc=stemmaDisc(.042,false);hornDisc.rotation.y=Math.PI;hornDisc.position.set(0,0,-.03);hornDisc.name='horn';swheel.add(hornDisc);}
   }catch(e){}
@@ -5501,9 +5504,9 @@ window.addEventListener('keyup',function(e){if(e.key.toLowerCase()==='h')hornOff
 (function(){
   var el=$('view'),rc=new THREE.Raycaster(),v2=new THREE.Vector2();
   el.addEventListener('pointerdown',function(e){
-    if(state!=='drive'||paused||camMode!==1||!hornDisc)return;
+    if(state!=='drive'||paused||(typeof GOD!=='undefined'&&GOD.on))return;
     var R=renderer.domElement.getBoundingClientRect();v2.set((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1);rc.setFromCamera(v2,camera);
-    var h=rc.intersectObject(hornDisc.parent,true).filter(function(x){return x.distance<1.5;});
+    var h=camMode===1?(hornDisc?rc.intersectObject(hornDisc.parent,true).filter(function(x){return x.distance<1.5;}):[]):(STEMD.length&&ext.visible?rc.intersectObjects(STEMD,false).filter(function(x){return x.distance<40;}):[]);
     if(h.length){audioInit();hornOn();e.stopPropagation();}
   },true);
   ['pointerup','pointercancel','pointerleave'].forEach(function(ev){el.addEventListener(ev,hornOff,true);});
@@ -8430,6 +8433,182 @@ function batSound(){
 }
 var batTr0=trSync;trSync=function(dt){batTr0(dt);batTick(dt);};
 
+
+/* ================= FESTE DI PAESE: nel giorno del santo patrono (o a sorpresa), dal buio a mezzanotte:
+   luminarie e stendardi su ogni casa, fuochi d'artificio continui, campane a festa, folla e banda ================= */
+/* fonte delle date: italianodoc.com, Santi patroni della provincia di Frosinone (controllate a campione con tuttitalia.it) */
+var FESTE={"Frosinone":["Santi Silverio e Ormisda","06-20"],"Acquafondata":["San Giovanni Battista","08-29"],"Acuto":["San Maurizio","09-22"],"Alatri":["San Sisto","pasqua+3"],
+"Alvito":["San Valerio","last-05"],"Amaseno":["San Lorenzo","08-10"],"Anagni":["San Magno","08-19"],"Aquino":["San Tommaso d'Aquino","03-07"],"Arce":["Sant'Eleuterio","05-29"],
+"Arnara":["San Sebastiano","01-20"],"Arpino":["Madonna di Loreto","12-10"],"Atina":["San Marco Galileo","10-01"],"Ausonia":["San Michele","09-29"],"Belmonte Castello":["San Nicola","12-06"],
+"Boville Ernica":["San Pietro Ispano","03-11"],"Broccostella":["San Michele","05-08"],"Campoli Appennino":["San Pancrazio","05-12"],"Casalattico":["San Barbato","02-19"],
+"Casalvieri":["Sant'Onorio","last-05"],"Cassino":["San Benedetto","03-21"],"Castelliri":["Santa Maria Salome","10-22"],"Castelnuovo Parano":["San Mauro","01-15"],
+"Castro dei Volsci":["Sant'Oliva","06-03"],"Castrocielo":["Santa Lucia","12-13"],"Ceccano":["San Giovanni Battista","06-24"],"Ceprano":["Sant'Arduino","07-28"],
+"Cervaro":["Maria Santissima de Piternis","09-08"],"Colfelice":["San Gaetano","08-07"],"Colle San Magno":["San Magno","08-19"],"Collepardo":["Santissimo Salvatore","08-06"],
+"Coreno Ausonio":["Santa Margherita","07-20"],"Esperia":["San Clino","last-05"],"Falvaterra":["San Sosio","1st-09"],"Ferentino":["Sant'Ambrogio","05-01"],
+"Filettino":["San Bernardino da Siena","05-20"],"Fiuggi":["San Biagio","02-03"],"Fontana Liri":["Santa Barbara","12-04"],"Fontechiari":["San Bartolomeo","08-24"],
+"Fumone":["San Sebastiano","01-20"],"Gallinaro":["San Gerardo","08-11"],"Giuliano di Roma":["San Biagio","last-08"],"Guarcino":["Sant'Agnello","12-14"],
+"Isola del Liri":["Madonna di Loreto","12-10"],"Monte San Giovanni Campano":["San Tommaso d'Aquino","03-07"],"Morolo":["San Michele Arcangelo","05-08"],"Paliano":["Sant'Andrea","11-30"],
+"Pastena":["Santissima Croce","05-03"],"Patrica":["San Rocco","08-16"],"Pescosolido":["San Giovanni Battista","09-14"],"Picinisco":["San Lorenzo","08-10"],"Pico":["Sant'Antonino","09-02"],
+"Piedimonte San Germano":["Sant'Amasio","01-23"],"Piglio":["San Lorenzo","08-10"],"Pignataro Interamna":["Santissima Addolorata","09-20"],"Pofi":["San Sebastiano","08-01"],
+"Pontecorvo":["San Giovanni Battista","2nd-05"],"Posta Fibreno":["Sante Vittoria e Blandina","08-20"],"Ripi":["San Giorgio","04-23"],"Rocca d'Arce":["San Bernardo","09-13"],
+"Roccasecca":["San Pietro","04-29"],"San Biagio Saracinisco":["San Biagio","02-03"],"San Donato Val di Comino":["San Donato","08-07"],"San Giorgio a Liri":["San Giorgio","04-23"],
+"San Giovanni Incarico":["San Giovanni Battista","04-24"],"San Vittore del Lazio":["San Vittore","05-08"],"Sant'Ambrogio sul Garigliano":["San Biagio","02-02"],
+"Sant'Andrea del Garigliano":["Sant'Andrea","11-30"],"Sant'Apollinare":["Sant'Apollinare","07-23"],"Sant'Elia Fiumerapido":["Sant'Elia","07-20"],"Santopadre":["San Folco","05-22"],
+"Serrone":["San Michele","09-29"],"Settefrati":["Santo Stefano","08-29"],"Sgurgola":["San Leonardo","11-06"],"Sora":["Santa Restituta","05-27"],"Strangolagalli":["San Michele","09-29"],
+"Supino":["San Lorenzo","08-10","San Cataldo","05-10"],"Terelle":["Sant'Egidio","09-01"],"Torre Cajetani":["San Michele","05-08"],"Torrice":["San Bernardino","05-19"],
+"Trevi nel Lazio":["San Pietro Eremita","08-29"],"Trivigliano":["Sant'Oliva","06-11"],"Vallecorsa":["San Michele Arcangelo","09-29"],"Vallemaio":["San Tommaso","07-07"],
+"Vallerotonda":["Santi Giovanni e Paolo","06-26"],"Veroli":["Santa Salome","05-25"],"Vicalvi":["San Bernardino","05-25"],"Vico nel Lazio":["San Giorgio","last-07"],
+"Villa Latina":["Sant'Antonio","06-13"],"Villa Santa Lucia":["Santa Lucia","12-13"],"Villa Santo Stefano":["Santo Stefano","08-16"],"Viticuso":["Sant'Antonino Martire","09-01"]};
+var FST={key:'',towns:[],t:0,said:{},fwT:0,bellT:5,au:null,chk:0};
+function fstEaster(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da);}
+function fstMatch(rule,D){
+  var y=D.getFullYear(),mo=D.getMonth()+1,da=D.getDate(),dw=D.getDay(),r;
+  if((r=/^(\d\d)-(\d\d)$/.exec(rule)))return +r[1]===mo&&+r[2]===da;
+  if((r=/^last-(\d\d)$/.exec(rule)))return dw===0&&+r[1]===mo&&da+7>new Date(y,mo,0).getDate();
+  if((r=/^(1st|2nd)-(\d\d)$/.exec(rule))){var n=r[1]==='1st'?1:2;return dw===0&&+r[2]===mo&&Math.ceil(da/7)===n;}
+  if(rule==='pasqua+3'){var E=fstEaster(y);E.setDate(E.getDate()+3);return E.getMonth()+1===mo&&E.getDate()===da;}
+  return false;
+}
+/* il santo festeggiato oggi in quel paese (null se non è festa) */
+function fstSaint(name,D){
+  var F=FESTE[name],mode=opts.festa||'real';if(mode==='off')return null;
+  if(mode==='rand'){var key=name+'|'+D.getFullYear()+'-'+D.getMonth()+'-'+D.getDate(),h=0;for(var i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))|0;return (Math.abs(h)%4===0)?(F?F[0]:'il santo patrono'):null;}
+  if(!F)return null;if(fstMatch(F[1],D))return F[0];if(F[2]&&fstMatch(F[3],D))return F[2];return null;
+}
+function fstNight(){return (LGT.dark||0)>.35;}
+function fstUpdate(){
+  if(!NET||!NET.towns)return;var D=new Date(),L=[];
+  NET.towns.forEach(function(t){if(t.c<1)return;var s=fstSaint(t.n,D);if(s)L.push({t:t,s:s});});
+  var key=(opts.festa||'real')+'|'+L.map(function(o){return o.t.n;}).join(',');
+  if(key!==FST.key){FST.key=key;FST.towns=L;}
+}
+/* ---------- case registrate mentre si costruisce il tassello ---------- */
+var BREC=null,BRO=[0,0];
+var _nBoxLo0=nBoxLo;nBoxLo=function(W,F,cx,cz,ux,uz,hw,hd,h,col,roof,u0,y,flat){if(BREC&&hw>1.2&&hd>1.2)BREC.push([cx+BRO[0],cz+BRO[1],ux,uz,hw,hd,y,y+h]);return _nBoxLo0.apply(this,arguments);};
+var _netTile0=netTile;netTile=function(tx,tz){BREC=[];BRO=[tx*NT,tz*NT];var r;try{r=_netTile0(tx,tz);}finally{var b=BREC;BREC=null;}if(r)r.brec=b;return r;};
+/* ---------- luminarie e stendardi ---------- */
+var FSTM=[0,1,2].map(function(){return new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,map:bulbTex,opacity:0,fog:false});});
+var FSTB=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+var FSTPAL=[[0xffd27a,0xffe9b8,0xffb347],[0xfff1c8,0xffcf6b,0xff8f5a]],FSTBAN=[[0xc8102e,0xf2c230],[0x1d4fa0,0xf3f1ea],[0x8e1b2c,0xf3f1ea],[0x1f7a3a,0xf3f1ea],[0xf2c230,0x1d4fa0]];
+function fstDecor(T,towns){
+  var g=new THREE.Group(),BL=[new GB(),new GB(),new GB()],BN=new GB(),cc=new THREE.Color(),ox=T.ox,oz=T.oz,n=0;
+  (T.brec||[]).forEach(function(b,bi){
+    var x=b[0],z=b[1],tw=null;for(var q=0;q<towns.length;q++){var t=towns[q].t;if(Math.hypot(x-t.x,z-t.z)<t.r*1.05){tw=towns[q];break;}}if(!tw)return;
+    var ux=b[2],uz=b[3],vx=-uz,vz=ux,hw=b[4],hd=b[5],Y=b[7],pal=FSTPAL[(bi>>2)%2],k=0;
+    /* lampadine lungo la gronda, su tutti e quattro i lati */
+    [[ux,uz,hw,hd],[-ux,-uz,hw,hd],[vx,vz,hd,hw],[-vx,-vz,hd,hw]].forEach(function(f){
+      var nx=f[0],nz=f[1],fx=x+nx*(f[2]+.12),fz=z+nz*(f[2]+.12),rx=nz,rz=-nx;
+      for(var a=-f[3]+.4;a<=f[3]-.4+.01;a+=.95){cc.setHex(pal[k%3]);nBulb(BL[k%3],fx+rx*a-ox,Y-.35,fz+rz*a-oz,nx,nz,cc,.32);k++;}
+    });
+    /* stendardo sul lato verso la strada */
+    var pr=netProbe(x,z);if(!pr||pr.d>NET.E[pr.e].half+22)return;
+    var P=NET.P,qx=P.x0[pr.p]+(P.x1[pr.p]-P.x0[pr.p])*pr.t-x,qz=P.z0[pr.p]+(P.z1[pr.p]-P.z0[pr.p])*pr.t-z,best=null,bd=-1e9;
+    [[ux,uz,hw,hd],[-ux,-uz,hw,hd],[vx,vz,hd,hw],[-vx,-vz,hd,hw]].forEach(function(f){var d=f[0]*qx+f[1]*qz;if(d>bd){bd=d;best=f;}});
+    var nx=best[0],nz=best[1],rx=nz,rz=-nx,fx=x+nx*(best[2]+.06),fz=z+nz*(best[2]+.06),cols=FSTBAN[(bi*7+3)%FSTBAN.length],nb=best[3]>4?2:1,H=Math.min(2.6,Math.max(1.2,(Y-b[6])*.35));
+    for(var j=0;j<nb;j++){var a=nb===1?0:(j?1:-1)*best[3]*.45,cx=fx+rx*a-ox,cz=fz+rz*a-oz,top=Y-.7,w=.45;
+      cc.setHex(cols[0]);BN.quad([[cx-rx*w,top-H*.5,cz-rz*w],[cx+rx*w,top-H*.5,cz+rz*w],[cx+rx*w,top,cz+rz*w],[cx-rx*w,top,cz-rz*w]],[nx,0,nz],N4,cc);
+      cc.setHex(cols[1]);BN.quad([[cx-rx*w,top-H,cz-rz*w],[cx,top-H-.35,cz],[cx+rx*w,top-H,cz+rz*w],[cx+rx*w,top-H*.5,cz+rz*w]],[nx,0,nz],N4,cc);
+      BN.quad([[cx-rx*w,top-H,cz-rz*w],[cx+rx*w,top-H*.5,cz+rz*w],[cx-rx*w,top-H*.5,cz-rz*w],[cx-rx*w,top-H,cz-rz*w]],[nx,0,nz],N4,cc);
+      cc.setHex(0x3a2a18);BN.quad([[cx-rx*(w+.15),top-.03,cz-rz*(w+.15)],[cx+rx*(w+.15),top-.03,cz+rz*(w+.15)],[cx+rx*(w+.15),top+.06,cz+rz*(w+.15)],[cx-rx*(w+.15),top+.06,cz-rz*(w+.15)]],[nx,0,nz],N4,cc);}
+    n++;
+  });
+  if(!n)return null;
+  BL.forEach(function(b,i){if(b.i.length){var m=b.mesh(FSTM[i]);m.renderOrder=2;g.add(m);}});if(BN.i.length)g.add(BN.mesh(FSTB));
+  return g;
+}
+function fstTiles(){
+  var towns=FST.towns;
+  for(var k in netTiles){var T=netTiles[k];if(!T||!T.g)continue;var want=towns.length?FST.key:'';
+    if(T.fk===want)continue;
+    if(T.fg){T.g.remove(T.fg);disposeChunk(T.fg);T.fg=null;}
+    T.fk=want;if(!want||!T.brec||!T.brec.length)continue;
+    var near=towns.filter(function(o){return Math.abs(o.t.x-(T.ox+NT/2))<NT/2+o.t.r&&Math.abs(o.t.z-(T.oz+NT/2))<NT/2+o.t.r;});
+    if(!near.length)continue;var g=fstDecor(T,near);if(g){T.fg=g;T.g.add(g);}
+    return;   /* un tassello per volta: niente scatti */
+  }
+}
+/* ---------- campane a festa ---------- */
+function fstBell(t0,f,vol,out){
+  [[.5,.5,4],[1,1,3],[1.19,.45,2.2],[1.56,.35,1.8],[2,.3,1.4],[2.51,.18,1],[3.01,.12,.8]].forEach(function(p){
+    var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f*p[0];
+    g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol*p[1],t0+.004);g.gain.exponentialRampToValueAtTime(.0005,t0+p[2]);o.connect(g);g.connect(out);o.start(t0);o.stop(t0+p[2]+.05);});
+}
+function fstPeal(d){
+  try{if(!AC||!au||!opts.snd||AC.state!=='running')return;var out=au.master,vol=.22*Math.pow(Math.max(0,1-d/1800),1.5);if(vol<.004)return;
+    var t=AC.currentTime+d/343+.05,B=[523.25,440,392,329.6],n=16+Math.floor(Math.random()*14);
+    for(var i=0;i<n;i++){var b=B[(i+Math.floor(i/4))%B.length];fstBell(t+i*.42+Math.random()*.05,b,vol*(.8+Math.random()*.3),out);}
+  }catch(e){}
+}
+/* ---------- folla e banda di paese (motivo originale, in do maggiore) ---------- */
+var FMEL=[[67,2],[64,1],[65,1],[67,2],[72,2],[71,2],[69,1],[67,1],[69,4],[65,2],[62,1],[64,1],[65,2],[69,2],[67,2],[65,1],[64,1],[67,4],
+  [64,1],[65,1],[67,2],[72,2],[76,2],[74,2],[72,1],[71,1],[69,4],[67,2],[69,1],[71,1],[72,2],[74,2],[72,6],[-1,2]],FBASS=[48,43,41,48,48,41,43,48];
+function fstAudioOn(){
+  if(FST.au||!AC||!au||!opts.snd)return;
+  try{var out=AC.createGain();out.gain.value=0;out.connect(au.master);
+    var len=AC.sampleRate*2,buf=AC.createBuffer(1,len,AC.sampleRate),ch=buf.getChannelData(0);for(var i=0;i<len;i++)ch[i]=Math.random()*2-1;
+    /* vociare: rumore filtrato come voci, che ondeggia */
+    var crowd=AC.createGain();crowd.gain.value=.5;crowd.connect(out);var srcs=[];
+    [[420,1.2,.37],[750,1.6,.53],[1150,2.2,.29]].forEach(function(c,i){var n=AC.createBufferSource();n.buffer=buf;n.loop=true;n.playbackRate.value=.9+i*.07;
+      var bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=c[0];bp.Q.value=c[1];var am=AC.createGain();am.gain.value=.35;
+      var l=AC.createOscillator(),lg=AC.createGain();l.frequency.value=c[2];lg.gain.value=.18;l.connect(lg);lg.connect(am.gain);
+      n.connect(bp);bp.connect(am);am.connect(crowd);n.start();l.start();srcs.push(n,l);});
+    var band=AC.createGain();band.gain.value=.55;band.connect(out);
+    FST.au={out:out,crowd:crowd,band:band,buf:buf,srcs:srcs,next:AC.currentTime+.1,step:0,voiceT:0};
+  }catch(e){FST.au=null;}
+}
+function fstAudioOff(){var A=FST.au;if(!A)return;FST.au=null;try{A.out.gain.setTargetAtTime(0,AC.currentTime,.3);setTimeout(function(){A.srcs.forEach(function(s){try{s.stop();}catch(e){}});A.out.disconnect();},1500);}catch(e){}}
+function fstNote(A,t,midi,dur,kind){
+  var f=440*Math.pow(2,(midi-69)/12),o=AC.createOscillator(),g=AC.createGain(),lp=AC.createBiquadFilter();
+  if(kind==='mel'){o.type='sawtooth';lp.frequency.value=2400;var v=AC.createOscillator(),vg=AC.createGain();v.frequency.value=5.5;vg.gain.value=f*.012;v.connect(vg);vg.connect(o.frequency);v.start(t);v.stop(t+dur+.05);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.16,t+.03);g.gain.setValueAtTime(.13,t+dur*.8);g.gain.linearRampToValueAtTime(0,t+dur);}
+  else{o.type='square';lp.frequency.value=380;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.2,t+.02);g.gain.exponentialRampToValueAtTime(.01,t+dur*.9);}
+  o.frequency.value=f;o.connect(lp);lp.connect(g);g.connect(A.band);o.start(t);o.stop(t+dur+.05);
+}
+function fstDrum(A,t,kind){
+  var s=AC.createBufferSource(),g=AC.createGain(),f=AC.createBiquadFilter();s.buffer=A.buf;
+  if(kind==='k'){var o=AC.createOscillator();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(45,t+.15);var og=AC.createGain();og.gain.setValueAtTime(.5,t);og.gain.exponentialRampToValueAtTime(.001,t+.2);o.connect(og);og.connect(A.band);o.start(t);o.stop(t+.22);return;}
+  f.type=kind==='s'?'highpass':'bandpass';f.frequency.value=kind==='s'?1400:7000;g.gain.setValueAtTime(kind==='s'?.22:.12,t);g.gain.exponentialRampToValueAtTime(.001,t+(kind==='s'?.16:.7));
+  s.connect(f);f.connect(g);g.connect(A.band);s.start(t,Math.random());s.stop(t+.8);
+}
+function fstAudioTick(vol){
+  var A=FST.au;if(!A)return;A.out.gain.setTargetAtTime(vol,AC.currentTime,.4);
+  var E=.25,now=AC.currentTime;if(A.next<now)A.next=now+.05;
+  /* programma le note dei prossimi 0,4 s (croma = 0,25 s, 120 battiti al minuto) */
+  while(A.next<now+.4){var st=A.step,bar=Math.floor(st/8)%8,inBar=st%8,t=A.next;
+    if(inBar%2===0){var root=FBASS[bar];fstNote(A,t,inBar%4===0?root:root+7,.45,'bass');fstDrum(A,t,inBar%4===0?'k':'s');}
+    if(st%64===0)fstDrum(A,t,'c');
+    var acc=0,pos=st%64;for(var i=0;i<FMEL.length;i++){if(acc===pos){if(FMEL[i][0]>0)fstNote(A,t,FMEL[i][0],FMEL[i][1]*E*.95,'mel');break;}acc+=FMEL[i][1];if(acc>pos)break;}
+    A.step++;A.next+=E;}
+  /* qualche voce che spicca: un richiamo, una risata */
+  A.voiceT-=.1;if(A.voiceT<=0){A.voiceT=.4+Math.random()*1.6;try{var t2=now+.05,o=AC.createOscillator(),g=AC.createGain(),bp=AC.createBiquadFilter(),f0=160+Math.random()*180,du=.18+Math.random()*.35;
+    o.type='sawtooth';o.frequency.setValueAtTime(f0,t2);o.frequency.linearRampToValueAtTime(f0*(.8+Math.random()*.6),t2+du);bp.type='bandpass';bp.frequency.value=700+Math.random()*900;bp.Q.value=4;
+    g.gain.setValueAtTime(0,t2);g.gain.linearRampToValueAtTime(.06,t2+.04);g.gain.linearRampToValueAtTime(0,t2+du);o.connect(bp);bp.connect(g);g.connect(A.crowd);o.start(t2);o.stop(t2+du+.05);}catch(e){}}
+}
+/* ---------- ciclo ---------- */
+function fstTick(dt){
+  if(world!=='net'||!NET)return;
+  FST.chk-=dt;if(FST.chk<=0){FST.chk=20;fstUpdate();}
+  var night=fstNight(),on=FST.towns.length>0;
+  fstTiles();
+  var op=night?1:0;FSTM.forEach(function(m,i){var ph=Math.floor(gameT*2)%3;m.opacity=op*(i===ph?1:.75);});
+  if(!on||state!=='drive'){fstAudioOff();return;}
+  /* il paese in festa più vicino */
+  var best=null,bd=1e9;FST.towns.forEach(function(o){var d=Math.hypot(o.t.x-car.x,o.t.z-car.z);if(d<bd){bd=d;best=o;}});
+  if(!best){fstAudioOff();return;}
+  var t=best.t;
+  if(bd<t.r+150&&!FST.said[t.n]){FST.said[t.n]=1;FW.said=true;say('Stanotte a '+t.n+' è festa: '+best.s+'!','good',4200);}
+  if(!night){fstAudioOff();return;}
+  /* fuochi d'artificio continui sopra il paese */
+  FST.fwT-=dt;if(bd<3500&&FST.fwT<=0){FST.fwT=.8+Math.random()*2.6;var n=Math.random()<.2?3:1;
+    for(var i=0;i<n;i++)FW.list.push({v:{x:t.x+(Math.random()-.5)*t.r*.7,z:t.z+(Math.random()-.5)*t.r*.7},delay:i*.35,st:0});}
+  /* campane */
+  FST.bellT-=dt;if(FST.bellT<=0){FST.bellT=35+Math.random()*40;if(bd<1800){audioInit();fstPeal(bd);}}
+  /* folla e banda: si sentono avvicinandosi al centro */
+  var R=Math.max(380,t.r*.9);
+  if(bd<R+100&&AC&&AC.state==='running'){fstAudioOn();var v=Math.pow(clamp(1-bd/R,0,1),1.6)*1.1;fstAudioTick(v);}else fstAudioOff();
+}
+var fstTr0=trSync;trSync=function(dt){fstTr0(dt);fstTick(dt);};
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -8443,7 +8622,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={BATS:BATS,batStart:batStart,batPoi:batPoi,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
