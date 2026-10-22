@@ -2407,7 +2407,7 @@ function netTick(dt){
   car.gy=netY(car.x,car.z);car.grade=clamp((hf-hb)/4.4,-.5,.5);
   ridgeT-=dt;if(ridgeT<=0){ridgeT=1.5;netSkyline(false);}
   var pr=netProbeY(car.x,car.z,car.gy),e=pr?NET.E[pr.e]:null;
-  car.off=!pr||pr.d>e.half+1.2;
+  car.off=!pr||pr.d>e.half+1.2;if(car.off&&isFinite(selSurf(car.x,car.z)))car.off=false;
   if(e&&pr.d<e.half+3){nrun.road=netRoadName(e);nrun.roadFull=e.ref&&e.name?e.ref+' · '+e.name:(e.ref||e.name||'');}
   netTrack(nrun.off>60);
   if(nrun.route&&nrun.off>32&&!race.done&&e&&pr.d<e.half+4){nrun.offT+=dt;if(nrun.offT>1.6){nrun.offT=0;netReroute(pr.e);}}else nrun.offT=0;
@@ -3985,12 +3985,12 @@ $('btnSkip').addEventListener('click',function(){scNear();});
   var el=$('view');
   el.addEventListener('pointerdown',function(e){
     if(state!=='drive'||paused)return;
-    var now=performance.now();if(now-look.tap<320){look.yaw=look.pitch=0;}look.tap=now;
+    var now=performance.now();if(now-look.tap<320){look.rc=true;}look.tap=now;
     look.pid=e.pointerId;look.x=e.clientX;look.y=e.clientY;try{el.setPointerCapture(e.pointerId);}catch(x){}
   });
   el.addEventListener('pointermove',function(e){
     if(e.pointerId!==look.pid)return;
-    look.yaw=clamp(look.yaw+(e.clientX-look.x)*.007,-2.9,2.9);look.pitch=clamp(look.pitch+(e.clientY-look.y)*.004,-.45,.6);look.x=e.clientX;look.y=e.clientY;
+    look.rc=false;look.yaw=clamp(look.yaw+(e.clientX-look.x)*.007,-2.9,2.9);look.pitch=clamp(look.pitch+(e.clientY-look.y)*.004,-.45,.6);look.x=e.clientX;look.y=e.clientY;
   });
   function up(e){if(e.pointerId===look.pid)look.pid=null;}
   el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
@@ -4094,7 +4094,7 @@ var orbit=.9,shake=0,vw=1,vh=1;
 function cameraTick(dt){
   var s=Math.sin(car.th),c=Math.cos(car.th),sp=Math.hypot(car.vx,car.vz),cy=car.y,X=car.x-OX,Z=car.z-OZ;
   var aspect=camera.aspect;
-  if(look.pid==null&&!auto.on&&!(world==='net'&&SC.auto)&&!WALK.on&&!BINO.on){var lf=Math.min(1,dt*4);look.yaw-=look.yaw*lf;look.pitch-=look.pitch*lf;}   /* lo sguardo torna avanti quando guidi tu */
+  if(look.rc){var lf=Math.min(1,dt*6);look.yaw-=look.yaw*lf;look.pitch-=look.pitch*lf;if(Math.abs(look.yaw)<.01&&Math.abs(look.pitch)<.01){look.yaw=look.pitch=0;look.rc=false;}}   /* lo sguardo torna avanti quando guidi tu */
   if(state!=='menu')camera.setViewOffset(vw,vh,0,vh*(aspect<1?.08:clamp(.5*150/vh,.1,.2)),vw,vh);
   if(state==='menu'){
     if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches))orbit+=dt*.16;
@@ -4124,6 +4124,7 @@ function cameraTick(dt){
   }
   if(shake>0){shake-=dt;camera.position.x+=(Math.random()-.5)*shake*.5;camera.position.y+=(Math.random()-.5)*shake*.4;}
   camera.near=state==='menu'?.3:(camMode===1||WALK.on||BINO.on)?.1:.9;camera.updateProjectionMatrix();
+  if(GOD.on)godCam();
   skyMesh.position.copy(camera.position);if(sunSpr.visible){var SD2=sunDir();sunSpr.position.set(camera.position.x+SD2.x*1000,camera.position.y+Math.max(SD2.y,-.03)*1000,camera.position.z+SD2.z*1000);}
   if(world!=='city')hwBack.position.set(camera.position.x,world==='net'?car.y:0,camera.position.z);
   skyG.position.y=world==='net'?car.y:0;
@@ -4662,6 +4663,7 @@ function frame(now){
   var dt=Math.min(.05,(now-last)/1000);last=now;
   if(state==='drive'&&!paused&&MP.phase==='count'){hudTick();mapTick(dt);}   /* conto alla rovescia: auto ferme, strumenti vivi */
   else if(state==='drive'&&!paused&&(WALK.on||BINO.on))walkFrame(dt);
+  else if(state==='drive'&&!paused&&GOD.on){godTick(dt);OX=car.x;OZ=car.z;skyTick(dt);natTick(dt);ntrTick(dt);hudTick();mapTick(dt);}
   else if(state==='drive'&&!paused){
     gameT+=dt;readInput(dt);
     acc+=dt;while(acc>=H){ipSave();step(H);acc-=H;}IP.a=acc/H;IP.ok=true;
@@ -6429,6 +6431,25 @@ function studTile(g){
   g.add(B.mesh(STUDM));
   var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(S.map(function(v,i){return i%3===1?v+.05:v;}),3));STUDPM.map=lampGlowTex();var pts=new THREE.Points(geo,STUDPM);pts.frustumCulled=false;pts.renderOrder=3;g.add(pts);
 }
+var SELTW=new Map();
+function selTown(x,z){var tx=Math.floor(x/NT),tz=Math.floor(z/NT),k=nk(tx,tz),L=SELTW.get(k);
+  if(!L){var cmx=tx*NT+NT/2,cmz=tz*NT+NT/2;L=NET.towns.filter(function(t){return Math.abs(t.x-cmx)<NT/2+t.r&&Math.abs(t.z-cmz)<NT/2+t.r;});SELTW.set(k,L);}
+  var f=0,c=0;for(var q=0;q<L.length;q++){var t=L[q],d=Math.hypot(x-t.x,z-t.z);if(d<t.r){var v=1-d/t.r;if(v>f){f=v;c=t.c;}}}return[f,c];}
+/* quota del selciato in (x,z), se lì è disegnato; altrimenti NaN */
+function selSurf(x,z){
+  if(!NET)return NaN;
+  if(typeof lmpNear==='function'){var lo=lmpNear(x,z);if(lo&&!lmpPip(lo.r[0],x,z)){var hp=selH(x,z);if(isFinite(hp))return hp+.05;}}
+  /* stessa griglia di selTile: quadri da 5 m, divisi in quattro vicino alle strade */
+  var S=5,ox=Math.floor(x/NT)*NT,oz=Math.floor(z/NT)*NT,i=Math.floor((x-ox)/S),j=Math.floor((z-oz)/S),cx=ox+(i+.5)*S,cz=oz+(j+.5)*S;
+  var tw=selTown(cx,cz);if(!(tw[0]>.5&&tw[1]>=1))return NaN;
+  var lu=LU.ready?luAt(cx,cz):9;if(lu===1||lu===10)return NaN;
+  var X=ox+i*S,Z=oz+j*S,SS=S;
+  if(selNear(cx,cz,S*.75+2)){SS=S/2;X+=x-X>=SS?SS:0;Z+=z-Z>=SS?SS:0;
+    if(selOnRoad(X+SS/2,Z+SS/2)||selOnRoad(X,Z)||selOnRoad(X+SS,Z)||selOnRoad(X,Z+SS)||selOnRoad(X+SS,Z+SS))return NaN;}
+  else if(!isFinite(selH(cx,cz)))return NaN;
+  var ha=selH(X,Z),hb=selH(X,Z+SS),hc=selH(X+SS,Z),hd=selH(X+SS,Z+SS);if(!isFinite(ha+hb+hc+hd))return NaN;
+  var u=(x-X)/SS,v=(z-Z)/SS;return ha*(1-u)*(1-v)+hc*u*(1-v)+hb*(1-u)*v+hd*u*v;
+}
 function selNear(x,z,m){var pr=netProbe(x,z);return !!pr&&pr.d<NET.E[pr.e].half+m;}
 function selOnRoad(x,z){var pr=netProbe(x,z);if(!pr)return false;var e=NET.E[pr.e];return !e.tu&&pr.d<e.half+.9;}
 function selCell(B,ox,oz,x0,z0,S,up,N0,c0){
@@ -6438,10 +6459,10 @@ function selCell(B,ox,oz,x0,z0,S,up,N0,c0){
 }
 /* altezza del selciato: sul terreno; vicino a una strada scende appena sotto il suo manto e ne segue la pendenza; niente sopra ponti, gallerie, scarpate */
 function selH(x,z){
-  var t=terrH(x,z),pr=netProbe(x,z);if(!pr)return t;var e=NET.E[pr.e],d=pr.d-e.half;if(d>4.5)return t;
-  if(e.br||e.tu)return NaN;var ry=netRoadY(pr)-.12;
-  if(d<=1.8)return Math.abs(ry-t)>6?NaN:ry;
-  if(Math.abs(ry-t)>2.5)return NaN;var f=(d-1.8)/2.7;f=f*f*(3-2*f);return ry+(t-ry)*f;
+  var t=terrH(x,z),pr=netProbe(x,z);if(!pr)return t;var e=NET.E[pr.e],d=pr.d-e.half;if(d>9)return t;
+  if(e.br||e.tu)return NaN;var ry=netRoadY(pr)-.12,dh=Math.abs(ry-t),W=Math.max(2.7,dh*1.2);if(d>1.8+W)return t;
+  if(dh>6)return NaN;if(d<=1.8)return ry;
+  var f=(d-1.8)/W;f=f*f*(3-2*f);return ry+(t-ry)*f;
 }
 /* per ogni tassello: il suolo dei centri storici diventa selciato, seguendo esattamente il terreno */
 function selTile(g,ox,oz,townAt){
@@ -7781,9 +7802,10 @@ function gndY(x,z,yref){
       else{if(e.cls>=3&&!e.link){if(tw<0)tw=gndTown(x,z);if(tw>.4)continue;}   /* in paese il muro è verticale */
         var dr=ry-.05-t;if(dr<=.5)continue;var wb=Math.min(dr*.9+1,16);y=ry-.05-(d-e.half-1.8)*dr/wb;}
       if(C)CS.push(Math.max(y,t));else if(y>best)best=y;}}
-  if(C){if(!CW)C=C.concat(CS);var bb=-1e9,mn=1e9;for(var q=0;q<C.length;q++){if(C[q]<=yref+3&&C[q]>bb)bb=C[q];if(C[q]<mn)mn=C[q];}if(FRC>bb)bb=FRC;return bb>-1e9?bb:mn;}   /* si sale sul gradino raggiungibile più alto; sotto un ponte alto si resta a terra */
-  if(cwb>-1e9)return Math.max(cwb,t);
-  return best>-1e9?Math.max(best,t):t;
+  if(C){if(!CW){C=C.concat(CS);var ss2=selSurf(x,z);if(isFinite(ss2))C.push(ss2);}var bb=-1e9,mn=1e9;for(var q=0;q<C.length;q++){if(C[q]<=yref+3&&C[q]>bb)bb=C[q];if(C[q]<mn)mn=C[q];}if(FRC>bb)bb=FRC;return bb>-1e9?bb:mn;}   /* si sale sul gradino raggiungibile più alto; sotto un ponte alto si resta a terra */
+  var res=cwb>-1e9?Math.max(cwb,t):best>-1e9?Math.max(best,t):t;
+  if(cwb<=-1e9){var ss=selSurf(x,z);if(isFinite(ss)&&ss>res&&ss-res<4)res=ss;}
+  return res;
 }
 var XOBS=[];
 var WPS={};
@@ -8255,6 +8277,69 @@ function mod3Refresh(){
   Object.keys(keys).forEach(function(k){var T=netTiles[k];if(!T)return;netG.remove(T.g);disposeChunk(T.g);delete netTiles[k];});
 }
 
+
+/* ================= MODALITÀ GOD (segreta, da PC): Tab durante la partita, parola d'ordine ================= */
+var GOD={on:false,x:0,y:0,z:0,yaw:0,pitch:-.25,agl:25,keys:{},drag:false,mx:0,my:0,save:null};
+function godBox(){
+  if($('godOv'))return $('godOv');
+  var d=document.createElement('div');d.id='godOv';d.hidden=true;
+  d.innerHTML='<form class="box" id="godF" autocomplete="off"><label for="godIn">Parola d’ordine</label><input id="godIn" type="password" autocomplete="off" spellcheck="false"><p class="tot" id="godMsg" role="status" aria-live="polite"></p></form>';
+  $('game').appendChild(d);
+  var st=document.createElement('style');st.textContent='#godOv{position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(11,17,27,.55)}#godOv .box{display:grid;gap:8px;width:min(92vw,320px);padding:16px;border-radius:14px;background:var(--night);border:1px solid var(--line)}#godOv label{font-size:13px;color:var(--dim)}#godOv input{font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;padding:8px}#game.god>*:not(#view):not(#godBadge):not(#godOv):not(canvas){visibility:hidden}#godBadge{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:6;padding:6px 12px;border-radius:999px;background:rgba(11,17,27,.8);color:#ffd166;font:600 13px/1.2 "Saira Semi Condensed",sans-serif;letter-spacing:.06em;pointer-events:none}';
+  document.head.appendChild(st);
+  var inp=$('godIn');
+  inp.addEventListener('keydown',function(e){e.stopPropagation();if(e.key==='Escape'||e.key==='Tab'){e.preventDefault();d.hidden=true;inp.value='';inp.blur();}});
+  inp.addEventListener('keyup',function(e){e.stopPropagation();});
+  $('godF').addEventListener('submit',function(e){e.preventDefault();
+    if(inp.value.trim().toLowerCase()==='gilgamesh'){d.hidden=true;inp.value='';inp.blur();godStart();}
+    else{$('godMsg').textContent='No.';inp.select();}});
+  return d;
+}
+function godStart(){
+  if(GOD.on||state!=='drive'||world!=='net'||WALK.on||BINO.on)return;
+  GOD.on=true;GOD.save={x:car.x,z:car.z,y:car.y,th:car.th};
+  GOD.yaw=car.th;GOD.pitch=-.3;GOD.agl=25;GOD.x=car.x-Math.sin(car.th)*20;GOD.z=car.z-Math.cos(car.th)*20;
+  car.vx=car.vz=0;car.thr=car.brk=0;inp.kbGas=inp.kbBrake=inp.kbL=inp.kbR=false;
+  carG.visible=false;$('game').classList.add('god');var b=document.createElement('div');b.id='godBadge';b.textContent='GOD · frecce e mouse · rotella: quota · Maiusc: veloce · Tab: esci';$('game').appendChild(b);
+}
+function godStop(){
+  if(!GOD.on)return;GOD.on=false;GOD.keys={};GOD.drag=false;
+  var s=GOD.save;if(s){car.x=s.x;car.z=s.z;car.th=s.th;car.vx=car.vz=0;netSync(true);car.gy=car.y=netY(car.x,car.z);}
+  carG.visible=true;$('game').classList.remove('god');var b=$('godBadge');if(b)b.remove();
+}
+function godGround(x,z){var g=gndY(x,z),t=terrH(x,z);return Math.max(g,t);}
+function godTick(dt){
+  var K=GOD.keys,f=(K.arrowup||K.w?1:0)-(K.arrowdown||K.s?1:0),r=(K.arrowright||K.d?1:0)-(K.arrowleft||K.a?1:0);
+  var sp=(12+GOD.agl*.9)*(K.shift?4:1),sy=Math.sin(GOD.yaw),cy=Math.cos(GOD.yaw);
+  GOD.x+=(sy*f+cy*r)*sp*dt;GOD.z+=(cy*f-sy*r)*sp*dt;
+  if(K.pageup)GOD.agl=Math.min(3000,GOD.agl*(1+dt*1.5)+dt*3);if(K.pagedown)GOD.agl=Math.max(1.6,GOD.agl/(1+dt*1.5)-dt*3);
+  var gy=godGround(GOD.x,GOD.z);GOD.y=gy+GOD.agl;
+  /* il mondo si carica attorno alla telecamera: l'auto (nascosta) la segue e torna al suo posto all'uscita */
+  car.x=GOD.x;car.z=GOD.z;car.y=car.gy=gy;car.vx=car.vz=0;car.off=false;
+}
+function godCam(){
+  camera.position.set(GOD.x-OX,GOD.y,GOD.z-OZ);
+  var cp=Math.cos(GOD.pitch);camera.lookAt(GOD.x-OX+Math.sin(GOD.yaw)*cp*10,GOD.y+Math.sin(GOD.pitch)*10,GOD.z-OZ+Math.cos(GOD.yaw)*cp*10);
+}
+window.addEventListener('keydown',function(e){
+  if(state!=='drive')return;
+  if(e.key==='Tab'){e.preventDefault();e.stopImmediatePropagation();if(GOD.on){godStop();return;}if(world!=='net'||paused)return;var d=godBox();d.hidden=false;$('godMsg').textContent='';setTimeout(function(){$('godIn').focus();},0);return;}
+  if(!GOD.on)return;var k=e.key.toLowerCase();
+  if(k==='escape'){godStop();e.preventDefault();e.stopImmediatePropagation();return;}
+  if(/^(arrow(up|down|left|right)|w|a|s|d|shift|pageup|pagedown)$/.test(k)){GOD.keys[k]=true;e.preventDefault();}
+  e.stopImmediatePropagation();
+},true);
+window.addEventListener('keyup',function(e){if(!GOD.on)return;GOD.keys[e.key.toLowerCase()]=false;if(e.key==='Shift')GOD.keys.shift=false;e.stopImmediatePropagation();},true);
+window.addEventListener('blur',function(){GOD.keys={};});
+(function(){
+  var el=$('view');
+  el.addEventListener('pointerdown',function(e){if(!GOD.on)return;GOD.drag=true;GOD.mx=e.clientX;GOD.my=e.clientY;try{el.setPointerCapture(e.pointerId);}catch(x){}e.stopImmediatePropagation();},true);
+  el.addEventListener('pointermove',function(e){if(!GOD.on)return;if(GOD.drag){GOD.yaw+=(e.clientX-GOD.mx)*.005;GOD.pitch=clamp(GOD.pitch-(e.clientY-GOD.my)*.005,-1.5,1.3);GOD.mx=e.clientX;GOD.my=e.clientY;}e.stopImmediatePropagation();},true);
+  function up(e){if(!GOD.on)return;GOD.drag=false;e.stopImmediatePropagation();}
+  el.addEventListener('pointerup',up,true);el.addEventListener('pointercancel',up,true);
+  el.addEventListener('wheel',function(e){if(!GOD.on)return;e.preventDefault();var f=Math.exp(clamp(e.deltaY,-200,200)*.0025);GOD.agl=clamp(GOD.agl*f+(e.deltaY>0?.3:-.3),1.6,3000);},{passive:false});
+})();
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -8268,7 +8353,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
