@@ -1,0 +1,25 @@
+{
+ "id": "/admin.html",
+ "name": "Schede dei luoghi · ITE Ferentino",
+ "short_name": "Schede ITE",
+ "description": "Area dei docenti di Ciociaria da scoprire: schede dei luoghi e proposte dei ragazzi",
+ "start_url": "/admin.html",
+ "scope": "/",
+ "display": "standalone",
+ "background_color": "#7b1e3a",
+ "theme_color": "#7b1e3a",
+ "lang": "it",
+ "icons": [
+  {
+   "src": "admin-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "admin-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  }
+ ]
+}
