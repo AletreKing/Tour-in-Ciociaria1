@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 23.10 23:03</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 23.10 23:18</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8396,20 +8396,23 @@ function edOff(q){if(!q)return null;var o=ED.off[q.pk]||q.pos3d||(q.q&&q.q.pos3d
 function edTargets(){
   var L=[];SC.pois.forEach(function(q){if(q.hid||q.x==null||!(q.p3||q.modello))return;L.push({pk:q.pk,n:q.n,x:q.x,z:q.z,kind:'poi',q:q});});
   EGGS.forEach(function(E){if(!E.pos)return;L.push({pk:E.p.pk,n:E.p.n,x:E.pos.x,z:E.pos.z,kind:'egg',E:E});});
-  (typeof pwSigns==='function'?pwSigns()||[]:[]).forEach(function(s){L.push({pk:s.pk,n:s.n,x:s.x0,z:s.z0,kind:'P',s:s});});
+  (typeof pwSigns==='function'?pwSigns()||[]:[]).forEach(function(s){if(!s.user)L.push({pk:s.pk,n:s.n,x:s.x0,z:s.z0,kind:'P',s:s});});
+  if(typeof plAll==='function'){plAll('L').forEach(function(e){L.push({pk:e.pk,n:'Lampione',x:e.o.x,z:e.o.z,kind:'L'});});plAll('Q').forEach(function(e){L.push({pk:e.pk,n:'Parcheggio',x:e.o.x,z:e.o.z,kind:'Q'});});}
   return L;
 }
 function edSave(){try{localStorage.setItem('au_pos3d',JSON.stringify(ED.off));}catch(e){}}
-function edBadge(){var b=$('godBadge');if(!b)return;b.textContent=ED.on?'MODIFICA · clic su un oggetto o un edificio e trascinalo · R/F quota · Q/E ruota · C copia · V incolla · Canc posto iniziale (toglie le copie) · S salva il file · M esci':'GOD · frecce e mouse · rotella: quota · Maiusc: veloce · M: modifica oggetti · Tab: esci';}
+function edBadge(){var b=$('godBadge');if(!b)return;b.textContent=ED.on?'MODIFICA · clic su oggetto, edificio o lampione e trascinalo · R/F quota · Q/E ruota · C copia · V incolla · L nuovo lampione · K nuovo parcheggio · Z zona della festa · Canc posto iniziale (toglie le aggiunte) · S salva il file · M esci':'GOD · frecce e mouse · rotella: quota · Maiusc: veloce · M: modifica oggetti · Tab: esci';}
 function edPickRay(e){
   var R=renderer.domElement.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1),rc=new THREE.Raycaster();rc.setFromCamera(v,camera);
   var H=rc.intersectObject(netG,true);return H.length?{x:H[0].point.x+OX,z:H[0].point.z+OZ,y:H[0].point.y}:null;
 }
 function edNearest(x,z){var best=null,bd=45;edTargets().forEach(function(q){var o=edOff(q)||{},d=Math.hypot(q.x+(o.dx||0)-x,q.z+(o.dz||0)-z)*(q.kind==='poi'?1:.7);if(d<bd){bd=d;best=q;}});
+  if(!best||bd>6){var tl=typeof plTileLamp==='function'?plTileLamp(x,z):null;if(tl)return tl;}
   var b=typeof bedAt==='function'?bedAt(x,z):null;if(b&&(!best||bd>8))return bedTarget(b);return best;}
 function edRing(){if(ED.ring)return ED.ring;var m=new THREE.Mesh(new THREE.RingGeometry(3.2,3.8,40),new THREE.MeshBasicMaterial({color:0xffd166,side:THREE.DoubleSide,transparent:true,opacity:.9,depthTest:false,fog:false}));m.rotation.x=-Math.PI/2;m.renderOrder=9;scene.add(m);ED.ring=m;return m;}
 function edRebuild(q){
-  if(q.kind==='egg')return;
+  if(q.kind==='egg'||q.kind==='TL')return;
+  if(q.kind==='L'||q.kind==='Q'){plRebuild();return;}
   if(q.kind==='B'||q.kind==='N'){bedRebuild(bedTilesOf(q));q.prevT=null;var o=edOff(q)||{},r=bedAt(q.x+(+o.dx||0),q.z+(+o.dz||0));if(r&&r.pk===q.pk)q.rec=r;return;}   /* le sorprese si spostano da sole, a ogni fotogramma */
   if(q.kind==='P'){if(PW.sg){scene.remove(PW.sg);PW.sg.traverse(function(o){if(o.geometry)o.geometry.dispose();});PW.sg=null;}pwSignBuild();if(typeof pwBoardReset==='function')pwBoardReset();return;}
   var tx=Math.floor(q.x/NT),tz=Math.floor(q.z/NT);
@@ -8417,7 +8420,7 @@ function edRebuild(q){
     netG.remove(T.g);disposeChunk(T.g);delete netTiles[k];}
   netSync(true);
 }
-function edChange(fn){var q=ED.sel;if(!q)return;if((q.kind==='B'||q.kind==='N')&&!q.prevT){var o0=edOff(q)||{};q.prevT=[Math.floor((q.x+(+o0.dx||0))/NT),Math.floor((q.z+(+o0.dz||0))/NT)];}var o=ED.off[q.pk]||(ED.off[q.pk]=JSON.parse(JSON.stringify(edOff(q)||{dx:0,dz:0,dy:0,rot:0})));fn(o);
+function edChange(fn){var q=ED.sel;if(!q)return;if(q.kind==='TL'){say('Lampione della strada: C per copiarlo, V per posarne uno uguale','',2600);return;}if((q.kind==='B'||q.kind==='N')&&!q.prevT){var o0=edOff(q)||{};q.prevT=[Math.floor((q.x+(+o0.dx||0))/NT),Math.floor((q.z+(+o0.dz||0))/NT)];}var o=ED.off[q.pk]||(ED.off[q.pk]=JSON.parse(JSON.stringify(edOff(q)||{dx:0,dz:0,dy:0,rot:0})));fn(o);
   ['dx','dz','dy','rot'].forEach(function(k){o[k]=Math.round((+o[k]||0)*100)/100;});edSave();clearTimeout(ED.tm);ED.tm=setTimeout(function(){edRebuild(q);},(q.kind==='B'||q.kind==='N')?350:220);}
 function edExport(){
   var keys=Object.keys(ED.off);if(!keys.length){say('Nessun oggetto spostato','',2200);return;}
@@ -8432,7 +8435,12 @@ function edTick(){
 window.addEventListener('keydown',function(e){
   if(typeof GOD==='undefined'||!GOD.on)return;var k=e.key.toLowerCase();
   if(k==='m'&&!e.repeat){ED.on=!ED.on;if(!ED.on)ED.sel=null;edBadge();e.stopImmediatePropagation();return;}
+  if(k==='z'&&!e.repeat){PL.zone=!PL.zone;if(PL.zone&&!ED.on){ED.on=true;edBadge();}say(PL.zone?'Zona della festa: clic a terra per spostarla, + e − per la grandezza, Canc per tutto il paese, Z per finire':'Zona della festa chiusa','good',3500);e.stopImmediatePropagation();return;}
+  if(PL.zone&&(k==='+'||k==='='||k==='-'||k==='_')){var up=k==='+'||k==='=';plZoneSet(function(o){o.r*=up?1.15:1/1.15;});e.stopImmediatePropagation();return;}
+  if(PL.zone&&(k==='delete'||k==='backspace')){if(PL.zt){ED.off['FA:'+PL.zt.n]={del:1};edSave();FST.chk=0;FST.key='';}e.stopImmediatePropagation();return;}
   if(!ED.on)return;
+  if(k==='l'&&!e.repeat){var pl=plMouse();if(pl){plNew('L',pl);say('Lampione posato: trascinalo, Q/E per girarlo','good',2400);}e.stopImmediatePropagation();return;}
+  if(k==='k'&&!e.repeat){var pk2=plMouse();if(pk2){plNew('Q',pk2);say('Parcheggio aggiunto: da qui si può partire a piedi','good',2600);}e.stopImmediatePropagation();return;}
   var big=e.shiftKey?5:1;
   if(k==='r'){edChange(function(o){o.dy+=.25*big;});e.stopImmediatePropagation();}
   else if(k==='f'){edChange(function(o){o.dy-=.25*big;});e.stopImmediatePropagation();}
@@ -8440,6 +8448,7 @@ window.addEventListener('keydown',function(e){
   else if(k==='e'){edChange(function(o){o.rot+=15;});e.stopImmediatePropagation();}
   else if(k==='c'&&!e.repeat){bedCopy();e.stopImmediatePropagation();e.preventDefault();}
   else if(k==='v'&&!e.repeat){bedPaste();e.stopImmediatePropagation();e.preventDefault();}
+  else if((k==='delete'||k==='backspace')&&ED.sel&&(ED.sel.kind==='L'||ED.sel.kind==='Q')){var ql=ED.sel,ol=edOff(ql);if(ol){ED.off[ql.pk]=Object.assign(JSON.parse(JSON.stringify(ol)),{del:1});edSave();}ED.sel=null;plRebuild();say('Tolto','',1500);e.stopImmediatePropagation();}
   else if((k==='delete'||k==='backspace')&&ED.sel&&ED.sel.kind==='N'){var qn=ED.sel,on=bedK(qn.pk);if(on){ED.off[qn.pk]=Object.assign(JSON.parse(JSON.stringify(on)),{del:1});edSave();}ED.sel=null;bedRebuild(bedTilesOf(qn));say('Copia tolta','',1800);e.stopImmediatePropagation();}
   else if(k==='delete'||k==='backspace'){if(ED.sel){ED.off[ED.sel.pk]={dx:0,dz:0,dy:0,rot:0};if(ED.sel.q)ED.sel.q.pos3d=null;edSave();edRebuild(ED.sel);}e.stopImmediatePropagation();}
   else if(k==='s'&&!e.repeat){edExport();e.stopImmediatePropagation();e.preventDefault();}
@@ -8447,6 +8456,7 @@ window.addEventListener('keydown',function(e){
 (function(){
   var el=$('view');
   el.addEventListener('pointerdown',function(e){if(typeof GOD==='undefined'||!GOD.on||!ED.on)return;var p=edPickRay(e);if(!p)return;
+    if(PL.zone){var tz=plZoneTown(p.x,p.z);if(tz){PL.zt=tz;plZoneSet(function(o){o.x=p.x;o.z=p.z;});}e.stopImmediatePropagation();return;}
     var q=edNearest(p.x,p.z);if(q&&(!ED.sel||ED.sel.pk!==q.pk)){ED.sel=q;say('Scelto: '+q.n+' — trascinalo, R/F quota, Q/E ruota','good',3200);e.stopImmediatePropagation();return;}
     if(ED.sel){var o=edOff(ED.sel)||{};if(Math.hypot(ED.sel.x+(o.dx||0)-p.x,ED.sel.z+(o.dz||0)-p.z)<60){var bl=ED.sel.kind==='B'||ED.sel.kind==='N';ED.drag={px:p.x,pz:p.z,py:p.y,dx:+o.dx||0,dz:+o.dz||0,live:bl,ndx:+o.dx||0,ndz:+o.dz||0};e.stopImmediatePropagation();}}},true);
   function plane(e,y){var R=renderer.domElement.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1),rc=new THREE.Raycaster();rc.setFromCamera(v,camera);var d=rc.ray.direction,o=rc.ray.origin;if(Math.abs(d.y)<1e-4)return null;var t=(y-o.y)/d.y;if(t<0||t>5000)return null;return{x:o.x+d.x*t+OX,z:o.z+d.z*t+OZ};}
@@ -8646,8 +8656,8 @@ function fstSaint(name,D){
 function fstNight(){return (LGT.dark||0)>.35;}
 function fstUpdate(){
   if(!NET||!NET.towns)return;var D=new Date(),L=[];
-  NET.towns.forEach(function(t){if(t.c<1)return;var s=fstSaint(t.n,D);if(s)L.push({t:t,s:s});});
-  var key=(opts.festa||'real')+'|'+L.map(function(o){return o.t.n;}).join(',');
+  NET.towns.forEach(function(t){if(t.c<1)return;var s=fstSaint(t.n,D);if(!s)return;var A=typeof fstArea==='function'?fstArea(t.n):null;L.push({t:A?{n:t.n,c:t.c,x:A.x,z:A.z,r:A.r}:t,s:s});});   /* la zona della festa scelta in modalità God, se c'è */
+  var key=(opts.festa||'real')+'|'+L.map(function(o){return o.t.n+'@'+Math.round(o.t.x)+','+Math.round(o.t.z)+','+Math.round(o.t.r);}).join(',');
   if(key!==FST.key){FST.key=key;FST.towns=L;}
 }
 /* ---------- case registrate mentre si costruisce il tassello ---------- */
@@ -9341,12 +9351,14 @@ function bedBox(){if(ED.bx)return ED.bx;var m=new THREE.Mesh(new THREE.BoxGeomet
 function bedBoxTick(){var q=ED.on&&ED.sel;if(!q||(q.kind!=='B'&&q.kind!=='N')){if(ED.bx)ED.bx.visible=false;return;}
   var r=q.rec,o=edOff(q)||{},D=ED.drag,dx=D&&D.live?D.ndx:(+o.dx||0),dz=D&&D.live?D.ndz:(+o.dz||0),u=bedRot(q.kind==='N'?o.ux:r.ux,q.kind==='N'?o.uz:r.uz,o.rot),x=q.x+dx,z=q.z+dz,y=gndY(x,z);
   var b=bedBox();b.visible=true;b.scale.set(r.hw*2+.3,(r.nh||8)+.6,r.hd*2+.3);b.position.set(x-OX,y+(r.nh||8)/2-.5,z-OZ);b.rotation.y=Math.atan2(-u[1],u[0]);}
-function bedCopy(){var q=ED.sel;if(!q||(q.kind!=='B'&&q.kind!=='N')){say('Scegli prima un edificio','',2000);return;}
+function bedCopy(){var q=ED.sel;if(q&&(q.kind==='L'||q.kind==='Q'||q.kind==='TL')){ED.clip={kind:q.kind==='Q'?'Q':'L',rot:(edOff(q)||{}).rot||0};say((q.kind==='Q'?'Parcheggio':'Lampione')+' copiato: V per posarlo dove punti il mouse','good',2600);return;}
+  if(!q||(q.kind!=='B'&&q.kind!=='N')){say('Scegli prima un edificio, un lampione o un parcheggio','',2000);return;}
   var r=q.rec;if(q.kind==='N'){ED.clip=JSON.parse(JSON.stringify(bedK(q.pk)));delete ED.clip.del;}
   else{var s=bedSlope(r.x,r.z,r.ux,r.uz,r.hw,r.hd);ED.clip={fn:r.fn,wall:r.wall,col:r.col.getHex(),roof:r.roof&&r.roof.getHex?r.roof.getHex():0x9a4a32,u0:r.u0||0,o4:r.fn==='box'?(r.o4||{}):!!r.o4,hw:r.hw,hd:r.hd,h:Math.max(3,r.h-(s[1]-s[0])),ux:r.ux,uz:r.uz,rot:(edOff(q)||{}).rot||0};}
   say('Edificio copiato: V per incollarlo dove punti il mouse','good',3000);}
 function bedPaste(){
-  if(!ED.clip){say('Prima copia un edificio con C','',2200);return;}
+  if(!ED.clip){say('Prima copia qualcosa con C','',2200);return;}
+  if(ED.clip.kind){var pm=plMouse();if(pm)plNew(ED.clip.kind,pm,{rot:ED.clip.rot||0});return;}
   var p=null;if(ED.mx!=null)p=edPickRay({clientX:ED.mx,clientY:ED.my});
   if(!p&&ED.sel){var o=edOff(ED.sel)||{};p={x:ED.sel.x+(+o.dx||0)+ED.clip.hw*2.4,z:ED.sel.z+(+o.dz||0)};}if(!p)return;
   var id='N:'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),c=JSON.parse(JSON.stringify(ED.clip));c.x=Math.round(p.x*10)/10;c.z=Math.round(p.z*10)/10;c.dx=c.dz=c.dy=0;c.rot=c.rot||0;
@@ -9356,6 +9368,66 @@ function bedPaste(){
 /* all'avvio, dopo aver letto le posizioni pubblicate: si rifanno solo i tasselli con edifici spostati o copiati */
 function bedApplyImp(){var P=CDSG_IMP.pos||{},L=[];Object.keys(P).forEach(function(k){var m=/^B:(-?\d+),(-?\d+):/.exec(k);if(m)L.push([+m[1],+m[2]]);else if(/^N:/.test(k)&&P[k]){var o=P[k];L.push([Math.floor((o.x+(+o.dx||0))/NT),Math.floor((o.z+(+o.dz||0))/NT)]);}});
   if(!L.length||world!=='net'||!NET)return;var any=L.some(function(t){return netTiles[nk(t[0],t[1])];});if(any)bedRebuild(L);}
+
+/* ================= GOD → MODIFICA: lampioni e parcheggi aggiunti a mano; zona della festa ================= */
+var PLG=new THREE.Group();scene.add(PLG);var PL={keys:'',zone:false,zg:null,zk:''};
+var PLMpole=new THREE.MeshLambertMaterial({color:0x2c3036}),PLMhead=new THREE.MeshBasicMaterial({color:0x9a9488}),PLMpad=new THREE.MeshLambertMaterial({vertexColors:true,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2});
+var PLMglow=new THREE.SpriteMaterial({map:lampGlowTex(),color:0xffd49a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false,opacity:0});
+function plAll(kind){var P=CDSG_IMP.pos||{},S={};Object.keys(P).concat(Object.keys(ED.off)).forEach(function(k){if(k.indexOf(kind+':')===0)S[k]=1;});
+  return Object.keys(S).map(function(k){var o=ED.off[k]||P[k];return o&&!o.del?{pk:k,o:o}:null;}).filter(Boolean);}
+function plPos(o){var r=(+o.rot||0)*Math.PI/180;return{x:o.x+(+o.dx||0),z:o.z+(+o.dz||0),dy:+o.dy||0,ux:Math.sin(r),uz:Math.cos(r)};}
+function plLamp(G,o){var p=plPos(o),y=gndY(p.x,p.z)+p.dy,g=new THREE.Group();
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.11,5,8),PLMpole);pole.position.y=2.5;g.add(pole);
+  var arm=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,1.1),PLMpole);arm.position.set(0,4.9,.5);g.add(arm);
+  var hd=new THREE.Mesh(new THREE.BoxGeometry(.42,.32,.42),PLMhead);hd.position.set(0,4.7,1);g.add(hd);
+  var gl=new THREE.Sprite(PLMglow);gl.position.set(0,4.5,1);gl.scale.set(3.2,3.2,1);g.add(gl);
+  g.position.set(p.x,y,p.z);g.rotation.y=Math.atan2(p.ux,p.uz);G.add(g);}
+function plPark(G,o){   /* piazzola di sosta: asfalto con quattro stalli bianchi */
+  var p=plPos(o),B=new GB(),as=hc(0x4a4d52),wh=hc(0xf2f2f2),fx=p.ux,fz=p.uz,rx=fz,rz=-fx,L=6,W=10.5;
+  function P(a,b,e){var x=p.x+rx*a+fx*b,z=p.z+rz*a+fz*b;return[x,gndY(x,z)+p.dy+(e||.06),z];}
+  B.quad([P(-W/2,0),P(W/2,0),P(W/2,L),P(-W/2,L)],[0,1,0],N4,as);
+  for(var i=0;i<=4;i++){var a=-W/2+.15+i*(W-.3)/4;B.quad([P(a-.06,.2,.09),P(a+.06,.2,.09),P(a+.06,L-.2,.09),P(a-.06,L-.2,.09)],[0,1,0],N4,wh);}
+  B.quad([P(-W/2+.1,L-.26,.09),P(W/2-.1,L-.26,.09),P(W/2-.1,L-.14,.09),P(-W/2+.1,L-.14,.09)],[0,1,0],N4,wh);
+  G.add(B.mesh(PLMpad));}
+function plRebuild(){
+  while(PLG.children.length){var c=PLG.children.pop();c.traverse(function(o){if(o.geometry)o.geometry.dispose();});}
+  plAll('L').forEach(function(e){plLamp(PLG,e.o);});plAll('Q').forEach(function(e){plPark(PLG,e.o);});
+  /* i parcheggi aggiunti diventano anche cartelli P, da cui si parte a piedi */
+  if(typeof pwSigns==='function'&&NET){var S=pwSigns()||[];for(var i=S.length-1;i>=0;i--)if(S[i].user)S.splice(i,1);
+    plAll('Q').forEach(function(e){var o=e.o;S.push({x:o.x,z:o.z,x0:o.x,z0:o.z,ux:0,uz:1,ix:o.x,iz:o.z+12,t:selTown(o.x,o.z),pk:e.pk,n:'Parcheggio',user:true});});
+    if(PW.sg){scene.remove(PW.sg);PW.sg=null;}if(typeof pwBoardReset==='function')pwBoardReset();}
+}
+function plKey(){return plAll('L').concat(plAll('Q')).map(function(e){return e.pk+JSON.stringify(e.o);}).join('|');}
+function plNew(kind,p,extra){var id=kind+':'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),o=Object.assign({x:Math.round(p.x*10)/10,z:Math.round(p.z*10)/10,dx:0,dz:0,dy:0,rot:0},extra||{});ED.off[id]=o;edSave();plRebuild();
+  ED.sel={pk:id,n:kind==='L'?'Lampione':'Parcheggio',x:o.x,z:o.z,kind:kind};return id;}
+function plMouse(){return ED.mx!=null?edPickRay({clientX:ED.mx,clientY:ED.my}):null;}
+/* lampioni della strada: si possono scegliere solo per copiarli */
+function plTileLamp(x,z){var tx=Math.floor(x/NT),tz=Math.floor(z/NT),best=null,bd=3;
+  for(var i=-1;i<=1;i++)for(var j=-1;j<=1;j++){var T=netTiles[nk(tx+i,tz+j)];if(!T||!T.g.userData.lamps)continue;var A=T.g.userData.lamps;
+    for(var q=0;q<A.length;q+=3){var d=Math.hypot(A[q]-x,A[q+2]-z);if(d<bd){bd=d;best={pk:'TL:'+Math.round(A[q])+','+Math.round(A[q+2]),n:'Lampione della strada',x:A[q],z:A[q+2],kind:'TL'};}}}
+  return best;}
+/* ---------- zona della festa: per ogni paese si sceglie dove si fa (centro e raggio), evidenziata a terra in giallo ---------- */
+function fstArea(n){var k='FA:'+n,o=ED.off[k]||(CDSG_IMP.pos&&CDSG_IMP.pos[k]);return o&&!o.del&&isFinite(o.r)?o:null;}
+function plZoneTown(x,z){var best=null,bd=1e9;(NET.towns||[]).forEach(function(t){if(t.c<1)return;var d=Math.hypot(t.x-x,t.z-z)/t.r;if(d<bd){bd=d;best=t;}});return bd<2.5?best:null;}
+function plZoneMesh(cx,cz,r,col){
+  var g=new THREE.Group(),NA=56,NR=Math.max(4,Math.min(16,Math.round(r/25))),P=[],I=[],i,j;
+  for(j=0;j<=NR;j++)for(i=0;i<NA;i++){var a=i/NA*Math.PI*2,rr=r*j/NR,x=cx+Math.cos(a)*rr,z=cz+Math.sin(a)*rr;P.push(x,gndY(x,z)+.35,z);}
+  for(j=0;j<NR;j++)for(i=0;i<NA;i++){var a0=j*NA+i,a1=j*NA+(i+1)%NA,b0=a0+NA,b1=a1+NA;I.push(a0,b0,a1,a1,b0,b1);}
+  var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setIndex(I);
+  var m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.32,depthWrite:false,side:THREE.DoubleSide,fog:false}));m.renderOrder=7;g.add(m);
+  var R=[];for(i=0;i<=NA;i++){var k=(NR*NA+i%NA)*3;R.push(P[k],P[k+1]+.15,P[k+2]);}
+  var lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(R,3));var ln=new THREE.Line(lg,new THREE.LineBasicMaterial({color:0xffd000,fog:false,depthTest:false,transparent:true}));ln.renderOrder=8;g.add(ln);
+  return g;}
+function plZoneTick(){
+  var on=PL.zone&&typeof GOD!=='undefined'&&GOD.on;if(!on){if(PL.zg){scene.remove(PL.zg);PL.zg.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});PL.zg=null;PL.zk='';}return;}
+  var t=plZoneTown(GOD.x,GOD.z);if(!t){if(PL.zg)PL.zg.visible=false;return;}
+  var A=fstArea(t.n),cx=A?A.x:t.x,cz=A?A.z:t.z,r=A?A.r:t.r,key=t.n+cx+','+cz+','+r;PL.zt=t;
+  if(key!==PL.zk){if(PL.zg){scene.remove(PL.zg);PL.zg.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}PL.zg=plZoneMesh(cx,cz,r,A?0xffd400:0xfff0a0);scene.add(PL.zg);PL.zk=key;
+    var nf=typeof pwNextFeast==='function'?pwNextFeast(t.n):null;say('Zona della festa di '+t.n+(A?'':' (tutto il paese)')+(nf&&nf.d?' · '+nf.d.toLocaleDateString('it-IT'):'')+' — clic per spostarla, + e − per allargarla, Canc tutto il paese','good',4200);}
+  PL.zg.visible=true;PL.zg.position.set(-OX,0,-OZ);
+}
+function plZoneSet(fn){var t=PL.zt;if(!t)return;var k='FA:'+t.n,o=fstArea(t.n)||{x:t.x,z:t.z,r:Math.round(t.r*.5)};o=JSON.parse(JSON.stringify(o));fn(o,t);o.r=Math.round(clamp(o.r,30,900));o.x=Math.round(o.x);o.z=Math.round(o.z);ED.off[k]=o;edSave();FST.chk=0;FST.key='';}
+var plTr0=trSync;trSync=function(dt){plTr0(dt);var k=plKey();if(k!==PL.keys){PL.keys=k;plRebuild();}PLG.position.set(-OX,0,-OZ);PLMglow.opacity=clamp(((LGT.dark||0)-.3)*2.5,0,1);PLMhead.color.setHex((LGT.dark||0)>.35?0xffe6b0:0x9a9488);plZoneTick();};
 
 /* ================= CROCI LUMINOSE sulle cime: di notte si accendono e si vedono anche da lontano ================= */
 var CRX={list:null,g:new THREE.Group(),chk:0,on:0};scene.add(CRX.g);CRX.g.visible=false;
@@ -9451,7 +9523,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},PL:PL,plNew:plNew,plAll:plAll,fstArea:fstArea,plZoneSet:plZoneSet,FSTU:function(){return FST;},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
