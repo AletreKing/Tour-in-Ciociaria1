@@ -417,7 +417,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="index.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 22.10 21:24</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="index.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 23.10 13:06</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -1501,7 +1501,18 @@ function netOnOther(x,z,ei,m){
       var ex=x0+dx*t-x,ez=z0+dz*t-z;if(ex*ex+ez*ez<(e.half+m)*(e.half+m))return true;}}
   return false;
 }
-function netGround(x,z){
+/* quota "di paese": media delle strade vicine, pesata sulla vicinanza */
+function townSurf(x,z){
+  var G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.floor(z/NG),sw=0,sy=0,i,j,k;
+  for(i=-1;i<=1;i++)for(j=-1;j<=1;j++){var a=G.get(nk(cx+i,cz+j));if(!a)continue;
+    for(k=0;k<a.length;k++){var p=a[k],e=NET.E[P.e[p]];if(e.br||e.tu)continue;
+      var x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L=dx*dx+dz*dz||1e-9,u=((x-x0)*dx+(z-z0)*dz)/L;u=u<0?0:u>1?1:u;
+      var ex=x0+dx*u-x,ez=z0+dz*u-z,d2=ex*ex+ez*ez;if(d2>45*45)continue;var d=Math.max(0,Math.sqrt(d2)-e.half),w=1/((d+1.5)*(d+1.5)*(d+1.5));sw+=w;sy+=w*(P.y0[p]+(P.y1[p]-P.y0[p])*u);}}
+  return sw?sy/sw:NaN;
+}
+function townK(x,z){if(typeof selTown!=='function'||!NET||!NET.towns)return 0;var tw=selTown(x,z);if(tw[1]<1)return 0;var f=(tw[0]-.42)/.14;f=f<0?0:f>1?1:f;return f*f*(3-2*f);}
+function netGround(x,z){var k=townK(x,z),g0=netGround0(x,z);if(k<=0)return g0;var ts=townSurf(x,z);if(!isFinite(ts))return g0;return g0+(ts-.3-g0)*k;}
+function netGround0(x,z){
   var h=demH(x,z),G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.floor(z/NG),flat=1e9,soft=1e9,cap=1e9,lo=-1e9,hi=1e9,onR=false,i,j,k,a,p;
   for(i=-1;i<=1;i++)for(j=-1;j<=1;j++){
     a=G.get(nk(cx+i,cz+j));if(!a)continue;
@@ -2861,7 +2872,7 @@ function scModes(){
   SC.perc.forEach(function(p){var l=f.querySelector('label[for="mode_'+p.id+'"]');l.firstChild.textContent=p.titolo;l.lastChild.textContent=p.tema+' · '+p.tappe.length+' tappe, con domande';});
   if(opts.mode==='vai'&&!SC.goto)opts.mode='free';
   if(opts.mode!=='free'&&opts.mode!=='vai'&&!scPerc())opts.mode='free';
-  $('mode_'+opts.mode).checked=true;
+  opts.mode=SC.goto?'vai':'free';$('mode_'+opts.mode).checked=true;f.hidden=true;
 }
 $('modes').addEventListener('change',function(e){if(e.target.name!=='mode')return;opts.mode=e.target.value;if(opts.mode!=='vai')store.set('mode',opts.mode);if(state==='menu'){resetRace();drawHb();knobToGear();drawGate();hudC={};}});
 
@@ -6472,6 +6483,7 @@ function selCell(B,ox,oz,x0,z0,S,up,N0,c0){
 }
 /* altezza del selciato: sul terreno; vicino a una strada scende appena sotto il suo manto e ne segue la pendenza; niente sopra ponti, gallerie, scarpate */
 function selH(x,z){
+  var kt=townK(x,z);if(kt>.99){var pr0=netProbe(x,z);if(pr0){var e0=NET.E[pr0.e];if(e0.br||e0.tu){if(pr0.d-e0.half<4.5)return NaN;}else if(pr0.d-e0.half<=1.8)return netRoadY(pr0)-.12;}var ts0=townSurf(x,z);if(isFinite(ts0))return ts0-.12;}
   var t=terrH(x,z),pr=netProbe(x,z);if(!pr)return t;var e=NET.E[pr.e],d=pr.d-e.half;if(d>9)return t;
   if(e.br||e.tu)return NaN;var ry=netRoadY(pr)-.12,dh=Math.abs(ry-t),W=Math.max(2.7,dh*1.2);if(d>1.8+W)return t;
   if(dh>6)return NaN;if(d<=1.8)return ry;
@@ -8097,6 +8109,39 @@ function p3Peak(q){   /* la cima vera: il punto più alto nei dintorni */
   for(var r=10;r<=60;r+=10)for(var a=0;a<12;a++){var x=q.x+Math.cos(a/12*Math.PI*2)*r,z=q.z+Math.sin(a/12*Math.PI*2)*r,y=terrH(x,z);if(y>by){by=y;bx=x;bz=z;}}
   return{x:bx,z:bz};
 }
+/* grotta: un imbocco ad arco nel fianco della collina, che si chiude in un antro nero */
+function caveBuild(g,B,G,q,x,z,y,ox,oz,obs,r){
+  var best=null,D0=10;
+  /* ai piedi della collina: il tratto della galleria è in piano, subito dietro il terreno sale */
+  for(var a=0;a<24;a++){var ux=Math.cos(a/24*Math.PI*2),uz=Math.sin(a/24*Math.PI*2);
+    for(var d=4;d<=40;d+=2){var fx=x+ux*d,fz=z+uz*d,fy=terrH(fx,fz),mx=-1e9;for(var k=1;k<=5;k++)mx=Math.max(mx,terrH(fx+ux*D0*k/5,fz+uz*D0*k/5)-fy);
+      var up=terrH(fx+ux*(D0+8),fz+uz*(D0+8))-fy;if(mx<.7&&up>2.2){var pr=netProbe(fx,fz);if(pr&&pr.d<NET.E[pr.e].half+5)continue;var sc=up-d*.06;if(!best||sc>best.sc)best={sc:sc,ux:ux,uz:uz,x:fx,z:fz,y:fy};break;}}}
+  if(!best){var hx=1,hz=0,pr2=netProbe(x,z);if(pr2){var P=NET.P,qx=P.x0[pr2.p]+(P.x1[pr2.p]-P.x0[pr2.p])*pr2.t,qz=P.z0[pr2.p]+(P.z1[pr2.p]-P.z0[pr2.p])*pr2.t,L=Math.hypot(qx-x,qz-z)||1;hx=(qx-x)/L;hz=(qz-z)/L;}
+    best={ux:-hx,uz:-hz,x:x,z:z,y:terrH(x,z)};}
+  var ux=best.ux,uz=best.uz,tx=-uz,tz=ux,fx=best.x,fz=best.z,gy=best.y-.3,R=2.6,D=10,N=16,lx=fx-ox,lz=fz-oz;
+  function Q(a,b,c,d,col){B.quad([a,b,c,d],[0,1,0],N4,col);B.quad([d,c,b,a],[0,1,0],N4,col);}
+  function pt(a,dd){var rr=R*(1-dd/D*.3);return[lx+tx*Math.cos(a)*rr+ux*dd,gy+Math.sin(a)*rr*1.05,lz+tz*Math.cos(a)*rr+uz*dd];}
+  /* volta della galleria: sempre più buia */
+  var S=5;for(var s=0;s<S;s++){var d0=s*D/S,d1=(s+1)*D/S,v=Math.round(70*(1-s/(S-1))+4),col=hc((v<<16)|((v-4)<<8)|(v-8));
+    for(var i=0;i<N;i++){var a0=i/N*Math.PI,a1=(i+1)/N*Math.PI;Q(pt(a0,d0),pt(a1,d0),pt(a1,d1),pt(a0,d1),col);}
+    Q(pt(0,d0),pt(0,d1),pt(Math.PI,d1),pt(Math.PI,d0),col);}
+  /* fondo nero */
+  var c0=hc(0x000000),e=pt(0,D),cE=[lx+ux*D,gy,lz+uz*D];for(i=0;i<N;i++){var p0=pt(i/N*Math.PI,D),p1=pt((i+1)/N*Math.PI,D);Q(cE,p0,p1,cE,c0);}
+  /* la collina di roccia attorno: fianchi, sopra e dietro, con il corridoio libero */
+  var rc=0x5b554d,rc2=0x6a7440;
+  G.push(p3Rock(F0,lx-tx*(R+4)+ux*4,gy-1,lz-tz*(R+4)+uz*4,3.6,R+3.5,D*.6,rc,r));
+  G.push(p3Rock(F0,lx+tx*(R+4)+ux*4,gy-1,lz+tz*(R+4)+uz*4,3.6,R+3,D*.6,rc,r));
+  G.push(p3Rock(F0,lx+ux*(D*.55),gy+R*1.05+1.6,lz+uz*(D*.55),R+3.6,2.4,D*.6,rc2,r));
+  G.push(p3Rock(F0,lx+ux*(D+3),gy-1,lz+uz*(D+3),R+7,R+5,6,rc2,r));
+  G.push(p3Rock(F0,lx+ux*(D*.6),gy+R+1.2,lz+uz*(D*.6),R+7,3.2,D*.75,0x66703d,r));   /* erba sulla collina */
+  /* cornice dell'arco */
+  G.push(p3Rock(F0,lx-tx*(R+1.5)+ux*.6,gy-.5,lz-tz*(R+1.5)+uz*.6,1.3,R*1.25,1.3,0x4f4a44,r));
+  G.push(p3Rock(F0,lx+tx*(R+1.5)+ux*.6,gy-.5,lz+tz*(R+1.5)+uz*.6,1.3,R*1.2,1.3,0x4f4a44,r));
+  G.push(p3Rock(F0,lx+ux*.5,gy+R*1.05+.5,lz+uz*.5,R+1.6,1.1,1.4,0x4f4a44,r));
+  obs.push([1,fx+ux*(D*.5),fz+uz*(D*.5),tx,tz,R+5,D*.55]);
+  q.mouth={x:fx-ux*.5,z:fz-uz*.5,y:gy+1.4,hx:-ux,hz:-uz};
+}
+
 function p3Build(g,q,ox,oz,obs){
   var k=p3Kind(q);if(!k)return;
   if(k==='water')return;   /* fiumi e laghi sono già disegnati */
@@ -8119,11 +8164,7 @@ function p3Build(g,q,ox,oz,obs){
     cbox(B,lx-hx*.4+ux*1.5,y+.45,lz-hz*.4+uz*1.5,.5,.1,.5,wood);cbox(B,lx-hx*.4-ux*1.5,y+.45,lz-hz*.4-uz*1.5,.5,.1,.5,wood);cbox(B,lx-hx*.4,y+.5,lz-hz*.4,Math.abs(ux)*3.4+.5,.08,Math.abs(uz)*3.4+.5,wood);
     cbox(B,lx+hx*1.2+ux*-2.4,y+.6,lz+hz*1.2+uz*-2.4,.12,1.2,.12,iron);cbox(B,lx+hx*1.2+ux*-2.4,y+1.3,lz+hz*1.2+uz*-2.4,.25,.25,.5,iron);
     obs.push([1,x+hx*2,z+hz*2,ux,uz,3.3,.35,y-.5,y+.9]);}
-  else if(k==='cave'){   /* parete di roccia con l'imbocco buio della grotta */
-    var hx=1,hz=0,prc=netProbe(x,z);if(prc){var Pc=NET.P,pc=prc.p,qx=Pc.x0[pc]+(Pc.x1[pc]-Pc.x0[pc])*prc.t,qz=Pc.z0[pc]+(Pc.z1[pc]-Pc.z0[pc])*prc.t,Lc=Math.hypot(qx-x,qz-z)||1;hx=(qx-x)/Lc;hz=(qz-z)/Lc;}
-    G.push(p3Rock(F0,lx,y-1,lz,7,6,7,0x77716a,r));
-    var m=new THREE.Mesh(new THREE.CircleGeometry(2.6,16,0,Math.PI),new THREE.MeshBasicMaterial({color:0x0b0b0d,side:THREE.DoubleSide}));m.position.set(lx+hx*6.4,y-.3,lz+hz*6.4);m.rotation.y=Math.atan2(hx,hz);m.renderOrder=2;g.add(m);q.mouth={x:x+hx*7.2,z:z+hz*7.2,y:y+.6,hx:hx,hz:hz};
-    obs.push([2,x,z,5,y]);}
+  else if(k==='cave'){caveBuild(g,B,G,q,x,z,y,ox,oz,obs,r);}
   else if(k==='rock'){G.push(p3Rock(F0,lx,y-.5,lz,4+r()*3,4+r()*3,4+r()*2,0x857f75,r));if(/trono/i.test(q.n)){cbox(B,lx+5,y+.4,lz,1.4,.8,1,stone);cbox(B,lx+5.55,y+1.2,lz,.3,1.6,1,stone);}obs.push([2,x,z,4,y]);}
   else if(k==='fall'){   /* salto d'acqua su una rupe, con la pozza */
     var hx=car.x-x,hz=car.z-z,L=Math.hypot(hx,hz)||1;hx/=L;hz/=L;var H=8+r()*6;
@@ -8630,6 +8671,11 @@ function fstMenu(){
   for(var k=1;k<=400;k++){var d=new Date(D.getFullYear(),D.getMonth(),D.getDate()+k),L=[];
     Object.keys(FESTE).forEach(function(n){if(oggi.some(function(o){return o[0]===n;}))return;var sn=fstSaint(n,d);if(sn)L.push([n,sn]);});
     if(L.length){h+='<div style="opacity:.8;margin-top:4px">Prossima festa: '+FSTGG[d.getDay()]+' '+d.getDate()+' '+FSTMESI[d.getMonth()]+' a '+L.slice(0,3).map(function(o){return fstEsc(o[0])+' ('+fstEsc(o[1])+')';}).join(', ')+(L.length>3?' e altri '+(L.length-3):'')+'</div>';break;}}
+  /* calendario delle feste del mese */
+  var mesi=[D.getMonth()],rows='';var y0=D.getFullYear(),m0=D.getMonth(),nd=new Date(y0,m0+1,0).getDate();
+  for(var g=1;g<=nd;g++){var dd=new Date(y0,m0,g),LL=[];Object.keys(FESTE).forEach(function(n){var sn=fstSaint(n,dd);if(sn)LL.push(fstEsc(n)+' <span style="opacity:.7">('+fstEsc(sn)+')</span>');});
+    if(LL.length){var past=g<D.getDate(),today=g===D.getDate();rows+='<div style="display:flex;gap:8px;'+(past?'opacity:.45;':'')+(today?'color:#ffd166;font-weight:700;':'')+'"><span style="min-width:52px">'+FSTGG[dd.getDay()].slice(0,3)+' '+g+'</span><span>'+LL.join(', ')+'</span></div>';}}
+  if(rows)h+='<details style="margin-top:6px"'+(window.innerWidth>700?' open':'')+'><summary style="cursor:pointer;font-weight:700">Calendario delle feste di '+FSTMESI[m0]+'</summary><div style="max-height:150px;overflow:auto;margin-top:4px;font-size:13px;display:grid;gap:2px">'+rows+'</div></details>';
   el.innerHTML=h;el.hidden=!h;
 }
 setTimeout(fstMenu,0);setInterval(function(){if(state==='menu')fstMenu();},60000);
