@@ -414,10 +414,11 @@ body.radioOk #btnRadio{display:inline-flex!important}
         <div class="destrow" id="destRow" hidden><label for="selDest">Arrivo</label><select id="selDest"></select></div>
         <div class="destrow" id="cioRow" hidden><label for="selFrom">Partenza da</label><select id="selFrom"></select><label for="selTo" hidden>a</label><select id="selTo" hidden></select></div>
         <div class="destrow" id="arrRow"><label for="selArr">Arrivo (facoltativo)</label><select id="selArr"></select></div>
+        <div class="destrow" id="percRow"><label for="selPerc2">Percorso a tappe (facoltativo)</label><select id="selPerc2"></select></div>
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="index.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 23.10 13:06</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="index.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 23.10 13:31</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -451,6 +452,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       <div class="opt"><span>Autovelox</span><div class="seg" id="segCam"><button type="button" data-v="1">Attivi</button><button type="button" data-v="0">Spenti</button></div></div>
       <div class="opt"><span>Esame per riavere la patente</span><div class="seg" id="segQuiz"><button type="button" data-v="1">Sì, quiz</button><button type="button" data-v="0">No</button></div></div>
       <div class="opt"><span>Suono del motore</span><div class="seg" id="segSnd"><button type="button" id="snd1" data-v="1">Acceso</button><button type="button" id="snd0" data-v="0">Spento</button></div></div>
+      <div class="opt"><span>Percorso a tappe</span><select id="selPerc" style="font:inherit;font-size:14px;color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:100%"><option value="free">Nessuno: esplorazione libera</option></select></div>
       <div class="opt"><span>Feste di paese</span><div class="seg" id="segFesta"><button type="button" data-v="real">Nei giorni veri</button><button type="button" data-v="rand">A sorpresa</button><button type="button" data-v="off">Spente</button></div></div>
       <div class="opt"><span>Traffico</span><div class="seg" id="segTraf"><button type="button" id="trf0" data-v="0">Nessuno</button><button type="button" id="trf1" data-v="1">Poco</button><button type="button" id="trf2" data-v="2">Normale</button></div></div>
       <div class="opt"><span>Specchietti</span><div class="seg" id="segMir"><button type="button" id="mir1" data-v="1">Riflettono</button><button type="button" id="mir0" data-v="0">Spenti</button></div></div>
@@ -2872,8 +2874,12 @@ function scModes(){
   SC.perc.forEach(function(p){var l=f.querySelector('label[for="mode_'+p.id+'"]');l.firstChild.textContent=p.titolo;l.lastChild.textContent=p.tema+' · '+p.tappe.length+' tappe, con domande';});
   if(opts.mode==='vai'&&!SC.goto)opts.mode='free';
   if(opts.mode!=='free'&&opts.mode!=='vai'&&!scPerc())opts.mode='free';
-  opts.mode=SC.goto?'vai':'free';$('mode_'+opts.mode).checked=true;f.hidden=true;
+  if(SC.goto)opts.mode='vai';else if(opts.mode!=='free'&&!scPerc())opts.mode='free';
+  var sp=$('selPerc');if(sp){var hh='<option value="free">Nessuno: esplorazione libera</option>';SC.perc.forEach(function(p){hh+='<option value="'+p.id+'">'+p.titolo.replace(/</g,'&lt;')+' · '+p.tappe.length+' tappe</option>';});sp.innerHTML=hh;sp.value=opts.mode==='vai'?'free':opts.mode;var s2=$('selPerc2');if(s2){s2.innerHTML=hh.replace('Nessuno: esplorazione libera','— nessuno: esplorazione libera —');s2.value=sp.value;}}
+  $('mode_'+opts.mode).checked=true;f.hidden=true;
 }
+['selPerc','selPerc2'].forEach(function(id){$(id).addEventListener('change',function(){var v=this.value;['selPerc','selPerc2'].forEach(function(k){if($(k))$(k).value=v;});opts.mode=v;store.set('mode',v);var r=$('mode_'+v);if(r)r.checked=true;if(state==='menu'){resetRace();drawHb();knobToGear();drawGate();hudC={};}
+  else say(v==='free'?'Esplorazione libera: il percorso parte dal menu iniziale':'Percorso scelto: parte dal menu iniziale','',2600);});});
 $('modes').addEventListener('change',function(e){if(e.target.name!=='mode')return;opts.mode=e.target.value;if(opts.mode!=='vai')store.set('mode',opts.mode);if(state==='menu'){resetRace();drawHb();knobToGear();drawGate();hudC={};}});
 
 /* ---------- mappa grande (tasto M o pulsante «Mappa»): gioco in pausa, destinazione a scelta ---------- */
