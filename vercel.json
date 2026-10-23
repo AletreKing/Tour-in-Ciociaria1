@@ -26,5 +26,12 @@
   "deploymentEnabled": {
    "proposte": false
   }
- }
+ },
+ "redirects": [
+  {
+   "source": "/",
+   "destination": "/guida.html",
+   "permanent": false
+  }
+ ]
 }
