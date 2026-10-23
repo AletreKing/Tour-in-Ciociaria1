@@ -1,5 +1,5 @@
 // Il gioco e l'area amministratori si aprono solo con l'account della scuola (se l'accesso è configurato)
-export const config = { matcher: ['/guida.html', '/guida', '/admin.html', '/admin'] };
+export const config = { matcher: ['/', '/index.html', '/index', '/guida.html', '/guida', '/admin.html', '/admin'] };
 function unb64u(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
 function b64u(buf) { let s = ''; new Uint8Array(buf).forEach(b => { s += String.fromCharCode(b); }); return btoa(s).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_'); }
 async function valid(tok, secret) {
