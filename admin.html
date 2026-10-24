@@ -369,7 +369,7 @@ $('imp').addEventListener('change',function(){
     }):f.text();
   job.then(function(txt){
     var j=JSON.parse(txt),sc=j.schede||{},n=0,skip=0;
-    if(j.tipo==='posizioni'&&j.posizioni){var np=0;Object.keys(j.posizioni).forEach(function(k){if(!BYK[k]){if(/^(egg:|P:|B:|N:|L:|Q:|FA:)/.test(k)){S.imp.pos=S.imp.pos||{};S.imp.pos[k]=j.posizioni[k];ls('imp',S.imp);np++;}return;}var s=work(k);s.pos3d=j.posizioni[k];s.ts=Date.now();s.da=$('who').value.trim()||'anonimo';np++;});saveLoc();draw();edit();toast(np+' oggetti riposizionati: ora pubblica sul sito');return;}
+    if(j.tipo==='posizioni'&&j.posizioni){var np=0;Object.keys(j.posizioni).forEach(function(k){if(!BYK[k]){if(/^(egg:|P:|B:|N:|L:|Q:|FA:|G:)/.test(k)){S.imp.pos=S.imp.pos||{};S.imp.pos[k]=j.posizioni[k];ls('imp',S.imp);np++;}return;}var s=work(k);s.pos3d=j.posizioni[k];s.ts=Date.now();s.da=$('who').value.trim()||'anonimo';np++;});saveLoc();draw();edit();toast(np+' oggetti riposizionati: ora pubblica sul sito');return;}
     if(j.impostazioni){var ji=j.impostazioni;if(typeof ji.radio==='boolean')S.imp.radio=ji.radio;S.imp.pos=Object.assign(S.imp.pos||{},ji.pos||{});S.imp.manifesti=Object.assign(S.imp.manifesti||{},ji.manifesti||{});ls('imp',S.imp);impDraw();}
     Object.keys(sc).forEach(function(k){if(!BYK[k])return;var mine=cur(k);if(!mine||(sc[k].ts||0)>(mine.ts||0)){S.loc[k]=sc[k];n++;}else skip++;});
     saveLoc();draw();edit();toast(n+' schede importate'+(skip?', '+skip+' tenute perché più recenti':''));

@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 24.10 23:06</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 24.10 23:34</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8436,13 +8436,13 @@ function mod3Refresh(){
 /* ================= MODALITÀ GOD → MODIFICA: si sceglie un oggetto dei luoghi e lo si sposta a mano ================= */
 var ED={on:false,sel:null,ring:null,drag:false,pend:{},off:{},t:0};
 try{ED.off=JSON.parse(localStorage.getItem('au_pos3d')||'{}')||{};}catch(e){ED.off={};}
-function edOff(q){if(!q)return null;var o=ED.off[q.pk]||q.pos3d||(q.q&&q.q.pos3d)||(CDSG_IMP.pos&&CDSG_IMP.pos[q.pk]);return o||null;}
+function edOff(q){if(!q)return null;var o=ED.off[q.pk]||q.pos3d||(q.q&&q.q.pos3d)||q.o0||(CDSG_IMP.pos&&CDSG_IMP.pos[q.pk]);return o||null;}
 /* che cosa si può spostare: i luoghi con un modello 3D, le sorprese nascoste (Belacqua, Cicerone, Manfredi) e i cartelli P */
 function edTargets(){
   var L=[];SC.pois.forEach(function(q){if(q.hid||q.x==null||!(q.p3||q.modello))return;L.push({pk:q.pk,n:q.n,x:q.x,z:q.z,kind:'poi',q:q});});
   EGGS.forEach(function(E){if(!E.pos)return;L.push({pk:E.p.pk,n:E.p.n,x:E.pos.x,z:E.pos.z,kind:'egg',E:E});});
   (typeof pwSigns==='function'?pwSigns()||[]:[]).forEach(function(s){if(!s.user)L.push({pk:s.pk,n:s.n,x:s.x0,z:s.z0,kind:'P',s:s});});
-  if(typeof plAll==='function'){plAll('L').forEach(function(e){L.push({pk:e.pk,n:'Lampione',x:e.o.x,z:e.o.z,kind:'L'});});plAll('Q').forEach(function(e){L.push({pk:e.pk,n:'Parcheggio',x:e.o.x,z:e.o.z,kind:'Q'});});}
+  if(typeof plAll==='function'){plAll('L').forEach(function(e){L.push({pk:e.pk,n:'Lampione',x:e.o.x,z:e.o.z,kind:'L'});});plAll('Q').forEach(function(e){L.push({pk:e.pk,n:'Parcheggio',x:e.o.x,z:e.o.z,kind:'Q'});});plAll('G').forEach(function(e){L.push({pk:e.pk,n:'Grotta della sorgente',x:e.o.x,z:e.o.z,kind:'G',o0:e.o});});}
   return L;
 }
 function edSave(){try{localStorage.setItem('au_pos3d',JSON.stringify(ED.off));}catch(e){}}
@@ -8457,7 +8457,7 @@ function edNearest(x,z){var best=null,bd=45;edTargets().forEach(function(q){var 
 function edRing(){if(ED.ring)return ED.ring;var m=new THREE.Mesh(new THREE.RingGeometry(3.2,3.8,40),new THREE.MeshBasicMaterial({color:0xffd166,side:THREE.DoubleSide,transparent:true,opacity:.9,depthTest:false,fog:false}));m.rotation.x=-Math.PI/2;m.renderOrder=9;scene.add(m);ED.ring=m;return m;}
 function edRebuild(q){
   if(q.kind==='egg'||q.kind==='TL')return;
-  if(q.kind==='L'||q.kind==='Q'){plRebuild();return;}
+  if(q.kind==='L'||q.kind==='Q'||q.kind==='G'){plRebuild();return;}
   if(q.kind==='B'||q.kind==='N'){bedRebuild(bedTilesOf(q));q.prevT=null;var o=edOff(q)||{},r=bedAt(q.x+(+o.dx||0),q.z+(+o.dz||0));if(r&&r.pk===q.pk)q.rec=r;return;}   /* le sorprese si spostano da sole, a ogni fotogramma */
   if(q.kind==='P'){if(PW.sg){scene.remove(PW.sg);PW.sg.traverse(function(o){if(o.geometry)o.geometry.dispose();});PW.sg=null;}pwSignBuild();if(typeof pwBoardReset==='function')pwBoardReset();return;}
   var tx=Math.floor(q.x/NT),tz=Math.floor(q.z/NT);
@@ -8493,7 +8493,7 @@ window.addEventListener('keydown',function(e){
   else if(k==='e'){edChange(function(o){o.rot+=15;});e.stopImmediatePropagation();}
   else if(k==='c'&&!e.repeat){bedCopy();e.stopImmediatePropagation();e.preventDefault();}
   else if(k==='v'&&!e.repeat){bedPaste();e.stopImmediatePropagation();e.preventDefault();}
-  else if((k==='delete'||k==='backspace')&&ED.sel&&(ED.sel.kind==='L'||ED.sel.kind==='Q')){var ql=ED.sel,ol=edOff(ql);if(ol){ED.off[ql.pk]=Object.assign(JSON.parse(JSON.stringify(ol)),{del:1});edSave();}ED.sel=null;plRebuild();say('Tolto','',1500);e.stopImmediatePropagation();}
+  else if((k==='delete'||k==='backspace')&&ED.sel&&(ED.sel.kind==='L'||ED.sel.kind==='Q'||ED.sel.kind==='G')){var ql=ED.sel,ol=edOff(ql);if(ol){ED.off[ql.pk]=Object.assign(JSON.parse(JSON.stringify(ol)),{del:1});edSave();}ED.sel=null;plRebuild();say('Tolto','',1500);e.stopImmediatePropagation();}
   else if((k==='delete'||k==='backspace')&&ED.sel&&ED.sel.kind==='N'){var qn=ED.sel,on=bedK(qn.pk);if(on){ED.off[qn.pk]=Object.assign(JSON.parse(JSON.stringify(on)),{del:1});edSave();}ED.sel=null;bedRebuild(bedTilesOf(qn));say('Copia tolta','',1800);e.stopImmediatePropagation();}
   else if(k==='delete'||k==='backspace'){if(ED.sel){ED.off[ED.sel.pk]={dx:0,dz:0,dy:0,rot:0};if(ED.sel.q)ED.sel.q.pos3d=null;edSave();edRebuild(ED.sel);}e.stopImmediatePropagation();}
   else if(k==='s'&&!e.repeat){edExport();e.stopImmediatePropagation();e.preventDefault();}
@@ -9396,7 +9396,7 @@ function bedBox(){if(ED.bx)return ED.bx;var m=new THREE.Mesh(new THREE.BoxGeomet
 function bedBoxTick(){var q=ED.on&&ED.sel;if(!q||(q.kind!=='B'&&q.kind!=='N')){if(ED.bx)ED.bx.visible=false;return;}
   var r=q.rec,o=edOff(q)||{},D=ED.drag,dx=D&&D.live?D.ndx:(+o.dx||0),dz=D&&D.live?D.ndz:(+o.dz||0),u=bedRot(q.kind==='N'?o.ux:r.ux,q.kind==='N'?o.uz:r.uz,o.rot),x=q.x+dx,z=q.z+dz,y=gndY(x,z);
   var b=bedBox();b.visible=true;b.scale.set(r.hw*2+.3,(r.nh||8)+.6,r.hd*2+.3);b.position.set(x-OX,y+(r.nh||8)/2-.5,z-OZ);b.rotation.y=Math.atan2(-u[1],u[0]);}
-function bedCopy(){var q=ED.sel;if(q&&(q.kind==='L'||q.kind==='Q'||q.kind==='TL')){ED.clip={kind:q.kind==='Q'?'Q':'L',rot:(edOff(q)||{}).rot||0};say((q.kind==='Q'?'Parcheggio':'Lampione')+' copiato: V per posarlo dove punti il mouse','good',2600);return;}
+function bedCopy(){var q=ED.sel;if(q&&(q.kind==='L'||q.kind==='Q'||q.kind==='G'||q.kind==='TL')){ED.clip={kind:q.kind==='TL'?'L':q.kind,rot:(edOff(q)||{}).rot||0};say((q.kind==='Q'?'Parcheggio':q.kind==='G'?'Grotta':'Lampione')+' copiato: V per posarlo dove punti il mouse','good',2600);return;}
   if(!q||(q.kind!=='B'&&q.kind!=='N')){say('Scegli prima un edificio, un lampione o un parcheggio','',2000);return;}
   var r=q.rec;if(q.kind==='N'){ED.clip=JSON.parse(JSON.stringify(bedK(q.pk)));delete ED.clip.del;}
   else{var s=bedSlope(r.x,r.z,r.ux,r.uz,r.hw,r.hd);ED.clip={fn:r.fn,wall:r.wall,col:r.col.getHex(),roof:r.roof&&r.roof.getHex?r.roof.getHex():0x9a4a32,u0:r.u0||0,o4:r.fn==='box'?(r.o4||{}):!!r.o4,hw:r.hw,hd:r.hd,h:Math.max(3,r.h-(s[1]-s[0])),ux:r.ux,uz:r.uz,rot:(edOff(q)||{}).rot||0};}
@@ -9435,16 +9435,16 @@ function plPark(G,o){   /* piazzola di sosta: asfalto con quattro stalli bianchi
   B.quad([P(-W/2+.1,L-.26,.09),P(W/2-.1,L-.26,.09),P(W/2-.1,L-.14,.09),P(-W/2+.1,L-.14,.09)],[0,1,0],N4,wh);
   G.add(B.mesh(PLMpad));}
 function plRebuild(){
-  while(PLG.children.length){var c=PLG.children.pop();c.traverse(function(o){if(o.geometry)o.geometry.dispose();});}
-  plAll('L').forEach(function(e){plLamp(PLG,e.o);});plAll('Q').forEach(function(e){plPark(PLG,e.o);});
+  while(PLG.children.length){var c=PLG.children.pop();if(!c.userData.keep)c.traverse(function(o){if(o.geometry)o.geometry.dispose();});}
+  plAll('L').forEach(function(e){plLamp(PLG,e.o);});plAll('Q').forEach(function(e){plPark(PLG,e.o);});plAll('G').forEach(function(e){plCave(PLG,e.o);});
   /* i parcheggi aggiunti diventano anche cartelli P, da cui si parte a piedi */
   if(typeof pwSigns==='function'&&NET){var S=pwSigns()||[];for(var i=S.length-1;i>=0;i--)if(S[i].user)S.splice(i,1);
     plAll('Q').forEach(function(e){var o=e.o;S.push({x:o.x,z:o.z,x0:o.x,z0:o.z,ux:0,uz:1,ix:o.x,iz:o.z+12,t:selTown(o.x,o.z),pk:e.pk,n:'Parcheggio',user:true});});
     if(PW.sg){scene.remove(PW.sg);PW.sg=null;}if(typeof pwBoardReset==='function')pwBoardReset();}
 }
-function plKey(){return plAll('L').concat(plAll('Q')).map(function(e){return e.pk+JSON.stringify(e.o);}).join('|');}
+function plKey(){return plAll('L').concat(plAll('Q')).concat(plAll('G')).map(function(e){return e.pk+JSON.stringify(e.o);}).join('|');}
 function plNew(kind,p,extra){var id=kind+':'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),o=Object.assign({x:Math.round(p.x*10)/10,z:Math.round(p.z*10)/10,dx:0,dz:0,dy:0,rot:0},extra||{});ED.off[id]=o;edSave();plRebuild();
-  ED.sel={pk:id,n:kind==='L'?'Lampione':'Parcheggio',x:o.x,z:o.z,kind:kind};return id;}
+  ED.sel={pk:id,n:kind==='L'?'Lampione':kind==='G'?'Grotta della sorgente':'Parcheggio',x:o.x,z:o.z,kind:kind};return id;}
 function plMouse(){return ED.mx!=null?edPickRay({clientX:ED.mx,clientY:ED.my}):null;}
 /* lampioni della strada: si possono scegliere solo per copiarli */
 function plTileLamp(x,z){var tx=Math.floor(x/NT),tz=Math.floor(z/NT),best=null,bd=3;
@@ -9472,7 +9472,44 @@ function plZoneTick(){
   PL.zg.visible=true;PL.zg.position.set(-OX,0,-OZ);
 }
 function plZoneSet(fn){var t=PL.zt;if(!t)return;var k='FA:'+t.n,o=fstArea(t.n)||{x:t.x,z:t.z,r:Math.round(t.r*.5)};o=JSON.parse(JSON.stringify(o));fn(o,t);o.r=Math.round(clamp(o.r,30,900));o.x=Math.round(o.x);o.z=Math.round(o.z);ED.off[k]=o;edSave();FST.chk=0;FST.key='';}
-var plTr0=trSync;trSync=function(dt){plTr0(dt);var k=plKey();if(k!==PL.keys){PL.keys=k;plRebuild();}PLG.position.set(-OX,0,-OZ);PLMglow.opacity=clamp(((LGT.dark||0)-.3)*2.5,0,1);PLMhead.color.setHex((LGT.dark||0)>.35?0xffe6b0:0x9a9488);plZoneTick();};
+var plTr0=trSync;trSync=function(dt){plTr0(dt);var k=plKey();if(k!==PL.keys){PL.keys=k;plRebuild();}PLG.position.set(-OX,0,-OZ);PLMglow.opacity=clamp(((LGT.dark||0)-.3)*2.5,0,1);PLMhead.color.setHex((LGT.dark||0)>.35?0xffe6b0:0x9a9488);plZoneTick();if(PLWT){PLWT.offset.y-=dt*.9;}};
+/* ---------- la grotta della sorgente: parete di roccia muschiosa, imbocco alto e buio, un torrente che ne esce tra i sassi ---------- */
+var PLWT=null,PLWM=null,PLFM=null;
+function plCaveMats(){if(PLWM)return;PLWT=watTex.clone();PLWT.needsUpdate=true;PLWT.wrapS=PLWT.wrapT=THREE.RepeatWrapping;
+  PLWM=new THREE.MeshPhongMaterial({map:PLWT,color:0xc4dde2,specular:0x2a3438,shininess:40,transparent:true,opacity:.88});
+  PLFM=new THREE.MeshBasicMaterial({color:0xeaf6f6,transparent:true,opacity:.55,depthWrite:false});}
+function plCaveGeo(){
+  if(PL.cg)return PL.cg;plCaveMats();var r=rng(7717),G=[],B=new GB(),D=new GB(),i;
+  var rock=0x6c695f,mossR=0x4f5a3c,moss=0x37531f,moss2=0x45652a;
+  function R(x,y,z,sx,sy,sz,c){G.push(p3Rock(F0,x,y,z,sx,sy,sz,c,r));}
+  /* parete: due pilastri ai lati dell'imbocco, l'architrave sopra, la massa dietro */
+  for(i=0;i<5;i++){R(-2.6-r()*1.2,-.5+i*1.7,-.6+r()*.8,1.6+r()*.8,2.2,1.6+r()*.6,i%2?rock:mossR);R(2.6+r()*1.2,-.5+i*1.7,-.6+r()*.8,1.6+r()*.8,2.2,1.6+r()*.6,i%2?mossR:rock);}
+  for(i=0;i<4;i++){R(-6+r()*1.5,-.5+i*1.9,-1.4,2.4,2.4,2,i%2?moss:rock);R(6-r()*1.5,-.5+i*1.9,-1.4,2.4,2.4,2,i%2?rock:moss);}
+  R(0,6.3,-.5,3.6,1.6,2.2,rock);R(-1.2,7.6,-1,3,1.8,2.4,mossR);R(1.6,7.9,-1.2,3,1.6,2.4,moss);
+  R(0,1,-5,8,7,4,rock);R(-4,3,-4,5,6,3,mossR);R(4,3,-4,5,6,3,rock);
+  /* muschio a terra sulle sponde e sassi nel torrente */
+  for(i=0;i<9;i++){var sd=i%2?1:-1;R(sd*(2.2+r()*2.2),-.15,2+i*1.4,1.4+r(),.45,1.2+r()*.6,r()<.6?moss2:moss);}
+  for(i=0;i<10;i++)R((r()-.5)*1.9,-.12,1.5+r()*11,.25+r()*.3,.22+r()*.12,.25+r()*.3,r()<.5?mossR:rock);
+  /* l'imbocco: un arco nero alto e stretto che si chiude in un antro buio */
+  var blk=hc(0x050505),W=1.3,H=4.4;
+  for(i=0;i<12;i++){var a0=i/12*Math.PI,a1=(i+1)/12*Math.PI;D.quad([[-W*Math.cos(a0),H-1.2+Math.sin(a0)*1.2,.2],[-W*Math.cos(a1),H-1.2+Math.sin(a1)*1.2,.2],[-W*Math.cos(a1),-.2,.2],[-W*Math.cos(a0),-.2,.2]],[0,0,1],N4,blk);}
+  cbox(D,0,2,-1.4,W*2,4.8,3,blk);
+  /* il torrente che esce dalla grotta */
+  var WG=new THREE.PlaneGeometry(2.5,15,1,12);WG.rotateX(-Math.PI/2);WG.translate(0,.08,6.8);
+  var P=WG.attributes.position;for(i=0;i<P.count;i++){var zz=P.getZ(i);P.setX(i,P.getX(i)*(1+Math.max(0,zz-4)*.06));P.setY(i,.08-Math.max(0,zz)*.03);}WG.computeVertexNormals();
+  var FG=new GB(),fw=hc(0xffffff);for(i=0;i<26;i++){var fx=(r()-.5)*2,fz=.8+r()*12,fs=.15+r()*.35;FG.quad([[fx-fs,.13-fz*.03,fz-fs*.6],[fx+fs,.13-fz*.03,fz-fs*.6],[fx+fs,.13-fz*.03,fz+fs*.6],[fx-fs,.13-fz*.03,fz+fs*.6]],[0,1,0],N4,fw);}
+  /* felci e ciuffi d'erba sulla roccia */
+  for(i=0;i<16;i++){var bx=(r()<.5?-1:1)*(2+r()*4),by=r()*6,bz=.6+r()*.8;cbox(B,bx,by,bz,.5+r()*.5,.3+r()*.3,.4,hc(r()<.5?0x2f5a1c:0x416d24));}
+  PL.cg={G:G,B:B.i.length?B.mesh(hwFlatM).geometry:null,D:D.mesh(new THREE.MeshBasicMaterial({color:0x050505})).geometry,W:WG,F:FG.mesh(PLFM).geometry};return PL.cg;
+}
+var PLROCKM=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true}),PLBLKM=new THREE.MeshBasicMaterial({vertexColors:true});
+function plCave(G0,o){var C=plCaveGeo(),p=plPos(o),g=new THREE.Group();
+  C.G.forEach(function(geo){g.add(new THREE.Mesh(geo,PLROCKM));});if(C.B)g.add(new THREE.Mesh(C.B,hwFlatM));g.add(new THREE.Mesh(C.D,PLBLKM));g.add(new THREE.Mesh(C.W,PLWM));g.add(new THREE.Mesh(C.F,PLFM));
+  g.position.set(p.x,gndY(p.x,p.z)+p.dy-.1,p.z);g.rotation.y=Math.atan2(p.ux,p.uz);g.userData.keep=1;G0.add(g);}
+/* la prima grotta: vicino all'imbocco delle Grotte di Pastena, da spostare a piacere */
+function plCaveDefault(){if(PL.gdef!==undefined)return PL.gdef;var c=typeof batPoi==='function'?batPoi():null,m=c&&c.mouth;if(!m)return null;
+  var sx=-m.hz,sz=m.hx,x=m.x+m.hx*14+sx*28,z=m.z+m.hz*14+sz*28;PL.gdef={x:Math.round(x),z:Math.round(z),dx:0,dz:0,dy:0,rot:Math.round(Math.atan2(m.hx,m.hz)*180/Math.PI)};return PL.gdef;}
+var plAll0=plAll;plAll=function(kind){var L=plAll0(kind);if(kind==='G'&&!L.some(function(e){return e.pk==='G:sorgente';})){var k='G:sorgente',P=CDSG_IMP.pos||{},o=ED.off[k]||P[k];if(!o){var d=plCaveDefault();if(d)L.push({pk:k,o:d});}}return L;};
 
 /* ================= CROCI LUMINOSE sulle cime: di notte si accendono e si vedono anche da lontano ================= */
 var CRX={list:null,g:new THREE.Group(),chk:0,on:0};scene.add(CRX.g);CRX.g.visible=false;
