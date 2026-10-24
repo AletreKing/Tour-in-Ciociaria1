@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 23.10 23:18</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 24.10 23:06</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -6362,12 +6362,55 @@ function eggBelacqua(){
   return g;
 }
 var eggBuild={manfredi:eggKnight,cicerone:eggCicero,belacqua:eggBelacqua};
+/* ================= SORPRESA ALLE GROTTE DI PASTENA: uno speleologo stordito da una stalattite (omaggio al film girato qui) ================= */
+(function(){
+  var E={k:'speleo',at:'cave',ll:[41.49688,13.48942],say:'Uno speleologo è seduto per terra, stordito… toccalo',
+    p:{n:'Lo speleologo stordito',com:'Pastena',w:'it:Grotte di Pastena',
+      t:"Una stalattite caduta dal soffitto e un casco volato via: a questo speleologo girano ancora le stelline sopra la testa.\nUna curiosità: nel film «Fantozzi va in pensione» (1988, regia di Neri Parenti, con Paolo Villaggio) il ragioniere più sfortunato d'Italia va in gita alle grotte di Postumia. In realtà la scena fu girata qui, dentro le Grotte di Pastena.",
+      video:[{url:'https://youtu.be/9F9D8JELGeM',titolo:'La scena del film girata nelle Grotte di Pastena'}]}};
+  var q=eggXZ(E.ll[0],E.ll[1]);E.x=q[0];E.z=q[1];var p=E.p;p.id=-10-EGGS.length;p.key=p.n;p.pk='egg:'+E.k;p.c='lett';p.x=E.x;p.z=E.z;p.wd='';p.foto=[];p.foto0=[];p.bozza=true;p.node=-1;p.extra=[];p.link=[];
+  EGGS.push(E);
+})();
+/* posto: davanti all'imbocco della grotta, un po' di lato */
+var eggPlace0=eggPlace;eggPlace=function(E){
+  if(E.at!=='cave')return eggPlace0(E);
+  var c=typeof batPoi==='function'?batPoi():null,m=c&&c.mouth;if(!m)return null;
+  var sx=-m.hz,sz=m.hx,x=m.x+m.hx*5.5+sx*2.6,z=m.z+m.hz*5.5+sz*2.6;
+  return{x:x,z:z,y:gndY(x,z),r:Math.atan2(m.hx,m.hz)};
+};
+function eggSpeleo(){
+  var g=new THREE.Group(),suit=eggM(0xd9641e,0x1c0c02),dark=eggM(0x3a3530),skin=eggM(0xe0b08c,0x1a100a),hair=eggM(0x6a4a30),belt=eggM(0x2a2f38),buckle=eggM(0xbfc4c8),boot=eggM(0x4a3426),rock=eggM(0x6e6253,0x0a0806),yel=eggM(0xf2c818,0x2a2000),lamp=eggM(0xfffbe0,0xfff3b0),star=new THREE.MeshBasicMaterial({color:0xffe14a,fog:false});
+  /* gambe stese in avanti, scarponi */
+  [.13,-.13].forEach(function(x){eggBox(g,.2,.2,.85,suit,x,.13,.5);eggBox(g,.22,.26,.16,boot,x,.16,.98);});
+  /* bacino e busto, appoggiato all'indietro sulle mani */
+  eggBox(g,.5,.28,.38,suit,0,.18,.02);
+  var tor=new THREE.Group();tor.position.set(0,.3,0);tor.rotation.x=-.32;g.add(tor);
+  eggBox(tor,.52,.66,.4,suit,0,.36,-.02);
+  var belly=new THREE.Mesh(new THREE.SphereGeometry(.33,14,10),suit);belly.scale.set(1,.9,.85);belly.position.set(0,.24,.14);tor.add(belly);   /* bella pancia */
+  eggBox(tor,.6,.07,.5,belt,0,.06,.05);eggBox(tor,.1,.08,.04,buckle,0,.06,.37);   /* imbracatura */
+  /* braccia all'indietro, mani a terra */
+  [.33,-.33].forEach(function(x){var a=new THREE.Group();a.position.set(x,.62,-.04);a.rotation.x=.75;tor.add(a);eggBox(a,.13,.6,.14,suit,0,-.28,0);eggBox(a,.12,.1,.15,skin,0,-.6,0);});
+  var hd=new THREE.Group();hd.position.set(0,.76,0);tor.add(hd);
+  eggBox(hd,.26,.28,.26,skin,0,.15,.02);eggBox(hd,.27,.08,.27,hair,0,.3,0);eggBox(hd,.04,.03,.02,dark,-.06,.18,.15);eggBox(hd,.04,.03,.02,dark,.06,.18,.15);eggBox(hd,.08,.03,.02,dark,0,.08,.15);
+  /* stelline che girano sopra la testa */
+  var st=new THREE.Group();st.position.y=.52;hd.add(st);
+  var sg=new THREE.Shape();for(var i=0;i<10;i++){var r=i%2?.035:.085,a=i/10*Math.PI*2;if(i)sg.lineTo(Math.sin(a)*r,Math.cos(a)*r);else sg.moveTo(Math.sin(a)*r,Math.cos(a)*r);}
+  var sgeo=new THREE.ShapeGeometry(sg);for(var k=0;k<5;k++){var s=new THREE.Mesh(sgeo,star);var a2=k/5*Math.PI*2;s.position.set(Math.cos(a2)*.25,0,Math.sin(a2)*.25);st.add(s);}
+  /* a sinistra la grossa stalattite caduta, a destra il casco giallo con la lampada */
+  var sl=new THREE.Mesh(new THREE.ConeGeometry(.24,1.7,9),rock);sl.rotation.z=Math.PI/2;sl.rotation.y=.5;sl.position.set(.95,.2,.35);g.add(sl);
+  var hm=new THREE.Group();hm.position.set(-.85,0,.25);hm.rotation.set(.35,.8,.2);g.add(hm);
+  var dome=new THREE.Mesh(new THREE.SphereGeometry(.2,14,8,0,Math.PI*2,0,Math.PI/2),yel);dome.position.y=.06;hm.add(dome);eggBox(hm,.44,.03,.44,yel,0,.06,0);
+  var lp=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.05,10),lamp);lp.rotation.x=Math.PI/2;lp.position.set(0,.16,.2);hm.add(lp);
+  g.userData.stars=st;g.userData.head=hd;return g;
+}
+eggBuild.speleo=eggSpeleo;
+
 function eggTick(dt){
   if(world!=='net'||!NET)return;
   EGGS.forEach(function(E){
     var cx=car.x,cz=car.z,d=Math.hypot(E.x-cx,E.z-cz);
     if(d>2500&&!E.g)return;
-    if(!E.pos){if(E.at==='bridge'&&!(typeof WAT!=='undefined'&&WAT.ready))return;E.pos=eggPlace(E);}
+    if(!E.pos){if(E.at==='bridge'&&!(typeof WAT!=='undefined'&&WAT.ready))return;E.pos=eggPlace(E);if(!E.pos)return;}
     var dd=Math.hypot(E.pos.x-cx,E.pos.z-cz);
     if(dd<1200&&!E.g){E.g=eggBuild[E.k]();E.g.traverse(function(o){o.userData.egg=E;});eggG.add(E.g);E.t=0;}
     else if(dd>1500&&E.g){eggG.remove(E.g);E.g.traverse(function(o){if(o.geometry)o.geometry.dispose();});E.g=null;}
@@ -6377,12 +6420,14 @@ function eggTick(dt){
       var ph=(E.t*.11)%2,u=ph<1?ph:2-ph,dir=ph<1?1:-1,ux=Math.cos(E.pos.r),uz=-Math.sin(E.pos.r),off=(u-.5)*12;x+=ux*off;z+=uz*off;ry=Math.atan2(ux*dir,uz*dir);
       var L=E.g.userData.legs;L[0].rotation.x=Math.sin(E.t*5.5)*.4;L[1].rotation.x=-Math.sin(E.t*5.5)*.4;E.g.userData.arm.rotation.x=-1.1+Math.sin(E.t*1.3)*.5;E.g.userData.arm.rotation.z=.3;}
     else if(E.k==='manfredi'){var tw=Math.atan2(cx-x,cz-z);var dr=Math.atan2(Math.sin(tw-E.pos.r),Math.cos(tw-E.pos.r));ry=E.pos.r+clamp(dr,-.6,.6)*Math.min(1,40/Math.max(dd,1));}
+    else if(E.k==='speleo'){var su=E.g.userData;su.stars.rotation.y+=dt*3.2;su.head.rotation.z=Math.sin(E.t*2.3)*.12;su.head.rotation.x=Math.sin(E.t*1.6)*.06;
+      if(dd<40){E.tw=(E.tw==null?2:E.tw)-dt;if(E.tw<=0){E.tw=2.5+Math.random()*3;speleoTwinkle(dd);}}}
     else if(E.k==='belacqua'){   /* scuote la testa e singhiozza: un pianto che mette i brividi */
       var sb=E.sob||0,sk=E.t-sb<2.6?Math.max(0,1-(E.t-sb)/2.6):0,hdg=E.g.userData.head,tor=E.g.userData.torso;
       hdg.rotation.y=Math.sin(E.t*7.5)*(.08+.38*sk);hdg.rotation.z=Math.sin(E.t*3.1)*.06;hdg.rotation.x=Math.sin(E.t*1.7)*.05;
       tor.position.y=.45+Math.abs(Math.sin(E.t*9))*.035*sk;
       if(dd<90){E.cry=(E.cry==null?1:E.cry)-dt;if(E.cry<=0){E.cry=3+Math.random()*4;E.sob=E.t;blCry(E,dd);}}}
-    var gy=terrH(x,z);if(E.k==='belacqua'){[[.35,.35],[-.35,.35],[.35,-.35],[-.35,-.35]].forEach(function(q){gy=Math.max(gy,terrH(x+q[0],z+q[1]));});gy+=.06;}else if(E.k!=='cicerone'){[[.5,.5],[-.5,.5],[.5,-.5],[-.5,-.5]].forEach(function(q){gy=Math.min(gy,terrH(x+q[0],z+q[1]));});}
+    var gy=terrH(x,z);if(E.k==='speleo')gy=gndY(x,z);else if(E.k==='belacqua'){[[.35,.35],[-.35,.35],[.35,-.35],[-.35,-.35]].forEach(function(q){gy=Math.max(gy,terrH(x+q[0],z+q[1]));});gy+=.06;}else if(E.k!=='cicerone'){[[.5,.5],[-.5,.5],[.5,-.5],[-.5,-.5]].forEach(function(q){gy=Math.min(gy,terrH(x+q[0],z+q[1]));});}
     E.g.position.set(x-OX,gy+(EO?+EO.dy||0:0),z-OZ);E.g.rotation.y=ry;
     if(dd<55&&!E.said&&state==='drive'){E.said=true;say(E.say,'good',3500);}
   });
@@ -9510,6 +9555,9 @@ function ufoTick(dt){
 }
 var ufoTr0=trSync;trSync=function(dt){ufoTr0(dt);ufoTick(dt);};
 
+/* tintinnio delle stelline */
+function speleoTwinkle(d){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t=AC.currentTime+.03,v=.12*Math.max(0,1-d/40);
+  [1568,2093,1760,2349,1976].forEach(function(f,i){var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t+i*.09);g.gain.linearRampToValueAtTime(v,t+i*.09+.01);g.gain.exponentialRampToValueAtTime(.0005,t+i*.09+.35);o.connect(g);g.connect(au.master);o.start(t+i*.09);o.stop(t+i*.09+.4);});}
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
