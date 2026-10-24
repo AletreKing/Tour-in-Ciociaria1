@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 24.10 23:44</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 00:01</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -4209,7 +4209,7 @@ function cameraTick(dt){
   }
   if(shake>0){shake-=dt;camera.position.x+=(Math.random()-.5)*shake*.5;camera.position.y+=(Math.random()-.5)*shake*.4;}
   camera.near=state==='menu'?.3:(camMode===1||WALK.on||BINO.on)?.1:.9;camera.updateProjectionMatrix();
-  if(GOD.on)godCam();else if(PW.on)pwCam();
+  if(GOD.on)godCam();else if(CAVE.on)caveCam();else if(PW.on)pwCam();
   skyMesh.position.copy(camera.position);if(sunSpr.visible){var SD2=sunDir();sunSpr.position.set(camera.position.x+SD2.x*1000,camera.position.y+Math.max(SD2.y,-.03)*1000,camera.position.z+SD2.z*1000);}
   if(world!=='city')hwBack.position.set(camera.position.x,world==='net'?car.y:0,camera.position.z);
   skyG.position.y=world==='net'?car.y:0;
@@ -4496,7 +4496,7 @@ $('btnRadioClose').addEventListener('click',function(){openRadio(false);});
 $('btnRadioStop').addEventListener('click',radioStop);
 $('radioVol').addEventListener('input',function(){try{radioEl.volume=this.value/100;}catch(e){}});
 
-function goMenu(){if(typeof PW!=='undefined'&&PW.on)pwStop();setTimeout(fstMenu,0);if(WALK.on)walkStop();if(BINO.on)binoStop();$('wAsk').hidden=true;autoSet(false);state='menu';paused=false;look.yaw=look.pitch=0;game.classList.add('menu');$('start').hidden=false;$('hint').hidden=true;if(camMode)toggleCam();resetRace();drawHb();knobToGear();drawGate();drawContinue();mpDraw();}
+function goMenu(){if(typeof CAVE!=='undefined'&&CAVE.on)caveStop(false);if(typeof PW!=='undefined'&&PW.on)pwStop();setTimeout(fstMenu,0);if(WALK.on)walkStop();if(BINO.on)binoStop();$('wAsk').hidden=true;autoSet(false);state='menu';paused=false;look.yaw=look.pitch=0;game.classList.add('menu');$('start').hidden=false;$('hint').hidden=true;if(camMode)toggleCam();resetRace();drawHb();knobToGear();drawGate();drawContinue();mpDraw();}
 $('btnAgain').addEventListener('click',function(){if(MP.on&&MP.conn){mpGo();return;}$('report').hidden=true;paused=false;resetRace();drawHb();knobToGear();drawGate();hudC={};tutIdx=0;});
 $('btnRepCars').addEventListener('click',function(){$('report').hidden=true;goMenu();});
 
@@ -4749,6 +4749,7 @@ function frame(now){
   requestAnimationFrame(frame);
   var dt=Math.min(.05,(now-last)/1000);last=now;
   if(state==='drive'&&!paused&&MP.phase==='count'){hudTick();mapTick(dt);}   /* conto alla rovescia: auto ferme, strumenti vivi */
+  else if(state==='drive'&&!paused&&CAVE.on)caveFrame(dt);
   else if(state==='drive'&&!paused&&PW.on)pwFrame(dt);
   else if(state==='drive'&&!paused&&(WALK.on||BINO.on))walkFrame(dt);
   else if(state==='drive'&&!paused&&GOD.on){godTick(dt);OX=car.x;OZ=car.z;skyTick(dt);natTick(dt);ntrTick(dt);hudTick();mapTick(dt);}
@@ -8052,7 +8053,8 @@ function lampLights(dt){
   }
   LAMPL.forEach(function(L){if(L.userData.w)L.position.set(L.userData.w[0]-OX,L.userData.w[1],L.userData.w[2]-OZ);});
   /* torcia: un fascio vero che illumina alberi, case e persone dove guardi */
-  if(typeof PW!=='undefined'&&PW.on&&PW.torch){var h2=PW.yaw+look.yaw,pt2=Math.max(-.6,Math.min(.7,look.pitch+.2)),hx=PW.fp?0:Math.cos(PW.yaw)*.3,hz=PW.fp?0:-Math.sin(PW.yaw)*.3;TORCH.position.set(PW.x-OX+hx,PW.y+1.3,PW.z-OZ+hz);
+  if(typeof CAVE!=='undefined'&&CAVE.on){}
+  else if(typeof PW!=='undefined'&&PW.on&&PW.torch){var h2=PW.yaw+look.yaw,pt2=Math.max(-.6,Math.min(.7,look.pitch+.2)),hx=PW.fp?0:Math.cos(PW.yaw)*.3,hz=PW.fp?0:-Math.sin(PW.yaw)*.3;TORCH.position.set(PW.x-OX+hx,PW.y+1.3,PW.z-OZ+hz);
     TORCH.target.position.set(PW.x-OX+Math.sin(h2)*10,PW.y+1.3-Math.tan(pt2)*10,PW.z-OZ+Math.cos(h2)*10);TORCH.intensity=d>.35?2.6:1.2;}
   else if(WALK&&WALK.on&&!BINO.on&&d>.35){var h=WALK.h+look.yaw,pt=Math.max(-.6,Math.min(.6,look.pitch))-.18;TORCH.position.set(car.x-OX,car.y+1.45,car.z-OZ);
     TORCH.target.position.set(car.x-OX+Math.sin(h)*10,car.y+1.45+Math.tan(pt)*10,car.z-OZ+Math.cos(h)*10);TORCH.intensity=Math.min(1,(d-.35)*2)*2.2;}
@@ -8484,7 +8486,7 @@ function edTargets(){
   var L=[];SC.pois.forEach(function(q){if(q.hid||q.x==null||!(q.p3||q.modello))return;L.push({pk:q.pk,n:q.n,x:q.x,z:q.z,kind:'poi',q:q});});
   EGGS.forEach(function(E){if(!E.pos)return;L.push({pk:E.p.pk,n:E.p.n,x:E.pos.x,z:E.pos.z,kind:'egg',E:E});});
   (typeof pwSigns==='function'?pwSigns()||[]:[]).forEach(function(s){if(!s.user)L.push({pk:s.pk,n:s.n,x:s.x0,z:s.z0,kind:'P',s:s});});
-  if(typeof plAll==='function'){plAll('L').forEach(function(e){L.push({pk:e.pk,n:'Lampione',x:e.o.x,z:e.o.z,kind:'L'});});plAll('Q').forEach(function(e){L.push({pk:e.pk,n:'Parcheggio',x:e.o.x,z:e.o.z,kind:'Q'});});plAll('G').forEach(function(e){L.push({pk:e.pk,n:'Grotta della sorgente',x:e.o.x,z:e.o.z,kind:'G',o0:e.o});});}
+  if(typeof plAll==='function'){plAll('L').forEach(function(e){L.push({pk:e.pk,n:'Lampione',x:e.o.x,z:e.o.z,kind:'L'});});plAll('Q').forEach(function(e){L.push({pk:e.pk,n:'Parcheggio',x:e.o.x,z:e.o.z,kind:'Q'});});plAll('G').forEach(function(e){L.push({pk:e.pk,n:'Grotta del Rio Obaco',x:e.o.x,z:e.o.z,kind:'G',o0:e.o});});}
   return L;
 }
 function edSave(){try{localStorage.setItem('au_pos3d',JSON.stringify(ED.off));}catch(e){}}
@@ -9486,7 +9488,7 @@ function plRebuild(){
 }
 function plKey(){return plAll('L').concat(plAll('Q')).concat(plAll('G')).map(function(e){return e.pk+JSON.stringify(e.o);}).join('|');}
 function plNew(kind,p,extra){var id=kind+':'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),o=Object.assign({x:Math.round(p.x*10)/10,z:Math.round(p.z*10)/10,dx:0,dz:0,dy:0,rot:0},extra||{});ED.off[id]=o;edSave();plRebuild();
-  ED.sel={pk:id,n:kind==='L'?'Lampione':kind==='G'?'Grotta della sorgente':'Parcheggio',x:o.x,z:o.z,kind:kind};return id;}
+  ED.sel={pk:id,n:kind==='L'?'Lampione':kind==='G'?'Grotta del Rio Obaco':'Parcheggio',x:o.x,z:o.z,kind:kind};return id;}
 function plMouse(){return ED.mx!=null?edPickRay({clientX:ED.mx,clientY:ED.my}):null;}
 /* lampioni della strada: si possono scegliere solo per copiarli */
 function plTileLamp(x,z){var tx=Math.floor(x/NT),tz=Math.floor(z/NT),best=null,bd=3;
@@ -9637,6 +9639,152 @@ var ufoTr0=trSync;trSync=function(dt){ufoTr0(dt);ufoTick(dt);};
 /* tintinnio delle stelline */
 function speleoTwinkle(d){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t=AC.currentTime+.03,v=.12*Math.max(0,1-d/40);
   [1568,2093,1760,2349,1976].forEach(function(f,i){var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t+i*.09);g.gain.linearRampToValueAtTime(v,t+i*.09+.01);g.gain.exponentialRampToValueAtTime(.0005,t+i*.09+.35);o.connect(g);g.connect(au.master);o.start(t+i*.09);o.stop(t+i*.09+.4);});}
+/* ================= DENTRO LE GROTTE DI PASTENA: passeggiata sotterranea che sbuca al Rio Obaco =================
+   la grotta è un mondo a parte, costruito sotto il piano del gioco: si cammina lungo il percorso, si guarda intorno, si fa luce con la torcia */
+var CAVE={on:false,g:null,s:0,mult:1,P:null,vis:null,lamps:[],L:[],snd:0,drip:1,hall:'',bats:[]};
+var CAVY=-2600;
+var CAVEHALLS=[[0,'Salone d’ingresso: sotto la passerella scorre il Fosso Mastro'],[70,'Corridoio Franchetti'],[95,'Sala del salice piangente'],[125,'Galleria delle meraviglie'],[160,'Sala delle colonne: il soffitto è macchiato dal guano dei pipistrelli'],[200,'Sala dei pipistrelli'],[230,'Sala delle diramazioni: la colata a testa di elefante'],[255,'Un ramo nuovo, stretto e bagnato: si sente l’acqua più avanti…'],[320,'Aria fredda: l’uscita sul Rio Obaco è vicina']];
+var OBACO={n:'Rio Obaco',key:'Rio Obaco',com:'Pastena',id:-30,pk:'egg:obaco',c:'nat',x:0,z:0,wd:'',w:'it:Grotte di Pastena',foto:[],foto0:[],bozza:true,node:-1,extra:[],link:[],video:[],
+  t:"Il Rio Obaco sbuca qui dalla roccia, alla fine di un ramo nascosto delle Grotte di Pastena che nel gioco si percorre a piedi dall'interno.\nLa sua acqua è sempre gelida, anche in piena estate: viene dal cuore della montagna, dove la temperatura resta bassa tutto l'anno."};
+/* ---------- il percorso e la galleria ---------- */
+function cavePath(){
+  var r=rng(5150),N=172,ds=2,P={x:[],z:[],y:[],h:[],w:[],ht:[],s:[],n:N},h=0,x=0,z=0;
+  for(var i=0;i<N;i++){var s=i*ds;h+=Math.sin(s/23)*.05+Math.sin(s/9.3+1)*.03+(r()-.5)*.03;x+=Math.sin(h)*ds;z+=Math.cos(h)*ds;
+    var y=CAVY+Math.sin(s/37)*2.2+Math.sin(s/13)*.5+(s>250?(s-250)*.03:0);
+    function hall(c,w,a){return Math.exp(-Math.pow((s-c)/w,2))*a;}
+    var W=3+r()*.6+hall(30,28,9)+hall(100,9,4)+hall(165,14,7)+hall(205,9,5)+hall(235,8,4)-(s>255&&s<300?1.2:0),H=3.4+r()*.5+hall(30,28,12)+hall(165,14,6)+hall(205,9,7)+hall(100,9,3);
+    P.x.push(x);P.z.push(z);P.y.push(y);P.h.push(h);P.w.push(W);P.ht.push(H);P.s.push(s);}
+  P.len=(N-1)*ds;return P;
+}
+function caveAt(s){var P=CAVE.P,f=clamp(s/2,0,P.n-1.001),i=Math.floor(f),u=f-i;function L(a){return a[i]+(a[i+1]-a[i])*u;}return{x:L(P.x),z:L(P.z),y:L(P.y),h:L(P.h),w:L(P.w),ht:L(P.ht)};}
+function caveWorldBuild(){
+  if(CAVE.g)return;var P=CAVE.P=cavePath(),r=rng(9091),M=22,pos=[],col=[],idx=[],i,j,c=new THREE.Color();
+  for(i=0;i<P.n;i++){var hx=Math.sin(P.h[i]),hz=Math.cos(P.h[i]),nx=hz,nz=-hx,W=P.w[i],H=P.ht[i],fy=P.y[i];
+    for(j=0;j<M;j++){var a=j/M*Math.PI*2,k=1+(r()-.5)*.28+Math.sin(i*.7+j*1.3)*.08,lat=Math.cos(a)*W*k,v=Math.sin(a)*H*k*.9+H*.32,y=fy+v;
+      if(v<0){y=fy+(Math.abs(lat)>W*.7?(Math.abs(lat)-W*.7)*.5:0)+(r()-.5)*.08;}
+      pos.push(P.x[i]+nx*lat,y,P.z[i]+nz*lat);
+      var ht=(y-fy)/Math.max(1,H*1.2),wet=v<0?1:0;c.setHex(wet?0x4a3d30:(r()<.12?0xcbb68c:ht>.7?0x9a8b72:0x7d6d58));var sh=.8+r()*.3;col.push(c.r*sh,c.g*sh,c.b*sh);}}
+  for(i=0;i<P.n-1;i++)for(j=0;j<M;j++){var a0=i*M+j,a1=i*M+(j+1)%M,b0=a0+M,b1=a1+M;idx.push(a0,a1,b0,a1,b1,b0);}
+  /* tappo all'inizio e alla fine (dietro di sé) */
+  var g=new THREE.Group(),geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));geo.setIndex(idx);geo.computeVertexNormals();
+  var nr=geo.attributes.normal;for(i=0;i<nr.count;i++)nr.setXYZ(i,-nr.getX(i),-nr.getY(i),-nr.getZ(i));   /* le pareti guardano dentro */
+  g.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,flatShading:true})));
+  /* stalattiti, stalagmiti e colonne */
+  var B=new GB(),cream=[0xd8c6a0,0xc9b088,0xe6d8b8,0xb89a74];
+  function cone(x,y,z,rad,len,down,cl){var n=6,tip=[x,y+(down?-len:len),z];for(var q=0;q<n;q++){var a=q/n*Math.PI*2,b=(q+1)/n*Math.PI*2,p0=[x+Math.cos(a)*rad,y,z+Math.sin(a)*rad],p1=[x+Math.cos(b)*rad,y,z+Math.sin(b)*rad];
+    B.quad(down?[p1,p0,tip,tip]:[p0,p1,tip,tip],[Math.cos((a+b)/2),0,Math.sin((a+b)/2)],N4,hc(cl));}}
+  for(i=3;i<P.n-2;i++){var s=P.s[i],W2=P.w[i],H2=P.ht[i],hx2=Math.sin(P.h[i]),hz2=Math.cos(P.h[i]),nx2=hz2,nz2=-hx2,big=W2>6,fy2=P.y[i];
+    if(s<55)continue;   /* nel salone d'ingresso niente stalattiti: l'acqua scorreva troppo veloce */
+    var ns=big?5:2;for(var q=0;q<ns;q++){var lat=(r()-.5)*W2*1.4,top=fy2+H2*(.32+.82*Math.sqrt(Math.max(0,1-Math.pow(lat/W2,2))))*.92;if(Math.abs(lat)<.9&&s<330)lat+=lat<0?-1:1;
+      cone(P.x[i]+nx2*lat,top,P.z[i]+nz2*lat,.08+r()*.18,.4+r()*(big?2.4:1),true,cream[Math.floor(r()*4)]);}
+    if(r()<.5){var la=(r()<.5?-1:1)*(W2*.55+r()*W2*.2);cone(P.x[i]+nx2*la,fy2-.1,P.z[i]+nz2*la,.15+r()*.25,.4+r()*1.4,false,cream[Math.floor(r()*4)]);}
+    if(s>150&&s<185&&i%3===0){var lc=(i%2?-1:1)*W2*.62,cx=P.x[i]+nx2*lc,cz=P.z[i]+nz2*lc;for(var t=0;t<8;t++){var a3=t/8*Math.PI*2,a4=(t+1)/8*Math.PI*2,R0=.7,R1=.45;B.quad([[cx+Math.cos(a3)*R0,fy2-.2,cz+Math.sin(a3)*R0],[cx+Math.cos(a4)*R0,fy2-.2,cz+Math.sin(a4)*R0],[cx+Math.cos(a4)*R1,fy2+H2*1.3,cz+Math.sin(a4)*R1],[cx+Math.cos(a3)*R1,fy2+H2*1.3,cz+Math.sin(a3)*R1]],[Math.cos(a3),0,Math.sin(a3)],N4,hc(0xc4a880));}}}
+  g.add(B.mesh(new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true})));
+  /* il torrente sotterraneo, sul lato sinistro, che scorre verso l'uscita; la passerella sul lato destro nel salone */
+  var wp=[],wu=[],wi=[];for(i=0;i<P.n;i++){var hx3=Math.sin(P.h[i]),hz3=Math.cos(P.h[i]),nx3=hz3,nz3=-hx3,W3=P.w[i],a5=-W3*.62,b5=-W3*.12;
+    [a5,b5].forEach(function(l,k){wp.push(P.x[i]+nx3*l,P.y[i]+.06,P.z[i]+nz3*l);wu.push(k,P.s[i]/3);});}
+  for(i=0;i<P.n-1;i++){var o=i*2;wi.push(o,o+2,o+1,o+1,o+2,o+3);}
+  var wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));wg.setAttribute('uv',new THREE.Float32BufferAttribute(wu,2));wg.setIndex(wi);wg.computeVertexNormals();
+  CAVE.wt=watTex.clone();CAVE.wt.needsUpdate=true;CAVE.wt.wrapS=CAVE.wt.wrapT=THREE.RepeatWrapping;
+  g.add(new THREE.Mesh(wg,new THREE.MeshPhongMaterial({map:CAVE.wt,color:0x7fa3ae,specular:0x556066,shininess:60,transparent:true,opacity:.85,side:THREE.DoubleSide})));
+  var BW=new GB(),wood=hc(0x6a4a30),rail=hc(0x3a2a1c);for(i=0;i<36;i++){var a6=caveAt(i*2),a7=caveAt(i*2+2),n6=[Math.cos(a6.h),-Math.sin(a6.h)],n7=[Math.cos(a7.h),-Math.sin(a7.h)];
+    BW.quad([[a6.x+n6[0]*.2,a6.y+.35,a6.z+n6[1]*.2],[a6.x+n6[0]*1.8,a6.y+.35,a6.z+n6[1]*1.8],[a7.x+n7[0]*1.8,a7.y+.35,a7.z+n7[1]*1.8],[a7.x+n7[0]*.2,a7.y+.35,a7.z+n7[1]*.2]],[0,1,0],N4,wood);
+    BW.quad([[a6.x+n6[0]*.2,a6.y+1.25,a6.z+n6[1]*.2],[a7.x+n7[0]*.2,a7.y+1.25,a7.z+n7[1]*.2],[a7.x+n7[0]*.2,a7.y+1.32,a7.z+n7[1]*.2],[a6.x+n6[0]*.2,a6.y+1.32,a6.z+n6[1]*.2]],[-n6[0],0,-n6[1]],N4,rail);
+    if(i%3===0)cbox(BW,a6.x+n6[0]*.2,a6.y+.8,a6.z+n6[1]*.2,.06,.9,.06,rail);}
+  g.add(BW.mesh(new THREE.MeshLambertMaterial({vertexColors:true})));
+  /* luci della visita turistica, solo nella parte aperta al pubblico */
+  CAVE.L=[];for(var sl=6;sl<240;sl+=14){var A=caveAt(sl),nx4=Math.cos(A.h),nz4=-Math.sin(A.h),la4=A.w*.8,sp=nwSprite(lampGlowTex(),0xffc27a,1.4,.9);sp.position.set(A.x+nx4*la4,A.y+.6,A.z+nz4*la4);g.add(sp);CAVE.L.push([sp.position.x,sp.position.y,sp.position.z]);}
+  CAVE.lamps=[0,1,2].map(function(){var L=new THREE.PointLight(0xffc27a,0,22,1.4);g.add(L);return L;});
+  /* in fondo, la luce del giorno che entra dall'uscita */
+  var E=caveAt(P.len-2),ex=nwSprite(lampGlowTex(),0xdff2ff,9,1);ex.position.set(E.x+Math.sin(E.h)*3,E.y+1.6,E.z+Math.cos(E.h)*3);g.add(ex);CAVE.exit=ex;
+  /* pipistrelli appesi e in volo nella loro sala */
+  var bm=new THREE.MeshBasicMaterial({color:0x151214,side:THREE.DoubleSide});CAVE.bats=[];for(i=0;i<14;i++){var b=new THREE.Group(),bd=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.18),bm);b.add(bd);[-1,1].forEach(function(sd){var w=new THREE.Mesh(new THREE.PlaneGeometry(.26,.12),bm);w.geometry.translate(sd*.13,0,0);w.rotation.x=-Math.PI/2;var pv=new THREE.Group();pv.add(w);b.add(pv);});
+    b.userData={s:195+r()*20,ph:r()*6,o:(r()-.5)*4,hh:2+r()*4};g.add(b);CAVE.bats.push(b);}
+  g.visible=false;scene.add(g);CAVE.g=g;
+}
+/* ---------- suoni: gocce, eco, il torrente ---------- */
+function caveSnd(on){
+  if(!on){var A=CAVE.au;CAVE.au=null;if(A){try{A.g.gain.setTargetAtTime(0,AC.currentTime,.4);setTimeout(function(){try{A.s.stop();}catch(e){}A.g.disconnect();},2000);}catch(e){}}return;}
+  if(!AC||!au||!opts.snd||AC.state!=='running'||CAVE.au)return;
+  try{var len=AC.sampleRate*2,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0),l=0;for(var i=0;i<len;i++){l=(l+(Math.random()*2-1)*.06)*.985;d[i]=l*3;}
+    var s=AC.createBufferSource();s.buffer=b;s.loop=true;var f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=700;var g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(au.master);s.start();CAVE.au={s:s,g:g};}catch(e){}
+}
+function caveDrip(){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t=AC.currentTime+.02,f=900+Math.random()*1400;
+  for(var e=0;e<3;e++){var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(f*(1+e*.02),t+e*.17);o.frequency.exponentialRampToValueAtTime(f*1.6,t+e*.17+.05);g.gain.setValueAtTime(0,t+e*.17);g.gain.linearRampToValueAtTime(.09/(1+e*1.8),t+e*.17+.005);g.gain.exponentialRampToValueAtTime(.0005,t+e*.17+.12);o.connect(g);g.connect(au.master);o.start(t+e*.17);o.stop(t+e*.17+.15);}}
+/* ---------- entrare e uscire ---------- */
+function caveMouth(){var p=typeof batPoi==='function'?batPoi():null;return p&&p.mouth;}
+function caveExitObj(){var L=typeof plAll==='function'?plAll('G'):[];var e=L.filter(function(x){return x.pk==='G:sorgente';})[0]||L[0];return e?plPos(e.o):null;}
+function caveStart(){
+  if(CAVE.on||!caveMouth()||!caveExitObj())return;
+  if(!PW.on)pwStart(null);if(!PW.on)return;
+  caveWorldBuild();CAVE.on=true;CAVE.s=1;CAVE.hall='';CAVE.drip=1;CAVE.vis=[];
+  scene.children.forEach(function(o){CAVE.vis.push([o,o.visible]);});
+  game.classList.add('cave');caveBar();look.yaw=look.pitch=0;caveSnd(true);
+  say('Dentro le Grotte di Pastena: AVANTI per camminare, trascina per guardarti intorno. La torcia è accesa','good',4200);
+}
+function caveStop(out){
+  if(!CAVE.on)return;CAVE.on=false;caveSnd(false);game.classList.remove('cave');
+  CAVE.vis.forEach(function(v){v[0].visible=v[1];});if(TORCH){TORCH.angle=.42;TORCH.penumbra=.55;TORCH.distance=34;}CAVE.g.visible=false;CAVE.vis=null;applyLight();
+  var m=caveMouth(),x,z,yaw;
+  if(out){var E=caveExitObj();x=E.x+E.ux*5+E.uz*2.4;z=E.z+E.uz*5-E.ux*2.4;yaw=Math.atan2(E.ux,E.uz);}
+  else{x=m.x+m.hx*4;z=m.z+m.hz*4;yaw=Math.atan2(m.hx,m.hz);}
+  PW.x=x;PW.z=z;PW.y=gndY(x,z);PW.yaw=yaw;car.x=x;car.z=z;car.y=car.gy=PW.y;OX=car.x;OZ=car.z;netSync(true);look.yaw=look.pitch=0;
+  if(out){OBACO.x=x;OBACO.z=z;var pts=SC.found[OBACO.id]?0:scFound(OBACO,true);setTimeout(function(){scCard(OBACO,{pts:pts});},600);say('Sei uscito al Rio Obaco: l’acqua è gelida!','good',3500);}
+  else say('Di nuovo all’ingresso delle grotte','',2000);
+}
+function caveBar(){
+  var b=$('caveBar');
+  if(!b){b=document.createElement('div');b.id='caveBar';b.className='hud';b.setAttribute('role','group');b.setAttribute('aria-label','Nella grotta');
+    b.innerHTML='<div class="wt">Grotte di Pastena</div><div class="cs" id="caveSala"></div><div class="wr"><span class="wl">Passo</span><button type="button" data-cm="1">×1</button><button type="button" data-cm="2">×2</button><button type="button" data-cm="4">×4</button></div><div class="wr"><button type="button" id="caveBack" class="wbk">Torna all’ingresso</button></div>';
+    $('game').appendChild(b);
+    var st=document.createElement('style');st.textContent='#caveBar{display:none;position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:16px;width:min(46%,300px);padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);gap:6px;z-index:4}#game.cave #caveBar{display:grid}#game.cave #pwBar,#game.cave #btnPw,#game.cave #btnCave,#game.cave #btnCam,#game.cave #nav,#game.cave #cluster,#game.cave #btnDisc{display:none!important}#caveBar .wt{font:700 15px/1.15 var(--font-d)}#caveBar .cs{font:500 13px/1.25 var(--font-d);opacity:.85;min-height:16px}#caveBar .wr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#caveBar .wl{font:600 11px var(--font-d);letter-spacing:.08em;text-transform:uppercase;opacity:.75}#caveBar button{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;padding:5px 11px;font:700 13px var(--font-d);cursor:pointer;min-height:32px}#caveBar button[aria-pressed=true],#caveBar .wbk{background:var(--amber);color:#1a1206;border-color:var(--amber)}#btnCave{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(288px + env(safe-area-inset-top,0px));z-index:3;background:#3b2a1a;color:#fff;border-color:#8a6a3a}';
+    document.head.appendChild(st);
+    b.addEventListener('pointerdown',function(e){e.stopPropagation();});
+    b.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;if(t.id==='caveBack'){caveStop(false);return;}if(t.dataset.cm){CAVE.mult=+t.dataset.cm;caveBarSync();}});}
+  caveBarSync();
+}
+function caveBarSync(){var b=$('caveBar');if(!b)return;b.querySelectorAll('[data-cm]').forEach(function(x){x.setAttribute('aria-pressed',+x.dataset.cm===CAVE.mult?'true':'false');});}
+/* ---------- un passo nella grotta ---------- */
+function caveFrame(dt){
+  gameT+=dt;if(sayT>0){sayT-=dt;if(sayT<=0)$('hint').hidden=true;}
+  var f=((inp.gas||inp.kbGas)?1:0)-((inp.brake||inp.kbBrake)?1:0),v=f>0?1.4*CAVE.mult:f<0?-.9:0;
+  CAVE.s=clamp(CAVE.s+v*dt,0,CAVE.P.len);if(CAVE.s>=CAVE.P.len-1){caveStop(true);return;}
+  if(CAVE.s<=0&&f<0){caveStop(false);return;}
+  if(Math.abs(v)>0){CAVE.stp=(CAVE.stp||0)+Math.abs(v)*dt;if(CAVE.stp>.75){CAVE.stp=0;if(typeof walkStepSnd==='function')walkStepSnd(1);}}
+  /* la sala in cui si è */
+  var hn='';CAVEHALLS.forEach(function(h){if(CAVE.s>=h[0])hn=h[1];});if(hn!==CAVE.hall){CAVE.hall=hn;$('caveSala').textContent=hn;say(hn,'good',3000);}
+  CAVE.drip-=dt;if(CAVE.drip<=0){CAVE.drip=.6+Math.random()*2.2;caveDrip();}
+  if(CAVE.au&&AC){var A=caveAt(CAVE.s),near=CAVE.s>255?1:.55;CAVE.au.g.gain.setTargetAtTime(.22*near,AC.currentTime,.4);}
+  if(CAVE.wt)CAVE.wt.offset.y-=dt*.5;
+  /* luci turistiche più vicine */
+  var C=caveAt(CAVE.s),Ls=CAVE.L.slice().sort(function(a,b){return Math.hypot(a[0]-C.x,a[2]-C.z)-Math.hypot(b[0]-C.x,b[2]-C.z);});
+  CAVE.lamps.forEach(function(L,i){var p=Ls[i];if(p&&Math.hypot(p[0]-C.x,p[2]-C.z)<30){L.position.set(p[0],p[1]+.5,p[2]);L.intensity=2.2;}else L.intensity=0;});
+  CAVE.bats.forEach(function(b){var u=b.userData,s=u.s+Math.sin(gameT*.6+u.ph)*8,A=caveAt(s),n=[Math.cos(A.h),-Math.sin(A.h)];b.position.set(A.x+n[0]*(u.o+Math.sin(gameT*1.3+u.ph)),A.y+A.ht*.8+Math.sin(gameT*2+u.ph)*.6,A.z+n[1]*(u.o+Math.sin(gameT*1.3+u.ph)));b.rotation.y=A.h+(Math.cos(gameT*.6+u.ph)>0?0:Math.PI);b.children[1].rotation.z=Math.sin(gameT*16+u.ph)*.9;b.children[2].rotation.z=-Math.sin(gameT*16+u.ph)*.9;});
+}
+function caveCam(){
+  /* solo la grotta e le sue luci: il resto del mondo resta fuori */
+  scene.children.forEach(function(o){o.visible=o===CAVE.g||o===hemi||o===sun||o===TORCH||(TORCH&&o===TORCH.target)||o===camera;});CAVE.g.visible=true;
+  hemi.intensity=.42;sun.intensity=0;scene.background.setHex(0x000000);scene.fog.color.setHex(0x000000);scene.fog.near=6;scene.fog.far=48;
+  var A=caveAt(CAVE.s),B=caveAt(Math.min(CAVE.P.len,CAVE.s+3)),hd=Math.atan2(B.x-A.x,B.z-A.z),nx=Math.cos(A.h),nz=-Math.sin(A.h),lat=CAVE.s<72?.9:.25,h=hd+look.yaw,pc=look.pitch;
+  var ex=A.x+nx*lat,ez=A.z+nz*lat,ey=A.y+1.65+(CAVE.s<72?.35:0);
+  camera.position.set(ex,ey,ez);camera.near=.1;camera.lookAt(ex+Math.sin(h)*10,ey-.3-Math.tan(pc)*10,ez+Math.cos(h)*10);camera.updateProjectionMatrix();
+  if(TORCH){TORCH.position.set(ex+Math.cos(h)*.3,ey-.3,ez-Math.sin(h)*.3);TORCH.target.position.set(ex+Math.sin(h)*10,ey-.6-Math.tan(pc+.1)*10,ez+Math.cos(h)*10);TORCH.intensity=4.2;TORCH.distance=55;TORCH.angle=.62;TORCH.penumbra=.6;}
+}
+/* ---------- il pulsante, vicino all'imbocco ---------- */
+function caveNearTick(dt){
+  CAVE.chk=(CAVE.chk||0)-dt;if(CAVE.chk>0)return;CAVE.chk=.5;
+  var b=$('btnCave');if(!b){if(world!=='net'||!NET)return;b=document.createElement('button');b.id='btnCave';b.className='chip hud';b.type='button';b.textContent='Entra nelle Grotte di Pastena';b.hidden=true;$('game').appendChild(b);caveBar();
+    b.addEventListener('pointerdown',function(e){e.stopPropagation();});b.addEventListener('click',function(){caveStart();});}
+  var m=caveMouth();if(!m||CAVE.on||world!=='net'||state!=='drive'||BINO.on||WALK.on||(typeof GOD!=='undefined'&&GOD.on)){b.hidden=true;return;}
+  var px=PW.on?PW.x:car.x,pz=PW.on?PW.z:car.z,d=Math.hypot(px-m.x,pz-m.z);b.hidden=!(d<(PW.on?14:40)&&(PW.on||Math.hypot(car.vx,car.vz)<4));
+}
+/* il Rio Obaco: l'acqua è gelida, e lo si sente */
+function obacoTick(dt){
+  if(!PW.on||CAVE.on)return;var E=caveExitObj();if(!E)return;var dx=PW.x-E.x,dz=PW.z-E.z,a=dx*E.ux+dz*E.uz,l=Math.abs(dx*E.uz-dz*E.ux);
+  if(a>0&&a<16&&l<1.6){CAVE.cold=(CAVE.cold||0)-dt;if(CAVE.cold<=0){CAVE.cold=25;say('Brrr! L’acqua del Rio Obaco è gelida','',2600);if(typeof pwSnd==='function')pwSnd('grido');}}
+}
+var caveTr0=trSync;trSync=function(dt){caveTr0(dt);caveNearTick(dt);obacoTick(dt);};
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -9650,7 +9798,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},PL:PL,plNew:plNew,plAll:plAll,fstArea:fstArea,plZoneSet:plZoneSet,FSTU:function(){return FST;},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={CAVE:CAVE,caveStart:caveStart,caveStop:caveStop,caveAt:caveAt,OBACO:OBACO,MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},PL:PL,plNew:plNew,plAll:plAll,fstArea:fstArea,plZoneSet:plZoneSet,FSTU:function(){return FST;},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
