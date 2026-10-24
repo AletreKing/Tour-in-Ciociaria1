@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 24.10 23:34</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 24.10 23:44</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -2464,12 +2464,19 @@ function netReport(rec){
   mpRepDraw();paused=true;$('report').hidden=false;inp.kbGas=inp.kbBrake=inp.kbL=inp.kbR=false;inp.syncPedals();
 }
 /* mappa attorno all'auto, con il muso in alto: la usano la mappina e il navigatore */
+/* nella mappina: il nome del fiume o lago vicino, nel punto del suo corso più vicino al centro */
+var NMW={t:0,L:[]};
+function netMapW(x,T,sc,W,H){if(!WAT.ready)return;var now=performance.now();if(now-NMW.t<800){if(NMW.L.length)wlabDraw(x,NMW.L,T,1,W,H,'#8fd3ff','#0b1420',[],'"Saira Condensed","Arial Narrow",sans-serif',22);return;}NMW.t=now;var best={},bd={};
+  WAT.R.forEach(function(R){var n=(R.n||'').trim();if(!n)return;if(R.bb&&(R.bb[2]<car.x-800||R.bb[0]>car.x+800||R.bb[3]<car.z-800||R.bb[1]>car.z+800))return;for(var i=0;i<R.x.length-1;i++){var d=Math.hypot(R.x[i]-car.x,R.z[i]-car.z);if(d<(bd[n]||1e9)&&d<H/sc*.6){bd[n]=d;var j=Math.min(R.x.length-1,i+3),k=Math.max(0,i-3),dx=R.x[j]-R.x[k],dz=R.z[j]-R.z[k],dl=Math.hypot(dx,dz)||1;best[n]=[n,R.x[i],R.z[i],dx/dl,dz/dl,1e9,'r'];}}});
+  WAT.L.forEach(function(L){var n=(L.n||'').trim();if(!n||L.x1<car.x-500||L.x0>car.x+500||L.z1<car.z-500||L.z0>car.z+500)return;var cx=0,cz=0;L.o.forEach(function(p){cx+=p[0];cz+=p[1];});best[n]=[n,cx/L.o.length,cz/L.o.length,1,0,1e9,'l'];});
+  var L2=Object.keys(best).map(function(n){return best[n];});NMW.L=L2;if(L2.length)wlabDraw(x,L2,T,1,W,H,'#8fd3ff','#0b1420',[],'"Saira Condensed","Arial Narrow",sans-serif',22);}
 function netMap(x,W,H,cx,cy,sc){
   var s=Math.sin(car.th),c=Math.cos(car.th),rad=Math.hypot(Math.max(cx,W-cx),Math.max(cy,H-cy))/sc,P=NET.P,G=NET.grid,k,i,j,a,p;
   function T(px,pz){var dx=px-car.x,dz=pz-car.z;return[cx+(-dx*c+dz*s)*sc,cy-(dx*s+dz*c)*sc];}
   x.save();x.beginPath();x.rect(0,0,W,H);x.clip();x.lineCap='round';x.lineJoin='round';
   var by=[[],[],[],[],[]],g0x=Math.floor((car.x-rad)/NG),g1x=Math.floor((car.x+rad)/NG),g0z=Math.floor((car.z-rad)/NG),g1z=Math.floor((car.z+rad)/NG);
   for(i=g0x;i<=g1x;i++)for(j=g0z;j<=g1z;j++){a=G.get(nk(i,j));if(!a)continue;for(k=0;k<a.length;k++){p=a[k];by[NET.E[P.e[p]].cls].push(p);}}
+  wlabWater(x,T,sc,car.x-rad,car.x+rad,car.z-rad,car.z+rad,6);
   var col=['#3fae6a','#4f8fe0','#d8d2b0','#a9b0bb','#7f8896'],lw=[4,3.6,3,2.4,2];
   for(var cl=4;cl>=0;cl--){
     x.beginPath();for(k=0;k<by[cl].length;k++){p=by[cl][k];var A=T(P.x0[p],P.z0[p]),B=T(P.x1[p],P.z1[p]);x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1]);}
@@ -2484,6 +2491,7 @@ function netMap(x,W,H,cx,cy,sc){
     x.fillStyle='#ffa02e';x.beginPath();x.arc(q2[0],q2[1],6,0,7);x.fill();
   }
   if(MP.on&&MP.conn&&MP.rv.has){var q3=T(MP.rv.dx,MP.rv.dz);x.fillStyle='#ff4133';x.beginPath();x.arc(q3[0],q3[1],5.5,0,7);x.fill();}
+  netMapW(x,T,sc,W,H);
   x.fillStyle='#eef2f6';x.beginPath();x.moveTo(cx,cy-9);x.lineTo(cx+6.5,cy+7);x.lineTo(cx,cy+3.5);x.lineTo(cx-6.5,cy+7);x.closePath();x.fill();
   x.restore();
 }
@@ -2913,6 +2921,38 @@ function bmInfo(msg){
   $('bmTitle').textContent=SC.mission?'Mappa · i numeri arancioni sono le tappe del percorso':'Mappa · tocca un luogo (pallino colorato) o una strada per andarci';
   var R=nrun.route;$('bmInfo').textContent=msg||((nrun.dst.poi||R?'Destinazione: '+nrun.dst.n:'Nessuna destinazione: esplorazione libera')+(R?' · mancano '+km(Math.max(0,R.len-nrun.done)):''));
 }
+/* nomi di fiumi e laghi sulla mappa, in celeste, lungo il corso d'acqua; niente sovrapposizioni */
+function wlabDraw(cx,L,SX,k,W,H,col,halo,boxes,font,px){px=px||11.5;
+  cx.save();cx.textAlign='center';cx.textBaseline='middle';var seen={};
+  L.slice().sort(function(a,b){return b[5]-a[5];}).forEach(function(l){
+    var n=l[0],lake=l[6]==='l';if(lake?l[5]*k<9:l[5]*k<130)return;
+    var q=SX(l[1],l[2]);if(q[0]<-60||q[0]>W+60||q[1]<-20||q[1]>H+20)return;
+    var q2=SX(l[1]+l[3]*60,l[2]+l[4]*60),a=lake?0:Math.atan2(q2[1]-q[1],q2[0]-q[0]);if(a>Math.PI/2)a-=Math.PI;else if(a<-Math.PI/2)a+=Math.PI;
+    cx.font='italic 600 '+(lake?px+.5:px)+'px '+(font||'sans-serif');var w=cx.measureText(n).width,hw=(Math.abs(Math.cos(a))*w+Math.abs(Math.sin(a))*px)/2+3,hh=(Math.abs(Math.sin(a))*w+Math.abs(Math.cos(a))*px)/2+3;
+    var b=[q[0]-hw,q[1]-hh,q[0]+hw,q[1]+hh];for(var m=0;m<boxes.length;m++){var o=boxes[m];if(b[0]<o[2]&&b[2]>o[0]&&b[1]<o[3]&&b[3]>o[1])return;}
+    boxes.push(b);cx.save();cx.translate(q[0],q[1]);cx.rotate(a);cx.lineWidth=Math.max(3,px/4);cx.strokeStyle=halo;cx.lineJoin='round';cx.strokeText(n,0,0);cx.fillStyle=col;cx.fillText(n,0,0);cx.restore();
+  });
+  cx.restore();
+}
+
+/* nomi e tracciati dell'acqua per le mappe del gioco (dai fiumi e laghi veri) */
+var WLAB=null;
+function wlabList(){if(WLAB||!WAT.ready)return WLAB||[];var byn={},out=[];
+  WAT.R.forEach(function(R){var n=(R.n||'').trim();if(!n||R.x.length<2)return;(byn[n]=byn[n]||[]).push(R);});
+  Object.keys(byn).forEach(function(n){var Ls=byn[n],tot=0;Ls.forEach(function(R){tot+=R.s[R.s.length-1];});if(tot<1200)return;
+    Ls.forEach(function(R){var ln=R.s[R.s.length-1];if(ln<Math.min(2500,tot*.6))return;var kk=Math.max(1,Math.floor(ln/3500));
+      for(var j=0;j<kk;j++){var d=ln*(j+.5)/kk,i=0;while(i<R.x.length-2&&R.s[i+1]<d)i++;var f=(d-R.s[i])/((R.s[i+1]-R.s[i])||1),x=R.x[i]+(R.x[i+1]-R.x[i])*f,z=R.z[i]+(R.z[i+1]-R.z[i])*f;
+        var a=Math.max(0,i-2),b=Math.min(R.x.length-1,i+3),dx=R.x[b]-R.x[a],dz=R.z[b]-R.z[a],dl=Math.hypot(dx,dz)||1;out.push([n,x,z,dx/dl,dz/dl,tot,'r']);}});});
+  WAT.L.forEach(function(L){var n=(L.n||'').trim();if(!n||L.a<15000)return;var cx=0,cz=0;L.o.forEach(function(p){cx+=p[0];cz+=p[1];});out.push([n,cx/L.o.length,cz/L.o.length,1,0,Math.sqrt(L.a),'l']);});
+  WLAB=out;return out;}
+function wlabWater(x,proj,k,vx0,vx1,vz0,vz1,lw){
+  if(!WAT.ready)return;x.fillStyle='#24506a';x.beginPath();
+  WAT.L.forEach(function(L){if(L.x1<vx0||L.x0>vx1||L.z1<vz0||L.z0>vz1)return;L.o.forEach(function(p,i){var q=proj(p[0],p[1]);if(i)x.lineTo(q[0],q[1]);else x.moveTo(q[0],q[1]);});x.closePath();});x.fill();
+  x.strokeStyle='#3f86b4';
+  WAT.R.forEach(function(R){if(!R.bb){var a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;for(var t=0;t<R.x.length;t++){a0=Math.min(a0,R.x[t]);a1=Math.max(a1,R.x[t]);b0=Math.min(b0,R.z[t]);b1=Math.max(b1,R.z[t]);}R.bb=[a0,b0,a1,b1];}if(R.bb[2]<vx0||R.bb[0]>vx1||R.bb[3]<vz0||R.bb[1]>vz1)return;var n=R.x.length,st=Math.max(1,Math.floor(n/Math.max(8,R.s[n-1]*k/3)));x.beginPath();var on=false;
+    for(var i=0;i<n;i+=st){var xx=R.x[i],zz=R.z[i];if(xx<vx0-50||xx>vx1+50||zz<vz0-50||zz>vz1+50){on=false;continue;}var q=proj(xx,zz);if(on)x.lineTo(q[0],q[1]);else{x.moveTo(q[0],q[1]);on=true;}}
+    var q2=proj(R.x[n-1],R.z[n-1]);if(on)x.lineTo(q2[0],q2[1]);x.lineWidth=Math.max(1,Math.min(lw,R.w*k));x.stroke();});
+}
 function bmS(px,pz){return[BM.W/2-(px-BM.cx)*BM.k,BM.H/2-(pz-BM.cz)*BM.k];}
 function bmDraw(){
   BM.raf=0;if(!BM.on)return;
@@ -2921,6 +2961,7 @@ function bmDraw(){
   /* provincia */
   x.beginPath();NET.bnd.forEach(function(r){r.forEach(function(p,i){var q=bmS(p[0],p[1]);if(i)x.lineTo(q[0],q[1]);else x.moveTo(q[0],q[1]);});x.closePath();});
   x.fillStyle='#15212b';x.fill();x.strokeStyle='#3e5c43';x.lineWidth=1.5;x.stroke();
+  wlabWater(x,bmS,k,BM.cx-W/2/k,BM.cx+W/2/k,BM.cz-H/2/k,BM.cz+H/2/k,4);
   var vx0=BM.cx-W/2/k,vx1=BM.cx+W/2/k,vz0=BM.cz-H/2/k,vz1=BM.cz+H/2/k,col=['#3fae6a','#4f8fe0','#d8d2b0','#a9b0bb','#6f7988'],f=clamp(k*45,.7,2.6),lw=[2.6,2.3,1.8,1.3,.9];
   for(var cl=4;cl>=0;cl--){
     x.beginPath();
@@ -2950,6 +2991,7 @@ function bmDraw(){
     x.fillStyle=l.p===0?'#eef2f6':l.p===1?'#b9c3cf':'#8b97a8';x.beginPath();x.arc(q[0],q[1],l.p===0?3.4:l.p===1?2.6:1.8,0,7);x.fill();
     if(free){boxes.push(b);x.fillText(l.n,q[0]+6,q[1]);}
   });
+  wlabDraw(x,wlabList(),bmS,k,W,H,'#8fd3ff','#0d1520',boxes,'"Saira Semi Condensed","Segoe UI",sans-serif');
   /* destinazione */
   var dq=bmS(nrun.dst.x,nrun.dst.z);x.fillStyle='#ffa02e';x.strokeStyle='#0d1520';x.lineWidth=2;
   x.beginPath();x.moveTo(dq[0],dq[1]);x.lineTo(dq[0],dq[1]-22);x.stroke();x.beginPath();x.moveTo(dq[0],dq[1]-22);x.lineTo(dq[0]+14,dq[1]-17);x.lineTo(dq[0],dq[1]-12);x.closePath();x.fill();
