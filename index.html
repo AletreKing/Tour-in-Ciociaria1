@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 21:08</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 23:10</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -10054,7 +10054,9 @@ function treSelectAt(p){
     if(bd>0)for(var i=0;i<t.x.length-1;i++){var x0=t.x[i],z0=t.z[i],dx=t.x[i+1]-x0,dz=t.z[i+1]-z0,L=dx*dx+dz*dz||1e-9,u=clamp(((p.x-x0)*dx+(p.z-z0)*dz)/L,0,1),d2=Math.hypot(x0+dx*u-p.x,z0+dz*u-p.z);if(d2<bd){bd=d2;best=t;bp=-1;}}});
   return best?{t:best,pt:bp}:null;}
 function treDown(e){
-  var p=edPickRay(e);if(!p)return;var S=treSelectAt(p);
+  var p=edPickRay(e);if(!p)return;
+  if(TRE.adding==='new'&&TRE.sel){var Cn=treCtrl(TRE.sel).map(function(q){return q.slice();});var lastp=Cn[Cn.length-1];if(Math.hypot(lastp[0]-p.x,lastp[1]-p.z)<3){TRE.pt=Cn.length-1;TRE.drag={t:TRE.sel,k:TRE.pt};return;}Cn.push([p.x,p.z]);TRE.pt=Cn.length-1;var kn=treKeyOf(TRE.sel);treSave(TRE.sel,Cn,{poi:null});treApply();TRE.sel=treFind(kn);TRE.dirty=true;treInfo();return;}
+  var S=treSelectAt(p);
   if(S&&S.pt>=0){TRE.sel=S.t;TRE.pt=S.pt;TRE.drag={t:S.t,k:S.pt};TRE.dirty=true;treInfo();return;}
   if(S&&(!TRE.sel||S.t!==TRE.sel||!TRE.adding)){   /* clic sul tracciato: lo si sceglie e si aggiunge un punto lì, da trascinare */
     var C=treCtrl(S.t).map(function(q){return q.slice();}),bi=0,bd=1e9;for(var i=0;i<C.length-1;i++){var x0=C[i][0],z0=C[i][1],dx=C[i+1][0]-x0,dz=C[i+1][1]-z0,L=dx*dx+dz*dz||1e-9,u=clamp(((p.x-x0)*dx+(p.z-z0)*dz)/L,0,1),d=Math.hypot(x0+dx*u-p.x,z0+dz*u-p.z);if(d<bd){bd=d;bi=i;}}
@@ -10066,20 +10068,22 @@ function treDown(e){
     treSave(t,C2,t.key&&t.key.indexOf('T:n')===0&&!TRE.keepPoi?{poi:null}:null);treApply();TRE.sel=treFind(treKeyOf(t))||t;TRE.dirty=true;treInfo();}
 }
 function treFind(k){for(var i=0;i<TRL.tr.length;i++)if(treKeyOf(TRL.tr[i])===k)return TRL.tr[i];return TRE.made&&TRE.made[k]||null;}
-function treMove(e){var D=TRE.drag;if(!D)return;var p=edPickRay(e);if(!p)return;var C=treCtrl(D.t).map(function(q){return q.slice();});C[D.k]=[p.x,p.z];D.pts=C;
+function trePlane(e,y){var R=renderer.domElement.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1),rc=new THREE.Raycaster();rc.setFromCamera(v,camera);var d=rc.ray.direction,o=rc.ray.origin;if(Math.abs(d.y)<1e-4)return null;var t=(y-o.y)/d.y;if(t<0||t>8000)return null;return{x:o.x+d.x*t+OX,z:o.z+d.z*t+OZ};}
+function treMove(e){var D=TRE.drag;if(!D)return;if(D.y==null){var q0=treCtrl(D.t)[D.k];D.y=gndY(q0[0],q0[1]);}var p=trePlane(e,D.y);if(!p)return;var C=treCtrl(D.t).map(function(q){return q.slice();});C[D.k]=[p.x,p.z];D.pts=C;
   /* anteprima leggera: solo la linea */
   if(TRE.g){var L=TRE.g.children.filter(function(o){return o.isLine&&o.material.color.getHex()===0xffd166;})[0];if(L){var P=[];C.forEach(function(q){P.push(q[0],gndY(q[0],q[1])+.5,q[1]);});L.geometry.dispose();L.geometry=new THREE.BufferGeometry();L.geometry.setAttribute('position',new THREE.Float32BufferAttribute(P,3));}}}
 function treUp(){var D=TRE.drag;TRE.drag=null;if(D&&D.pts){treSave(D.t,D.pts);treApply();TRE.sel=treFind(treKeyOf(D.t));TRE.dirty=true;treInfo();}}
 function treNew(){var p=ED.mx!=null?edPickRay({clientX:ED.mx,clientY:ED.my}):null;if(!p){say('Punta il mouse sul terreno dove comincia il sentiero','',2400);return;}
   var k='T:n'+Date.now().toString(36);ED.off[k]={pts:[[p.x,p.z],[p.x+2,p.z+2]],poi:null};edSave();treApply();var t=TRE.made[k];
   t.user=[[p.x,p.z]];ED.off[k].pts=[[Math.round(p.x*10)/10,Math.round(p.z*10)/10]];edSave();TRE.sel=t;TRE.pt=0;TRE.adding='new';TRE.dirty=true;
-  say('Nuovo sentiero: clicca sul terreno per aggiungere i punti fino alla meta; la meta è il luogo più vicino all’ultimo punto','good',4500);treInfo();}
+  say('Nuovo sentiero: clicca sul terreno per aggiungere i punti fino alla meta (il luogo più vicino all’ultimo punto); Invio per finire','good',4500);treInfo();}
 function treInfo(){var t=TRE.sel,b=$('godBadge');if(!b)return;
   if(!TRE.on){edBadge();return;}
   var p=t&&t.poi>=0?SC.pois[t.poi]:null;
   b.textContent='SENTIERI · '+(t?(t.key?'nuovo sentiero':'sentiero')+(p?' per '+p.n:'')+' · '+(t.len?Math.round(t.len)+' m':'')+' · trascina i punti, clic sul tracciato per aggiungerne uno, clic sul terreno per allungarlo, X togli il punto, Maiusc+Canc togli il sentiero, Canc tracciato originale':'clic su un sentiero (linee arancioni) per sceglierlo · N nuovo sentiero')+' · S salva il file · T esci';}
 function treKey(k,e){
   if(k==='n'&&!e.repeat){treNew();return true;}
+  if(k==='enter'&&TRE.adding){TRE.adding=null;TRE.dirty=true;var tt=TRE.sel,pp=tt&&tt.poi>=0?SC.pois[tt.poi]:null;say('Sentiero finito'+(pp?': porta a '+pp.n:''),'good',2600);treInfo();return true;}
   if(k==='escape'){TRE.sel=null;TRE.pt=-1;TRE.adding=null;TRE.dirty=true;treInfo();return true;}
   var t=TRE.sel;if(!t)return false;
   if(k==='x'&&TRE.pt>=0){var C=treCtrl(t).map(function(q){return q.slice();});if(C.length<=2){say('Un sentiero ha almeno due punti: per toglierlo, Maiusc+Canc','',2600);return true;}C.splice(TRE.pt,1);TRE.pt=-1;treSave(t,C);treApply();TRE.sel=treFind(treKeyOf(t));TRE.dirty=true;treInfo();return true;}
