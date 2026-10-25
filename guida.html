@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 23:10</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 23:25</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -9801,7 +9801,7 @@ function caveWorldBuild(){
     [i,i+1].forEach(function(q){var nx5=Math.cos(P.h[q]),nz5=-Math.sin(P.h[q]),W5=P.w[q]*1.05,y5=P.wl[q]+.05;fp.push(P.x[q]-nx5*W5,y5,P.z[q]-nz5*W5,P.x[q]+nx5*W5,y5,P.z[q]+nz5*W5);fu.push(0,P.s[q]/2.5,W5/1.5,P.s[q]/2.5);});
     fi.push(fn,fn+2,fn+1,fn+1,fn+2,fn+3);fn+=4;}
   var fg2=new THREE.BufferGeometry();fg2.setAttribute('position',new THREE.Float32BufferAttribute(fp,3));fg2.setAttribute('uv',new THREE.Float32BufferAttribute(fu,2));fg2.setIndex(fi);
-  var fm2=fm.clone();fm2.opacity=.5;fm2.depthWrite=false;CAVE.fall2=new THREE.Mesh(fg2,fm2);CAVE.fall2.renderOrder=2;g.add(CAVE.fall2);
+  CAVE.ft2=foamTex.clone();CAVE.ft2.needsUpdate=true;CAVE.ft2.wrapS=CAVE.ft2.wrapT=THREE.RepeatWrapping;var fm2=fm.clone();fm2.map=CAVE.ft2;fm2.opacity=.5;fm2.depthWrite=false;CAVE.fall2=new THREE.Mesh(fg2,fm2);CAVE.fall2.renderOrder=2;g.add(CAVE.fall2);
   /* passerelle: grigliato d'acciaio e ringhiera rossa; nel Lago Blu sporge a sbalzo dalla parete */
   var BW=new GB(),deck=hc(0x5d6066),rail=hc(0xb02a22),beam=hc(0x3a3d42);
   for(var sd=0;sd<146;sd+=1.5){var a6=caveAt(sd),a7=caveAt(sd+1.5);
@@ -9951,7 +9951,7 @@ function caveFrame(dt){
   caveDropsTick(dt);caveBatsTick(dt);caveMicTick(dt);
   if(CAVE.au&&AC){var s=CAVE.s,sc=A0.sec,base={salone:.12,gal1:.08,lago:.2,disc:.1,art:.2,att:.24,stretta:.28,grandi:.36,casc:.3,bypass:.22}[sc]||.2,ff=Math.exp(-Math.pow((s-104)/18,2))*.3+Math.exp(-Math.pow((s-484)/16,2))*.5;
     CAVE.au.g.gain.setTargetAtTime(base+ff,AC.currentTime,.4);CAVE.au.f.frequency.setTargetAtTime(500+(base+ff)*2600,AC.currentTime,.4);}
-  if(CAVE.wt)CAVE.wt.offset.y-=dt*.45;if(CAVE.ft)CAVE.ft.offset.y+=dt*1.6;
+  if(CAVE.wt)CAVE.wt.offset.y-=dt*.7;if(CAVE.ft)CAVE.ft.offset.y+=dt*1.6;if(CAVE.ft2)CAVE.ft2.offset.y-=dt*1.4;   /* tutta l'acqua corre verso l'uscita del Rio Obaco */
   var C=caveAt(CAVE.s),Ls=CAVE.L.slice().sort(function(a,b){return Math.hypot(a[0]-C.x,a[2]-C.z)-Math.hypot(b[0]-C.x,b[2]-C.z);});
   CAVE.lamps.forEach(function(L,i){var p=Ls[i];if(p&&Math.hypot(p[0]-C.x,p[2]-C.z)<40){L.position.set(p[0],p[1]+.4,p[2]);L.intensity=.7;}else L.intensity=0;});
 }
