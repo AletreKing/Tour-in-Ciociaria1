@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 19:19</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 21:08</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -2601,7 +2601,7 @@ var CDSG=(function(){
   /* ---- schede compilate dagli amministratori: file schede.json accanto alla pagina ---- */
   var schedeP=null;
   function loadSchede(){
-    if(!schedeP)schedeP=fetch('schede.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('no');return r.json();}).then(function(j){CDSG_IMP=(j&&j.impostazioni)||{};setTimeout(function(){if(typeof bedApplyImp==='function')bedApplyImp();if(typeof pwBoardReset==='function'){pwBoardReset();if(PW.sg&&CDSG_IMP.pos){scene.remove(PW.sg);PW.sg=null;}}},0);return(j&&j.schede)||{};}).catch(function(){return{};});
+    if(!schedeP)schedeP=fetch('schede.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('no');return r.json();}).then(function(j){CDSG_IMP=(j&&j.impostazioni)||{};setTimeout(function(){if(typeof treApply==='function'&&TRE.applied&&treHas())treApply();if(typeof bedApplyImp==='function')bedApplyImp();if(typeof pwBoardReset==='function'){pwBoardReset();if(PW.sg&&CDSG_IMP.pos){scene.remove(PW.sg);PW.sg=null;}}},0);return(j&&j.schede)||{};}).catch(function(){return{};});
     return schedeP;
   }
   function apply(poi,s){
@@ -8306,9 +8306,11 @@ function caveBuild(g,B,G,q,x,z,y,ox,oz,obs,r){
   function Q(a,b,c,d,col){B.quad([a,b,c,d],[0,1,0],N4,col);B.quad([d,c,b,a],[0,1,0],N4,col);}
   function pt(a,dd){var k=1-Math.max(0,dd)/D*.45,rr=R*k*(1+.12*Math.sin(a*3.1+dd*.7));return[lx+tx*Math.cos(a)*rr+ux*dd,gy+Math.sin(a)*rr*HK*(1-.15*Math.abs(Math.cos(a))),lz+tz*Math.cos(a)*rr+uz*dd];}
   /* l'antro: alto e irregolare, sempre più buio; comincia un po' fuori dalla parete per non lasciare fessure */
-  var S=6;for(var s=0;s<S;s++){var d0=-.9+s*(D+.9)/S,d1=-.9+(s+1)*(D+.9)/S,v=Math.round(62*Math.pow(1-s/(S-1),1.4)+3),col=hc((v<<16)|((v-3)<<8)|Math.max(0,v-6));
+  var S=6;for(var s=0;s<S;s++){var d0=-.9+s*(D+.9)/S,d1=-.9+(s+1)*(D+.9)/S,v=Math.round(16*Math.pow(1-s/(S-1),1.6)+2),col=hc((v<<16)|((v-3)<<8)|Math.max(0,v-6));
     for(var i=0;i<N;i++){var a0=i/N*Math.PI,a1=(i+1)/N*Math.PI;Q(pt(a0,d0),pt(a1,d0),pt(a1,d1),pt(a0,d1),col);}
-    Q(pt(0,d0),pt(0,d1),pt(Math.PI,d1),pt(Math.PI,d0),hc(0x1c1a16));}
+    Q(pt(0,d0),pt(0,d1),pt(Math.PI,d1),pt(Math.PI,d0),hc(0x080706));}
+  /* l'antro è buio fino in fondo: un velo nero appena dentro l'imbocco copre il pendio che c'è dietro */
+  var Dp=1.4,cP=[lx+ux*Dp,gy+R*HK*.35,lz+uz*Dp];for(var ip=0;ip<N;ip++){var q0=pt(ip/N*Math.PI,Dp),q1=pt((ip+1)/N*Math.PI,Dp);Q(cP,q0,q1,cP,hc(0x000000));}Q(cP,pt(Math.PI,Dp),pt(0,Dp),cP,hc(0x000000));
   var c0=hc(0x000000),cE=[lx+ux*D,gy,lz+uz*D];for(i=0;i<N;i++){var p0=pt(i/N*Math.PI,D),p1=pt((i+1)/N*Math.PI,D);Q(cE,p0,p1,cE,c0);}
   /* la parete di calcare: grigia e beige, con colature arancioni, sporgente in alto, con il buco dell'ingresso */
   var NT=38,NY=22,T0=19,HY=19,P=[],C=[],I=[],cc=new THREE.Color(),hole=function(tt,yy){if(yy<-.8)return false;var e=R*1.02*(1+.12*Math.sin(Math.atan2(yy/HK,tt)*3.1)),h=yy/(HK*1.0);return tt*tt+h*h<e*e&&yy<R*HK*1.02;};
@@ -8337,6 +8339,17 @@ function caveBuild(g,B,G,q,x,z,y,ox,oz,obs,r){
   for(k=0;k<8;k++){var sd2=k%2?1:-1,tt4=sd2*(R*.6+r()*R*1.4),u4=-1.5-r()*4;G.push(p3Rock(F0,lx+tx*tt4+ux*u4,gy-.35,lz+tz*tt4+uz*u4,1+r()*1.2,.38,1+r()*.8,r()<.5?0x5f8a30:0x4f7a2a,r));}
   obs.push([1,fx+ux*(D*.5),fz+uz*(D*.5),tx,tz,R+1,D*.55]);
   [-1,1].forEach(function(sd){obs.push([1,fx+tx*sd*(R+1+7)+ux*1.5,fz+tz*sd*(R+1+7)+uz*1.5,tx,tz,7,2.2]);});   /* la parete non si attraversa */
+  /* il torrente entra nella grotta: dal punto in cui finisce, un letto d'acqua fino in fondo all'antro */
+  if(typeof WAT!=='undefined'&&WAT.ready&&typeof watM!=='undefined'){var rv=null;WAT.R.forEach(function(Rr){var n=Rr.x.length;if(n<2)return;[n-1,0].forEach(function(k){var d=Math.hypot(Rr.x[k]-fx,Rr.z[k]-fz);if(d<140&&(!rv||d<rv.d))rv={d:d,x:Rr.x[k],z:Rr.z[k],y:Rr.y[k],w:Math.max(1.6,Rr.half*2)};});});
+    if(rv){var path=[[rv.x,rv.z]],mx=fx-ux*2.5,mz=fz-uz*2.5,L1=Math.hypot(mx-rv.x,mz-rv.z);if(L1>1)path.push([mx,mz]);path.push([fx+ux*(D-1),fz+uz*(D-1)]);
+      var WP=[],WU=[],WI=[],vv=0,nv=0;
+      for(var pi=0;pi<path.length-1;pi++){var A=path[pi],Bq=path[pi+1],Ls=Math.hypot(Bq[0]-A[0],Bq[1]-A[1])||1,m=Math.max(1,Math.ceil(Ls/2)),dx=(Bq[0]-A[0])/Ls,dz=(Bq[1]-A[1])/Ls;
+        for(var k=(pi?1:0);k<=m;k++){var f=k/m,x=A[0]+(Bq[0]-A[0])*f,z=A[1]+(Bq[1]-A[1])*f,inside=((x-fx)*ux+(z-fz)*uz)>-.5,hw2=Math.min(rv.w,R*1.4)/2,
+            yw=inside?gy+.08:Math.max(gndY(x,z),Math.min(rv.y,gndY(x,z)+1))+.08;
+          if(nv)vv+=2;var nx2=-dz,nz2=dx;WP.push(x-nx2*hw2-ox,yw,z-nz2*hw2-oz,x+nx2*hw2-ox,yw,z+nz2*hw2-oz);WU.push(0,(pi*1000+k*2)/3,hw2/1.5,(pi*1000+k*2)/3);
+          if(nv)WI.push(nv-2,nv,nv-1,nv-1,nv,nv+1);nv+=2;}}
+      var wg2=new THREE.BufferGeometry();wg2.setAttribute('position',new THREE.Float32BufferAttribute(WP,3));wg2.setAttribute('uv',new THREE.Float32BufferAttribute(WU,2));wg2.setIndex(WI);wg2.computeVertexNormals();
+      var wm2=new THREE.Mesh(wg2,watM);wm2.renderOrder=1;g.add(wm2);}}
   q.mouth={x:fx-ux*1.5,z:fz-uz*1.5,y:gy+2.2,hx:-ux,hz:-uz};
   /* il sentiero finisce sulla sponda, davanti all'ingresso (non dentro la roccia) */
   if(best.riv&&typeof TRL!=='undefined'&&TRL.byPoi[q.id])TRL.byPoi[q.id].forEach(function(t){if(t.caveFix)return;t.caveFix=1;var n=t.x.length-1,sd=((t.x[n-1]-fx)*tx+(t.z[n-1]-fz)*tz)>=0?1:-1,bx=fx-ux*3+tx*sd*(riv.half+1.6),bz=fz-uz*3+tz*sd*(riv.half+1.6);
@@ -8547,7 +8560,7 @@ function edTargets(){
   return L;
 }
 function edSave(){try{localStorage.setItem('au_pos3d',JSON.stringify(ED.off));}catch(e){}}
-function edBadge(){var b=$('godBadge');if(!b)return;b.textContent=ED.on?'MODIFICA · clic su oggetto, edificio o lampione e trascinalo · R/F quota · Q/E ruota · C copia · V incolla · L nuovo lampione · K nuovo parcheggio · Z zona della festa · Canc posto iniziale (toglie le aggiunte) · S salva il file · M esci':'GOD · frecce e mouse · rotella: quota · Maiusc: veloce · M: modifica oggetti · Tab: esci';}
+function edBadge(){var b=$('godBadge');if(!b)return;b.textContent=ED.on?'MODIFICA · clic su oggetto, edificio o lampione e trascinalo · R/F quota · Q/E ruota · C copia · V incolla · L nuovo lampione · K nuovo parcheggio · Z zona della festa · T sentieri · Canc posto iniziale (toglie le aggiunte) · S salva il file · M esci':'GOD · frecce e mouse · rotella: quota · Maiusc: veloce · M: modifica oggetti · Tab: esci';}
 function edPickRay(e){
   var R=renderer.domElement.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1),rc=new THREE.Raycaster();rc.setFromCamera(v,camera);
   var H=rc.intersectObject(netG,true);return H.length?{x:H[0].point.x+OX,z:H[0].point.z+OZ,y:H[0].point.y}:null;
@@ -8580,7 +8593,9 @@ function edTick(){
 }
 window.addEventListener('keydown',function(e){
   if(typeof GOD==='undefined'||!GOD.on)return;var k=e.key.toLowerCase();
-  if(k==='m'&&!e.repeat){ED.on=!ED.on;if(!ED.on)ED.sel=null;edBadge();e.stopImmediatePropagation();return;}
+  if(k==='m'&&!e.repeat){if(TRE.on){TRE.on=false;TRE.dirty=true;}ED.on=!ED.on;if(!ED.on)ED.sel=null;edBadge();e.stopImmediatePropagation();return;}
+  if(k==='t'&&!e.repeat){TRE.on=!TRE.on;if(TRE.on){ED.on=true;PL.zone=false;ED.sel=null;treApply();}TRE.sel=null;TRE.pt=-1;TRE.adding=null;TRE.dirty=true;treInfo();e.stopImmediatePropagation();return;}
+  if(TRE.on){var used=false;if(k==='s'&&!e.repeat){edExport();e.preventDefault();used=true;}else used=treKey(k,e);if(used){e.stopImmediatePropagation();return;}if(!/^arrow|^shift|^page/.test(k)){e.stopImmediatePropagation();return;}return;}
   if(k==='z'&&!e.repeat){PL.zone=!PL.zone;if(PL.zone&&!ED.on){ED.on=true;edBadge();}say(PL.zone?'Zona della festa: clic a terra per spostarla, + e − per la grandezza, Canc per tutto il paese, Z per finire':'Zona della festa chiusa','good',3500);e.stopImmediatePropagation();return;}
   if(PL.zone&&(k==='+'||k==='='||k==='-'||k==='_')){var up=k==='+'||k==='=';plZoneSet(function(o){o.r*=up?1.15:1/1.15;});e.stopImmediatePropagation();return;}
   if(PL.zone&&(k==='delete'||k==='backspace')){if(PL.zt){ED.off['FA:'+PL.zt.n]={del:1};edSave();FST.chk=0;FST.key='';}e.stopImmediatePropagation();return;}
@@ -8602,12 +8617,13 @@ window.addEventListener('keydown',function(e){
 (function(){
   var el=$('view');
   el.addEventListener('pointerdown',function(e){if(typeof GOD==='undefined'||!GOD.on||!ED.on)return;var p=edPickRay(e);if(!p)return;
+    if(TRE.on){treDown(e);e.stopImmediatePropagation();return;}
     if(PL.zone){var tz=plZoneTown(p.x,p.z);if(tz){PL.zt=tz;plZoneSet(function(o){o.x=p.x;o.z=p.z;});}e.stopImmediatePropagation();return;}
     var q=edNearest(p.x,p.z);if(q&&(!ED.sel||ED.sel.pk!==q.pk)){ED.sel=q;say('Scelto: '+q.n+' — trascinalo, R/F quota, Q/E ruota','good',3200);e.stopImmediatePropagation();return;}
     if(ED.sel){var o=edOff(ED.sel)||{};if(Math.hypot(ED.sel.x+(o.dx||0)-p.x,ED.sel.z+(o.dz||0)-p.z)<60){var bl=ED.sel.kind==='B'||ED.sel.kind==='N';ED.drag={px:p.x,pz:p.z,py:p.y,dx:+o.dx||0,dz:+o.dz||0,live:bl,ndx:+o.dx||0,ndz:+o.dz||0};e.stopImmediatePropagation();}}},true);
   function plane(e,y){var R=renderer.domElement.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1),rc=new THREE.Raycaster();rc.setFromCamera(v,camera);var d=rc.ray.direction,o=rc.ray.origin;if(Math.abs(d.y)<1e-4)return null;var t=(y-o.y)/d.y;if(t<0||t>5000)return null;return{x:o.x+d.x*t+OX,z:o.z+d.z*t+OZ};}
-  el.addEventListener('pointermove',function(e){if(ED.on){ED.mx=e.clientX;ED.my=e.clientY;}if(!ED.drag)return;var D=ED.drag,p=plane(e,D.py);if(p&&ED.sel){if(D.live){D.ndx=D.dx+(p.x-D.px);D.ndz=D.dz+(p.z-D.pz);}else edChange(function(o){o.dx=D.dx+(p.x-D.px);o.dz=D.dz+(p.z-D.pz);});}e.stopImmediatePropagation();},true);
-  function up(e){if(ED.drag){var D=ED.drag;ED.drag=false;if(D.live&&(D.ndx!==D.dx||D.ndz!==D.dz))edChange(function(o){o.dx=D.ndx;o.dz=D.ndz;});e.stopImmediatePropagation();}}
+  el.addEventListener('pointermove',function(e){if(ED.on){ED.mx=e.clientX;ED.my=e.clientY;}if(TRE.drag){treMove(e);e.stopImmediatePropagation();return;}if(!ED.drag)return;var D=ED.drag,p=plane(e,D.py);if(p&&ED.sel){if(D.live){D.ndx=D.dx+(p.x-D.px);D.ndz=D.dz+(p.z-D.pz);}else edChange(function(o){o.dx=D.dx+(p.x-D.px);o.dz=D.dz+(p.z-D.pz);});}e.stopImmediatePropagation();},true);
+  function up(e){if(TRE.drag){treUp();e.stopImmediatePropagation();return;}if(ED.drag){var D=ED.drag;ED.drag=false;if(D.live&&(D.ndx!==D.dx||D.ndz!==D.dz))edChange(function(o){o.dx=D.ndx;o.dz=D.ndz;});e.stopImmediatePropagation();}}
   el.addEventListener('pointerup',up,true);el.addEventListener('pointercancel',up,true);
 })();
 var edTr0=trSync;trSync=function(dt){edTr0(dt);edTick();if(typeof bedBoxTick==='function')bedBoxTick();};
@@ -9975,6 +9991,105 @@ function obacoTick(dt){
 }
 var caveTr0=trSync;trSync=function(dt){caveTr0(dt);caveNearTick(dt);caveOutTick(dt);obacoTick(dt);};
 
+/* ================= GOD → MODIFICA → SENTIERI: si creano, si spostano, si allungano e si tolgono i sentieri =================
+   i sentieri originali hanno chiave T:b<numero>, quelli nuovi T:n<codice>; si salvano con gli altri spostamenti (S) */
+var TRE={on:false,sel:null,pt:-1,drag:null,g:null,dirty:true,base:null,chk:0};
+function treKeyOf(t){return t.key||('T:b'+t.bi);}
+function treEdits(){var P=CDSG_IMP.pos||{},S={};Object.keys(P).concat(Object.keys(ED.off)).forEach(function(k){if(k.indexOf('T:')===0)S[k]=1;});var o={};Object.keys(S).forEach(function(k){o[k]=ED.off[k]||P[k];});return o;}
+function treFill(t,pts){   /* dai punti scelti al sentiero vero: punti ogni 8 m al massimo, lunghezza, salita, ingombro */
+  var x=[],z=[];for(var i=0;i<pts.length;i++){if(i){var a=pts[i-1],b=pts[i],L=Math.hypot(b[0]-a[0],b[1]-a[1]),m=Math.max(1,Math.ceil(L/8));for(var k=1;k<m;k++){x.push(a[0]+(b[0]-a[0])*k/m);z.push(a[1]+(b[1]-a[1])*k/m);}}x.push(pts[i][0]);z.push(pts[i][1]);}
+  var s=[0],up=0,L2=0,ty=[];for(i=1;i<x.length;i++){L2+=Math.hypot(x[i]-x[i-1],z[i]-z[i-1]);s.push(L2);var dh=terrH(x[i],z[i])-terrH(x[i-1],z[i-1]);if(dh>0)up+=dh;}
+  for(i=0;i<x.length;i++)ty.push(t.ty0!=null?t.ty0:0);
+  t.x=x;t.z=z;t.s=s;t.len=L2;t.up=up;t.ty=ty;t.user=pts.map(function(p){return[p[0],p[1]];});
+  var a2=1e9,b2=-1e9,c2=1e9,d2=-1e9;for(i=0;i<x.length;i++){a2=Math.min(a2,x[i]);b2=Math.max(b2,x[i]);c2=Math.min(c2,z[i]);d2=Math.max(d2,z[i]);}t.bb=[a2,c2,b2,d2];
+  if(t.mesh){trG.remove(t.mesh);disposeChunk(t.mesh);t.mesh=null;}
+}
+function trePoiIdx(pk,x,z){var i=-1;if(pk)SC.pois.forEach(function(p,k){if(p.pk===pk)i=k;});if(i>=0)return i;var bd=500;SC.pois.forEach(function(p,k){if(p.hid||p.x==null)return;var d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;i=k;}});return i;}
+/* i punti «di controllo» di un sentiero originale: una semplificazione del tracciato, comoda da spostare */
+function treCtrl(t){if(t.user)return t.user;var P=[],last=-1e9;for(var i=0;i<t.x.length;i++){if(i===0||i===t.x.length-1||t.s[i]-last>=25){P.push([t.x[i],t.z[i]]);last=t.s[i];}}return P;}
+function treApply(){
+  if(!TRL.ready||!SC.pois.length)return;
+  if(!TRE.base){TRE.base=TRL.tr.slice();TRE.base.forEach(function(t,k){t.bi=k;t.orig={x:t.x,z:t.z,s:t.s,len:t.len,up:t.up,ty:t.ty,bb:t.bb,poi:t.poi};t.ty0=t.ty[0]||0;});}
+  var E=treEdits(),list=[];
+  TRE.base.forEach(function(t){var e=E['T:b'+t.bi];
+    if(e&&e.del){if(t.mesh){trG.remove(t.mesh);disposeChunk(t.mesh);t.mesh=null;}return;}
+    if(e&&e.pts&&e.pts.length>1){if(JSON.stringify(e.pts)!==JSON.stringify(t.user))treFill(t,e.pts);var pi=trePoiIdx(e.poi,t.x[t.x.length-1],t.z[t.z.length-1]);if(pi>=0)t.poi=pi;}
+    else if(t.user){var o=t.orig;t.x=o.x;t.z=o.z;t.s=o.s;t.len=o.len;t.up=o.up;t.ty=o.ty;t.bb=o.bb;t.poi=o.poi;t.user=null;if(t.mesh){trG.remove(t.mesh);disposeChunk(t.mesh);t.mesh=null;}}
+    list.push(t);});
+  TRE.made=TRE.made||{};
+  Object.keys(E).forEach(function(k){if(k.indexOf('T:n')!==0)return;var e=E[k];if(!e||e.del||!e.pts||e.pts.length<2){if(TRE.made[k]&&TRE.made[k].mesh){trG.remove(TRE.made[k].mesh);disposeChunk(TRE.made[k].mesh);TRE.made[k].mesh=null;}return;}
+    var t=TRE.made[k]||(TRE.made[k]={key:k,mesh:null,ty0:0});if(JSON.stringify(e.pts)!==JSON.stringify(t.user))treFill(t,e.pts);t.poi=trePoiIdx(e.poi,t.x[t.x.length-1],t.z[t.z.length-1]);if(t.poi<0)return;list.push(t);});
+  /* indici: griglia, sentieri per luogo, cartelli di partenza */
+  TRL.heads.forEach(function(h){if(h.g){trG.remove(h.g);disposeChunk(h.g);h.g.userData.tm.map.dispose();h.g.userData.tm.dispose();h.g=null;}});
+  TRL.tr=list;TRL.grid=new Map();TRL.byPoi={};TRL.heads=[];
+  list.forEach(function(t,ti){t.i=ti;(TRL.byPoi[t.poi]=TRL.byPoi[t.poi]||[]).push(t);
+    for(var i=0;i<t.x.length-1;i++){var gx0=Math.floor(Math.min(t.x[i],t.x[i+1])/TRG),gx1=Math.floor(Math.max(t.x[i],t.x[i+1])/TRG),gz0=Math.floor(Math.min(t.z[i],t.z[i+1])/TRG),gz1=Math.floor(Math.max(t.z[i],t.z[i+1])/TRG);
+      for(var gx=gx0;gx<=gx1;gx++)for(var gz=gz0;gz<=gz1;gz++){var k=nk(gx,gz),A=TRL.grid.get(k);if(!A)TRL.grid.set(k,A=[]);A.push(ti,i);}}
+    var h=null;for(i=0;i<TRL.heads.length;i++){var o=TRL.heads[i];if(Math.hypot(o.x-t.x[0],o.z-t.z[0])<40){h=o;break;}}
+    if(!h){h={i:TRL.heads.length,x:t.x[0],z:t.z[0],tr:[],g:null,pos:null};TRL.heads.push(h);}h.tr.push(t);t.head=h;});
+  trShown=trShown.filter(function(o){return !o.tr;});TRE.dirty=true;
+}
+/* ---------- il disegno dei sentieri mentre si modifica ---------- */
+function treDraw(){
+  if(TRE.g){scene.remove(TRE.g);TRE.g.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});TRE.g=null;}
+  if(!TRE.on)return;var g=new THREE.Group(),cx=GOD.x,cz=GOD.z;
+  TRL.tr.forEach(function(t){var B=t.bb;if(Math.max(B[0]-cx,0,cx-B[2])>900||Math.max(B[1]-cz,0,cz-B[3])>900)return;var sel=TRE.sel===t,P=[];
+    for(var i=0;i<t.x.length;i++)P.push(t.x[i],gndY(t.x[i],t.z[i])+.5,t.z[i]);var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
+    var ln=new THREE.Line(geo,new THREE.LineBasicMaterial({color:sel?0xffd166:0xff7a2e,depthTest:false,transparent:true,fog:false}));ln.renderOrder=9;g.add(ln);
+    if(sel)treCtrl(t).forEach(function(p,k){var m=new THREE.Mesh(new THREE.SphereGeometry(k===TRE.pt?1.3:.9,10,8),new THREE.MeshBasicMaterial({color:k===TRE.pt?0xffffff:k===0?0x3fae6a:0xffd166,depthTest:false,fog:false}));m.position.set(p[0],gndY(p[0],p[1])+.8,p[1]);m.renderOrder=10;g.add(m);});});
+  if(TRE.sel){var t2=TRE.sel,pi=t2.poi>=0?SC.pois[t2.poi]:null;if(pi){var e=t2.x.length-1,L=new THREE.BufferGeometry();L.setAttribute('position',new THREE.Float32BufferAttribute([t2.x[e],gndY(t2.x[e],t2.z[e])+.6,t2.z[e],pi.x,gndY(pi.x,pi.z)+.6,pi.z],3));var d=new THREE.Line(L,new THREE.LineDashedMaterial({color:0x7fd0ff,dashSize:3,gapSize:2,depthTest:false,fog:false}));d.computeLineDistances();d.renderOrder=9;g.add(d);}}
+  scene.add(g);TRE.g=g;TRE.dirty=false;
+}
+function treTick(dt){
+  if(!TRE.on){if(TRE.g)treDraw();return;}
+  TRE.chk-=dt;var moved=TRE.last&&Math.hypot(GOD.x-TRE.last[0],GOD.z-TRE.last[1])>150;if(TRE.dirty||moved||TRE.chk<=0&&!TRE.g){TRE.last=[GOD.x,GOD.z];TRE.chk=2;treDraw();}
+  if(TRE.g)TRE.g.position.set(-OX,0,-OZ);
+}
+/* ---------- comandi ---------- */
+function treSave(t,pts,extra){var k=treKeyOf(t),o=Object.assign({},ED.off[k]||(CDSG_IMP.pos&&CDSG_IMP.pos[k])||{},{pts:pts.map(function(p){return[Math.round(p[0]*10)/10,Math.round(p[1]*10)/10];})},extra||{});delete o.del;ED.off[k]=o;edSave();}
+function treSelectAt(p){
+  var best=null,bd=14,bp=-1,bk=1e9;
+  TRL.tr.forEach(function(t){var B=t.bb;if(p.x<B[0]-30||p.x>B[2]+30||p.z<B[1]-30||p.z>B[3]+30)return;
+    var C=treCtrl(t);C.forEach(function(q,k){var d=Math.hypot(q[0]-p.x,q[1]-p.z);if(d<bk&&d<8){bk=d;best=t;bp=k;bd=-1;}});
+    if(bd>0)for(var i=0;i<t.x.length-1;i++){var x0=t.x[i],z0=t.z[i],dx=t.x[i+1]-x0,dz=t.z[i+1]-z0,L=dx*dx+dz*dz||1e-9,u=clamp(((p.x-x0)*dx+(p.z-z0)*dz)/L,0,1),d2=Math.hypot(x0+dx*u-p.x,z0+dz*u-p.z);if(d2<bd){bd=d2;best=t;bp=-1;}}});
+  return best?{t:best,pt:bp}:null;}
+function treDown(e){
+  var p=edPickRay(e);if(!p)return;var S=treSelectAt(p);
+  if(S&&S.pt>=0){TRE.sel=S.t;TRE.pt=S.pt;TRE.drag={t:S.t,k:S.pt};TRE.dirty=true;treInfo();return;}
+  if(S&&(!TRE.sel||S.t!==TRE.sel||!TRE.adding)){   /* clic sul tracciato: lo si sceglie e si aggiunge un punto lì, da trascinare */
+    var C=treCtrl(S.t).map(function(q){return q.slice();}),bi=0,bd=1e9;for(var i=0;i<C.length-1;i++){var x0=C[i][0],z0=C[i][1],dx=C[i+1][0]-x0,dz=C[i+1][1]-z0,L=dx*dx+dz*dz||1e-9,u=clamp(((p.x-x0)*dx+(p.z-z0)*dz)/L,0,1),d=Math.hypot(x0+dx*u-p.x,z0+dz*u-p.z);if(d<bd){bd=d;bi=i;}}
+    if(TRE.sel===S.t){C.splice(bi+1,0,[p.x,p.z]);treSave(S.t,C);treApply();TRE.pt=bi+1;TRE.drag={t:S.t,k:bi+1};}else{TRE.pt=-1;}
+    TRE.sel=S.t;TRE.dirty=true;treInfo();return;}
+  if(TRE.sel){   /* clic sul terreno libero: il sentiero scelto si allunga dalla parte più vicina */
+    var t=TRE.sel,C2=treCtrl(t).map(function(q){return q.slice();}),a=C2[0],b=C2[C2.length-1];
+    if(TRE.adding==='new'||Math.hypot(b[0]-p.x,b[1]-p.z)<=Math.hypot(a[0]-p.x,a[1]-p.z)){C2.push([p.x,p.z]);TRE.pt=C2.length-1;}else{C2.unshift([p.x,p.z]);TRE.pt=0;}
+    treSave(t,C2,t.key&&t.key.indexOf('T:n')===0&&!TRE.keepPoi?{poi:null}:null);treApply();TRE.sel=treFind(treKeyOf(t))||t;TRE.dirty=true;treInfo();}
+}
+function treFind(k){for(var i=0;i<TRL.tr.length;i++)if(treKeyOf(TRL.tr[i])===k)return TRL.tr[i];return TRE.made&&TRE.made[k]||null;}
+function treMove(e){var D=TRE.drag;if(!D)return;var p=edPickRay(e);if(!p)return;var C=treCtrl(D.t).map(function(q){return q.slice();});C[D.k]=[p.x,p.z];D.pts=C;
+  /* anteprima leggera: solo la linea */
+  if(TRE.g){var L=TRE.g.children.filter(function(o){return o.isLine&&o.material.color.getHex()===0xffd166;})[0];if(L){var P=[];C.forEach(function(q){P.push(q[0],gndY(q[0],q[1])+.5,q[1]);});L.geometry.dispose();L.geometry=new THREE.BufferGeometry();L.geometry.setAttribute('position',new THREE.Float32BufferAttribute(P,3));}}}
+function treUp(){var D=TRE.drag;TRE.drag=null;if(D&&D.pts){treSave(D.t,D.pts);treApply();TRE.sel=treFind(treKeyOf(D.t));TRE.dirty=true;treInfo();}}
+function treNew(){var p=ED.mx!=null?edPickRay({clientX:ED.mx,clientY:ED.my}):null;if(!p){say('Punta il mouse sul terreno dove comincia il sentiero','',2400);return;}
+  var k='T:n'+Date.now().toString(36);ED.off[k]={pts:[[p.x,p.z],[p.x+2,p.z+2]],poi:null};edSave();treApply();var t=TRE.made[k];
+  t.user=[[p.x,p.z]];ED.off[k].pts=[[Math.round(p.x*10)/10,Math.round(p.z*10)/10]];edSave();TRE.sel=t;TRE.pt=0;TRE.adding='new';TRE.dirty=true;
+  say('Nuovo sentiero: clicca sul terreno per aggiungere i punti fino alla meta; la meta è il luogo più vicino all’ultimo punto','good',4500);treInfo();}
+function treInfo(){var t=TRE.sel,b=$('godBadge');if(!b)return;
+  if(!TRE.on){edBadge();return;}
+  var p=t&&t.poi>=0?SC.pois[t.poi]:null;
+  b.textContent='SENTIERI · '+(t?(t.key?'nuovo sentiero':'sentiero')+(p?' per '+p.n:'')+' · '+(t.len?Math.round(t.len)+' m':'')+' · trascina i punti, clic sul tracciato per aggiungerne uno, clic sul terreno per allungarlo, X togli il punto, Maiusc+Canc togli il sentiero, Canc tracciato originale':'clic su un sentiero (linee arancioni) per sceglierlo · N nuovo sentiero')+' · S salva il file · T esci';}
+function treKey(k,e){
+  if(k==='n'&&!e.repeat){treNew();return true;}
+  if(k==='escape'){TRE.sel=null;TRE.pt=-1;TRE.adding=null;TRE.dirty=true;treInfo();return true;}
+  var t=TRE.sel;if(!t)return false;
+  if(k==='x'&&TRE.pt>=0){var C=treCtrl(t).map(function(q){return q.slice();});if(C.length<=2){say('Un sentiero ha almeno due punti: per toglierlo, Maiusc+Canc','',2600);return true;}C.splice(TRE.pt,1);TRE.pt=-1;treSave(t,C);treApply();TRE.sel=treFind(treKeyOf(t));TRE.dirty=true;treInfo();return true;}
+  if((k==='delete'||k==='backspace')&&e.shiftKey){var kk=treKeyOf(t);ED.off[kk]={del:1};edSave();TRE.sel=null;TRE.pt=-1;treApply();say('Sentiero tolto','',2000);treInfo();return true;}
+  if(k==='delete'||k==='backspace'){var k2=treKeyOf(t);if(t.key){say('È un sentiero nuovo: per toglierlo usa Maiusc+Canc','',2600);return true;}ED.off[k2]={reset:1};edSave();treApply();TRE.sel=treFind(k2);TRE.pt=-1;say('Tracciato originale ripristinato','',2200);treInfo();return true;}
+  return false;
+}
+function treHas(){var E=treEdits();return Object.keys(E).length>0;}
+var treTr0=trSync;trSync=function(dt){treTr0(dt);if(!TRE.applied&&TRL.ready&&SC.pois.length&&world==='net'){TRE.applied=true;if(treHas())treApply();}if(typeof GOD!=='undefined'&&GOD.on||TRE.g)treTick(dt);};
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -9988,7 +10103,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={CAVE:CAVE,caveStart:caveStart,caveStop:caveStop,caveAt:caveAt,OBACO:OBACO,MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},PL:PL,plNew:plNew,plAll:plAll,fstArea:fstArea,plZoneSet:plZoneSet,FSTU:function(){return FST;},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={TRE:TRE,treApply:treApply,treSelectAt:treSelectAt,CAVE:CAVE,caveStart:caveStart,caveStop:caveStop,caveAt:caveAt,OBACO:OBACO,MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},PL:PL,plNew:plNew,plAll:plAll,fstArea:fstArea,plZoneSet:plZoneSet,FSTU:function(){return FST;},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
