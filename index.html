@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 17:13</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 17:25</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -3555,6 +3555,13 @@ function enableTilt(){
   function up(e){if(e.pointerId!==pid)return;pid=null;inp.strip=0;$('steerKnob').style.left='50%';}
   el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
 })();
+function footInput(){
+  if(opts.ctl==='joy'&&typeof JOY!=='undefined'){var g=Math.max(0,-JOY.y),b=Math.max(0,JOY.y);inp.gas=g>.18;inp.brake=b>.18;}
+  var kb=(inp.kbR?1:0)-(inp.kbL?1:0);if(kb)return kb;
+  if(opts.ctl==='joy'&&typeof JOY!=='undefined')return Math.abs(JOY.x)>.18?JOY.x:0;
+  if(steerMode==='tilt'){var a=tilt.raw*(opts.inv?-1:1),dz=4*DEG;a=Math.abs(a)<dz?0:(a-(a>0?dz:-dz));return clamp(a/LOCK[opts.sens],-1,1);}
+  return steerMode==='keys'?0:(inp.strip||0);
+}
 function readInput(dt){
   if(world==='net'&&SC.auto){if(inp.brake||inp.kbBrake)scAutoSet(0);else{car.thr=0;car.brk=0;return;}}
   if(auto.on){autoDrive(dt);return;}
@@ -6085,7 +6092,7 @@ function walkCam(dt){
 }
 function walkFrame(dt){
   gameT+=dt;
-  if(WALK.on)walkTick(dt);else{car.vx=car.vz=0;car.thr=0;}
+  if(WALK.on){var wt=footInput();if(wt&&!inp.kbL&&!inp.kbR)look.yaw=clamp(look.yaw+wt*dt*1.5,-2.9,2.9);walkTick(dt);}else{car.vx=car.vz=0;car.thr=0;}
   OX=car.x;OZ=car.z;
   skyTick(dt);natTick(dt);ntrTick(dt);nwTick(dt);if(sayT>0){sayT-=dt;if(sayT<=0)$('hint').hidden=true;}mapTick(dt);
   if(WALK.on&&WALK.pg){var k=WALK.park;WALK.pg.position.set(k.x-OX,k.y,k.z-OZ);}
@@ -9294,7 +9301,7 @@ function pwBarSync(){var b=$('pwBar');if(!b||!PW.on)return;var tb=$('pwTorch');i
 /* ---------- un passo alla volta ---------- */
 function pwFrame(dt){
   gameT+=dt;
-  var f=((inp.gas||inp.kbGas)?1:0)-((inp.brake||inp.kbBrake)?1:0),kb=(inp.kbR?1:0)-(inp.kbL?1:0),tr=kb!==0?kb:(steerMode==='keys'?0:(inp.strip||0));
+  var tr=footInput(),f=((inp.gas||inp.kbGas)?1:0)-((inp.brake||inp.kbBrake)?1:0);
   PW.yaw+=tr*dt*1.9;
   var v=f>0?1.45*PW.mult:f<0?-.9:0,nx=PW.x+Math.sin(PW.yaw)*v*dt,nz=PW.z+Math.cos(PW.yaw)*v*dt,w=v?pwMove(PW.x,PW.z,PW.y,nx,nz,.3):[PW.x,PW.z];
   if(!w){PW.stuck=(PW.stuck||0)+dt;w=PW.stuck>2.5?walkPush(nx,nz):[PW.x,PW.z];if(PW.stuck<.1)say('Qui c’è un muro','',1200);}else if(v)PW.stuck=0;   /* chiusi in trappola? dopo un po' si passa */
@@ -9888,6 +9895,7 @@ function caveBarSync(){var b=$('caveBar');if(!b)return;b.querySelectorAll('[data
 /* ---------- un passo nella grotta ---------- */
 function caveFrame(dt){
   gameT+=dt;if(sayT>0){sayT-=dt;if(sayT<=0)$('hint').hidden=true;}
+  var trn=footInput();if(trn)look.yaw=clamp(look.yaw+trn*dt*1.6,-2.9,2.9);
   var f=((inp.gas||inp.kbGas)?1:0)-((inp.brake||inp.kbBrake)?1:0),A0=caveAt(CAVE.s),wet=isFinite(A0.wl)&&A0.sec!=='salone'&&A0.sec!=='lago',v=f>0?(wet?1.1:1.4)*CAVE.mult:f<0?-.9:0;
   CAVE.s=clamp(CAVE.s+v*dt,0,CAVE.P.len);if(CAVE.s>=CAVE.P.len-1){caveStop(true);return;}
   if(CAVE.s<=0&&f<0){caveStop(false);return;}
