@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 07:50</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 16:49</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -9826,6 +9826,8 @@ function caveBank(x0,z0,hx,hz){   /* un punto asciutto e camminabile vicino (mai
   return[x0+hx*6,z0+hz*6];}
 function caveStart(){
   if(CAVE.on||!caveMouth()||!caveExitObj())return;
+  if(!$('card').hidden){$('card').hidden=true;SC.card=null;}paused=false;
+  if(typeof WALK!=='undefined'&&WALK.on){var wx=car.x,wz=car.z;walkStop();pwStart(null);if(PW.on){PW.x=wx;PW.z=wz;PW.y=gndY(wx,wz);}}   /* arrivati col sentiero: si prosegue a piedi da dove si è */
   if(!PW.on)pwStart(null);if(!PW.on)return;
   caveWorldBuild();CAVE.on=true;CAVE.s=1;CAVE.hall='';CAVE.drip=.5;CAVE.vis=[];CAVE.wet=false;CAVE.dark=false;CAVE.yaw=0;
   scene.children.forEach(function(o){CAVE.vis.push([o,o.visible]);});
@@ -9847,7 +9849,7 @@ function caveBar(){
   if(!b){b=document.createElement('div');b.id='caveBar';b.className='hud';b.setAttribute('role','group');b.setAttribute('aria-label','Nella grotta');
     b.innerHTML='<div class="wt">Grotte di Pastena</div><div class="cs" id="caveSala"></div><div class="wr"><span class="wl">Passo</span><button type="button" data-cm="1">×1</button><button type="button" data-cm="2">×2</button><button type="button" data-cm="4">×4</button></div><div class="wr"><button type="button" id="caveShout">Grida</button><button type="button" id="caveMic" aria-pressed="false">Microfono</button></div><div class="wr"><button type="button" id="caveBack" class="wbk">Torna all’ingresso</button></div>';
     $('game').appendChild(b);
-    var st=document.createElement('style');st.textContent='#caveBar{display:none;position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:16px;width:min(46%,300px);padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);gap:6px;z-index:4}#game.cave #caveBar{display:grid}#game.cave #pwBar,#game.cave #btnPw,#game.cave #btnCave,#game.cave #btnCam,#game.cave #nav,#game.cave #cluster,#game.cave #btnDisc{display:none!important}#caveBar .wt{font:700 15px/1.15 var(--font-d)}#caveBar .cs{font:500 13px/1.25 var(--font-d);opacity:.85;min-height:16px}#caveBar .wr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#caveBar .wl{font:600 11px var(--font-d);letter-spacing:.08em;text-transform:uppercase;opacity:.75}#caveBar button{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;padding:5px 11px;font:700 13px var(--font-d);cursor:pointer;min-height:32px}#caveBar button[aria-pressed=true],#caveBar .wbk{background:var(--amber);color:#1a1206;border-color:var(--amber)}#btnCave{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(288px + env(safe-area-inset-top,0px));z-index:3;background:#3b2a1a;color:#fff;border-color:#8a6a3a}';
+    var st=document.createElement('style');st.textContent='#caveBar{display:none;position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:16px;width:min(46%,300px);padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);gap:6px;z-index:4}#game.cave #caveBar{display:grid}#game.cave #pwBar,#game.cave #btnPw,#game.cave #btnCave,#game.cave #btnCam,#game.cave #nav,#game.cave #cluster,#game.cave #btnDisc{display:none!important}#caveBar .wt{font:700 15px/1.15 var(--font-d)}#caveBar .cs{font:500 13px/1.25 var(--font-d);opacity:.85;min-height:16px}#caveBar .wr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#caveBar .wl{font:600 11px var(--font-d);letter-spacing:.08em;text-transform:uppercase;opacity:.75}#caveBar button{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;padding:5px 11px;font:700 13px var(--font-d);cursor:pointer;min-height:32px}#caveBar button[aria-pressed=true],#caveBar .wbk{background:var(--amber);color:#1a1206;border-color:var(--amber)}#btnCave{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(288px + env(safe-area-inset-top,0px));z-index:6;background:#3b2a1a;color:#fff;border-color:#8a6a3a}';
     document.head.appendChild(st);
     b.addEventListener('pointerdown',function(e){e.stopPropagation();});
     b.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;if(t.id==='caveBack'){caveStop(false);return;}if(t.id==='caveShout'){if(typeof pwVoice==='function')pwVoice('Ehi!','me',false);caveShout();return;}if(t.id==='caveMic'){caveMic(!CAVE.micOn);return;}if(t.dataset.cm){CAVE.mult=+t.dataset.cm;caveBarSync();}});}
@@ -9884,8 +9886,8 @@ function caveNearTick(dt){
   CAVE.chk=(CAVE.chk||0)-dt;if(CAVE.chk>0)return;CAVE.chk=.5;
   var b=$('btnCave');if(!b){if(world!=='net'||!NET)return;b=document.createElement('button');b.id='btnCave';b.className='chip hud';b.type='button';b.textContent='Entra nelle Grotte di Pastena';b.hidden=true;$('game').appendChild(b);caveBar();
     b.addEventListener('pointerdown',function(e){e.stopPropagation();});b.addEventListener('click',function(){caveStart();});}
-  var m=caveMouth();if(!m||CAVE.on||world!=='net'||state!=='drive'||BINO.on||WALK.on||(typeof GOD!=='undefined'&&GOD.on)){b.hidden=true;return;}
-  var px=PW.on?PW.x:car.x,pz=PW.on?PW.z:car.z,d=Math.hypot(px-m.x,pz-m.z);b.hidden=!(d<(PW.on?16:40)&&(PW.on||Math.hypot(car.vx,car.vz)<4));
+  var m=caveMouth();if(!m||CAVE.on||world!=='net'||state!=='drive'||BINO.on||(typeof GOD!=='undefined'&&GOD.on)){b.hidden=true;return;}
+  var px=PW.on?PW.x:car.x,pz=PW.on?PW.z:car.z,d=Math.hypot(px-m.x,pz-m.z),foot=PW.on||WALK.on;b.hidden=!(d<(foot?30:40)&&(foot||Math.hypot(car.vx,car.vz)<4));
 }
 /* fuori: ogni tanto qualche pipistrello esce dalla grotta; se saluti (Yu-huuu!) vicino all'ingresso, esce lo sciame */
 function caveOutTick(dt){
