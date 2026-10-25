@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 00:01</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 07:50</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8624,9 +8624,9 @@ window.addEventListener('blur',function(){GOD.keys={};});
 var BATS={on:false,t:0,last:-1e9,list:null,g:null,geo:null,eyes:null,mouth:null};
 var BATN=150,BATEYE=new THREE.PointsMaterial({size:.3,fog:false,alphaTest:.02,color:0xff3a1a,transparent:true,opacity:1,depthWrite:false,blending:THREE.AdditiveBlending});
 function batPoi(){if(!SC||!SC.pois)return null;for(var i=0;i<SC.pois.length;i++){var p=SC.pois[i];if(/grotte di pastena/i.test(p.n))return p;}return null;}
-function batStart(p){
+function batStart(p,nb,quiet){
   var m=p.mouth||{x:p.x,z:p.z,y:gndY(p.x,p.z)+1,hx:1,hz:0};
-  BATS.on=true;BATS.t=0;BATS.last=gameT;BATS.mouth=m;
+  BATS.on=true;BATS.t=0;if(!quiet)BATS.last=gameT;BATS.mouth=m;
   if(!BATS.g){
     BATS.geo=new THREE.BufferGeometry();BATS.geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(BATN*12*3),3));
     var mesh=new THREE.Mesh(BATS.geo,new THREE.MeshBasicMaterial({color:0x120f14,side:THREE.DoubleSide,fog:false}));mesh.frustumCulled=false;
@@ -8639,8 +8639,8 @@ function batStart(p){
     var sp=9+Math.random()*7,a=(Math.random()-.5)*1.6,ca=Math.cos(a),sa=Math.sin(a),dx=m.hx*ca-m.hz*sa,dz=m.hx*sa+m.hz*ca;
     L.push({d:Math.random()*2.8,x:m.x+(Math.random()-.5)*2.4,y:m.y+Math.random()*1.4,z:m.z+(Math.random()-.5)*2.4,vx:dx*sp,vy:1+Math.random()*3,vz:dz*sp,
       ph:Math.random()*6.3,f:11+Math.random()*7,s:1.5+Math.random()*.9,seek:Math.random()<.5,sw:Math.random()<.5?1:-1,o:Math.random()*6.3});}
-  BATS.list=L;batSound();
-  say('Uno sciame di pipistrelli esce dalla grotta!','warn',3200);if(typeof shake!=='undefined')shake=.25;
+  if(nb)for(var q=nb;q<BATN;q++)L[q].gone=true;
+  BATS.list=L;if(quiet){if(typeof caveChirp==='function')caveChirp(3+nb,1);}else{batSound();say('Uno sciame di pipistrelli esce dalla grotta!','warn',3200);if(typeof shake!=='undefined')shake=.25;}
 }
 function batTick(dt){
   if(!BATS.on){
@@ -9269,7 +9269,7 @@ function pwFrame(dt){
   PW.yaw+=tr*dt*1.9;
   var v=f>0?1.45*PW.mult:f<0?-.9:0,nx=PW.x+Math.sin(PW.yaw)*v*dt,nz=PW.z+Math.cos(PW.yaw)*v*dt,w=v?pwMove(PW.x,PW.z,PW.y,nx,nz,.3):[PW.x,PW.z];
   if(!w){PW.stuck=(PW.stuck||0)+dt;w=PW.stuck>2.5?walkPush(nx,nz):[PW.x,PW.z];if(PW.stuck<.1)say('Qui c’è un muro','',1200);}else if(v)PW.stuck=0;   /* chiusi in trappola? dopo un po' si passa */
-  if(typeof wOn==='function'&&wOn(w[0],w[1],.3)){w=[PW.x,PW.z];}
+  if(typeof wOn==='function'&&wOn(w[0],w[1],.3)&&!wOn(PW.x,PW.z,.3)){w=[PW.x,PW.z];}   /* se si è già nell'acqua, si può sempre uscirne */
   PW.dist+=Math.hypot(w[0]-PW.x,w[1]-PW.z);PW.x=w[0];PW.z=w[1];
   var gy=gndY(PW.x,PW.z,PW.y);PW.y=Math.abs(gy-PW.y)>6?gy:PW.y+(gy-PW.y)*Math.min(1,dt*9);
   car.x=PW.x;car.z=PW.z;car.y=car.gy=PW.y;car.th=PW.yaw;car.vx=car.vz=0;car.off=false;
@@ -9639,136 +9639,245 @@ var ufoTr0=trSync;trSync=function(dt){ufoTr0(dt);ufoTick(dt);};
 /* tintinnio delle stelline */
 function speleoTwinkle(d){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t=AC.currentTime+.03,v=.12*Math.max(0,1-d/40);
   [1568,2093,1760,2349,1976].forEach(function(f,i){var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t+i*.09);g.gain.linearRampToValueAtTime(v,t+i*.09+.01);g.gain.exponentialRampToValueAtTime(.0005,t+i*.09+.35);o.connect(g);g.connect(au.master);o.start(t+i*.09);o.stop(t+i*.09+.4);});}
-/* ================= DENTRO LE GROTTE DI PASTENA: passeggiata sotterranea che sbuca al Rio Obaco =================
-   la grotta è un mondo a parte, costruito sotto il piano del gioco: si cammina lungo il percorso, si guarda intorno, si fa luce con la torcia */
-var CAVE={on:false,g:null,s:0,mult:1,P:null,vis:null,lamps:[],L:[],snd:0,drip:1,hall:'',bats:[]};
-var CAVY=-2600;
-var CAVEHALLS=[[0,'Salone d’ingresso: sotto la passerella scorre il Fosso Mastro'],[70,'Corridoio Franchetti'],[95,'Sala del salice piangente'],[125,'Galleria delle meraviglie'],[160,'Sala delle colonne: il soffitto è macchiato dal guano dei pipistrelli'],[200,'Sala dei pipistrelli'],[230,'Sala delle diramazioni: la colata a testa di elefante'],[255,'Un ramo nuovo, stretto e bagnato: si sente l’acqua più avanti…'],[320,'Aria fredda: l’uscita sul Rio Obaco è vicina']];
+/* ================= DENTRO LE GROTTE DI PASTENA: il ramo attivo, dal salone d'ingresso alla risorgenza del Rio Obaco =================
+   tracciato ispirato al racconto di Lamberto Ferri Ricchi (salone, Lago Blu, gallerie artificiali al posto dei sifoni, laghetti,
+   volte alte, cascata, galleria by-pass); le distanze vere (circa 2.200 m) sono accorciate */
+var CAVE={on:false,g:null,s:0,mult:1,P:null,vis:null,lamps:[],L:[],drip:1,hall:'',bats:[],drops:[],rings:[],tips:[],mic:null,micOn:false,shoutT:-99,batT:8,wet:false};
+var CAVY=-2600,CAVLEN=600,CAVDS=1.5;
+var CAVEHALLS=[[0,'Salone d’ingresso: la piccola diga crea un laghetto, la passerella corre a destra'],[70,'Galleria artificiale verso il Lago Blu'],[82,'Lago Blu: la passerella a sbalzo corre sopra il lago e la sua cascata'],[125,'Galleria in discesa: sulla piattaforma finisce il percorso turistico'],[145,'Ramo attivo: da qui è buio, solo la torcia. Questa galleria ha preso il posto del primo e del secondo sifone'],[230,'Laghetti e concrezioni del ramo attivo: l’acqua scorre sempre ai piedi'],[330,'La strettoia della «bocca tassata»'],[360,'Gallerie con volte alte oltre venti metri: il fragore dell’acqua'],[470,'Una cascata di cinque metri: sotto c’è il laghetto del settimo sifone'],[500,'La galleria by-pass scavata negli anni Settanta: si sente aria fresca'],[580,'La risorgenza del Rio Obaco']];
 var OBACO={n:'Rio Obaco',key:'Rio Obaco',com:'Pastena',id:-30,pk:'egg:obaco',c:'nat',x:0,z:0,wd:'',w:'it:Grotte di Pastena',foto:[],foto0:[],bozza:true,node:-1,extra:[],link:[],video:[],
-  t:"Il Rio Obaco sbuca qui dalla roccia, alla fine di un ramo nascosto delle Grotte di Pastena che nel gioco si percorre a piedi dall'interno.\nLa sua acqua è sempre gelida, anche in piena estate: viene dal cuore della montagna, dove la temperatura resta bassa tutto l'anno."};
-/* ---------- il percorso e la galleria ---------- */
+  t:"Qui torna alla luce il fiume sotterraneo delle Grotte di Pastena, il «ramo attivo»: le acque entrano nella montagna da un inghiottitoio e, dopo circa 2.200 metri sotto terra, riemergono in questa risorgenza, chiamata anche «dell’Obbùco» o del Rio Obaco.\nNegli anni Sessanta il geologo e speleosub Lamberto Ferri Ricchi esplorò il ramo attivo superando in immersione sette sifoni. Negli anni Settanta, con una galleria by-pass scavata a partire da qui, i sifoni finali furono eliminati per evitare che le piene allagassero le grotte.\nL’acqua che esce dalla roccia è sempre gelida, anche in piena estate."};
+function cvSec(s){return s<70?'salone':s<80?'gal1':s<125?'lago':s<145?'disc':s<230?'art':s<330?'att':s<360?'stretta':s<470?'grandi':s<500?'casc':'bypass';}
+function cvDark(s){return s>=145;}
+var CVPAL={salone:[0x8a7f74,0x9b8c7e,0x6e655c],gal1:[0xc9c2b4,0xb8b0a0],lago:[0xa0684a,0xb98a62,0x7a4e36],disc:[0xc9c2b4,0xb8b0a0],art:[0xd0c9bb,0xbdb5a5,0xa89f8e],att:[0xa66b45,0xc08a5c,0x7e5236],stretta:[0xb8956e,0xd2b48c],grandi:[0xa87a52,0xc49a6c,0x8a5e3e,0xd8c8a8],casc:[0xa87a52,0xc49a6c,0x8a5e3e],bypass:[0x9d968a,0x878074,0xaaa395]};
+/* ---------- il tracciato ---------- */
 function cavePath(){
-  var r=rng(5150),N=172,ds=2,P={x:[],z:[],y:[],h:[],w:[],ht:[],s:[],n:N},h=0,x=0,z=0;
-  for(var i=0;i<N;i++){var s=i*ds;h+=Math.sin(s/23)*.05+Math.sin(s/9.3+1)*.03+(r()-.5)*.03;x+=Math.sin(h)*ds;z+=Math.cos(h)*ds;
-    var y=CAVY+Math.sin(s/37)*2.2+Math.sin(s/13)*.5+(s>250?(s-250)*.03:0);
-    function hall(c,w,a){return Math.exp(-Math.pow((s-c)/w,2))*a;}
-    var W=3+r()*.6+hall(30,28,9)+hall(100,9,4)+hall(165,14,7)+hall(205,9,5)+hall(235,8,4)-(s>255&&s<300?1.2:0),H=3.4+r()*.5+hall(30,28,12)+hall(165,14,6)+hall(205,9,7)+hall(100,9,3);
-    P.x.push(x);P.z.push(z);P.y.push(y);P.h.push(h);P.w.push(W);P.ht.push(H);P.s.push(s);}
-  P.len=(N-1)*ds;return P;
+  var r=rng(5150),N=Math.round(CAVLEN/CAVDS)+1,P={x:[],z:[],h:[],w:[],ht:[],fy:[],py:[],pl:[],wl:[],sec:[],s:[],n:N},h=0,x=0,z=0,i;
+  for(i=0;i<N;i++){var s=i*CAVDS,sc=cvSec(s),art=/gal1|disc|art|bypass/.test(sc);
+    h+=(art?.15:1)*(Math.sin(s/23)*.035+Math.sin(s/9.3+1)*.02+(r()-.5)*.02);x+=Math.sin(h)*CAVDS;z+=Math.cos(h)*CAVDS;
+    var yb=CAVY-.01*s-clamp((s-125)/20,0,1)*6-clamp((s-478)/14,0,1)*5,W,H,fy=yb,py=yb,pl=0,wl=yb+.28;
+    if(sc==='salone'){W=13;H=17;py=yb+.5;pl=7;wl=yb+.3;}
+    else if(sc==='gal1'){W=2.2;H=2.6;wl=NaN;}
+    else if(sc==='lago'){W=12;H=19;fy=yb-9;py=yb+.5;pl=8.4;wl=yb-7;}
+    else if(sc==='disc'){W=2.4;H=2.8;wl=NaN;}
+    else if(sc==='art'){W=2.9;H=3.2;}
+    else if(sc==='att'){W=4.4+Math.sin(s/11)*1.4;H=5.4+Math.sin(s/7)*.8;}
+    else if(sc==='stretta'){W=1.6;H=2.1;}
+    else if(sc==='grandi'){W=7.5+Math.sin(s/17)*1.5;H=17+Math.sin(s/13)*3;}
+    else if(sc==='casc'){W=5;H=9;pl=s>472&&s<496?2.3:0;}
+    else{W=2.6;H=3;}
+    P.x.push(x);P.z.push(z);P.h.push(h);P.w.push(W);P.ht.push(H);P.fy.push(fy);P.py.push(py);P.pl.push(pl);P.wl.push(wl);P.sec.push(sc);P.s.push(s);}
+  /* raccordi morbidi tra un ambiente e l'altro */
+  ['w','ht','fy','py','pl'].forEach(function(k){var A=P[k],B=A.slice();for(i=0;i<N;i++){var t=0,c=0;for(var j=-3;j<=3;j++){var q=i+j;if(q<0||q>=N)continue;t+=A[q];c++;}B[i]=t/c;}P[k]=B;});
+  for(i=0;i<N;i++){var lim=P.w[i]*.62;P.pl[i]=clamp(P.pl[i],-lim,lim);if(isFinite(P.wl[i])&&P.sec[i]!=='lago'&&P.sec[i]!=='salone')P.wl[i]=P.fy[i]+.28;}
+  P.len=(N-1)*CAVDS;return P;
 }
-function caveAt(s){var P=CAVE.P,f=clamp(s/2,0,P.n-1.001),i=Math.floor(f),u=f-i;function L(a){return a[i]+(a[i+1]-a[i])*u;}return{x:L(P.x),z:L(P.z),y:L(P.y),h:L(P.h),w:L(P.w),ht:L(P.ht)};}
+function caveAt(s){var P=CAVE.P,f=clamp(s/CAVDS,0,P.n-1.001),i=Math.floor(f),u=f-i;function L(a){return a[i]+(a[i+1]-a[i])*u;}
+  return{x:L(P.x),z:L(P.z),h:L(P.h),w:L(P.w),ht:L(P.ht),fy:L(P.fy),py:L(P.py),pl:L(P.pl),wl:P.wl[i],sec:P.sec[i]};}
+function cvCeil(A,lat){return A.fy+A.ht*(.32+.9*.86*Math.sqrt(Math.max(0,1-Math.pow(lat/A.w,2))));}
+/* ---------- la grotta ---------- */
 function caveWorldBuild(){
   if(CAVE.g)return;var P=CAVE.P=cavePath(),r=rng(9091),M=22,pos=[],col=[],idx=[],i,j,c=new THREE.Color();
-  for(i=0;i<P.n;i++){var hx=Math.sin(P.h[i]),hz=Math.cos(P.h[i]),nx=hz,nz=-hx,W=P.w[i],H=P.ht[i],fy=P.y[i];
-    for(j=0;j<M;j++){var a=j/M*Math.PI*2,k=1+(r()-.5)*.28+Math.sin(i*.7+j*1.3)*.08,lat=Math.cos(a)*W*k,v=Math.sin(a)*H*k*.9+H*.32,y=fy+v;
-      if(v<0){y=fy+(Math.abs(lat)>W*.7?(Math.abs(lat)-W*.7)*.5:0)+(r()-.5)*.08;}
+  for(i=0;i<P.n;i++){var hx=Math.sin(P.h[i]),hz=Math.cos(P.h[i]),nx=hz,nz=-hx,W=P.w[i],H=P.ht[i],fy=P.fy[i],sc=P.sec[i],art=/gal1|disc|art/.test(sc),nz2=art?.05:sc==='bypass'?.16:.28,pal=CVPAL[sc];
+    for(j=0;j<M;j++){var a=j/M*Math.PI*2,k=1+(r()-.5)*nz2+(art?0:Math.sin(i*.5+j*1.3)*.08),lat=Math.cos(a)*W*k,v=Math.sin(a)*H*k*.9+H*.32,y=fy+v;
+      if(v<0)y=fy+(Math.abs(lat)>W*.75?(Math.abs(lat)-W*.75)*.6:0)+(r()-.5)*.06;
       pos.push(P.x[i]+nx*lat,y,P.z[i]+nz*lat);
-      var ht=(y-fy)/Math.max(1,H*1.2),wet=v<0?1:0;c.setHex(wet?0x4a3d30:(r()<.12?0xcbb68c:ht>.7?0x9a8b72:0x7d6d58));var sh=.8+r()*.3;col.push(c.r*sh,c.g*sh,c.b*sh);}}
+      c.setHex(v<0?0x4a3d30:pal[Math.floor(r()*pal.length)]);var band=sc==='grandi'||sc==='att'?.88+.14*Math.sin(y*1.7):1,sh=(.82+r()*.26)*band;col.push(c.r*sh,c.g*sh,c.b*sh);}}
   for(i=0;i<P.n-1;i++)for(j=0;j<M;j++){var a0=i*M+j,a1=i*M+(j+1)%M,b0=a0+M,b1=a1+M;idx.push(a0,a1,b0,a1,b1,b0);}
-  /* tappo all'inizio e alla fine (dietro di sé) */
   var g=new THREE.Group(),geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));geo.setIndex(idx);geo.computeVertexNormals();
-  var nr=geo.attributes.normal;for(i=0;i<nr.count;i++)nr.setXYZ(i,-nr.getX(i),-nr.getY(i),-nr.getZ(i));   /* le pareti guardano dentro */
-  g.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,flatShading:true})));
-  /* stalattiti, stalagmiti e colonne */
-  var B=new GB(),cream=[0xd8c6a0,0xc9b088,0xe6d8b8,0xb89a74];
+  var nr=geo.attributes.normal;for(i=0;i<nr.count;i++)nr.setXYZ(i,-nr.getX(i),-nr.getY(i),-nr.getZ(i));
+  var rockM=new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,flatShading:true,shininess:8,specular:0x1a1a1a});
+  g.add(new THREE.Mesh(geo,rockM));
+  /* concrezioni: stalattiti (le punte gocciolano), stalagmiti, colonne, colate «a vela» */
+  var B=new GB(),cream=[0xd8c6a0,0xc9b088,0xe6d8b8,0xb89a74],tips=CAVE.tips=[];
   function cone(x,y,z,rad,len,down,cl){var n=6,tip=[x,y+(down?-len:len),z];for(var q=0;q<n;q++){var a=q/n*Math.PI*2,b=(q+1)/n*Math.PI*2,p0=[x+Math.cos(a)*rad,y,z+Math.sin(a)*rad],p1=[x+Math.cos(b)*rad,y,z+Math.sin(b)*rad];
-    B.quad(down?[p1,p0,tip,tip]:[p0,p1,tip,tip],[Math.cos((a+b)/2),0,Math.sin((a+b)/2)],N4,hc(cl));}}
-  for(i=3;i<P.n-2;i++){var s=P.s[i],W2=P.w[i],H2=P.ht[i],hx2=Math.sin(P.h[i]),hz2=Math.cos(P.h[i]),nx2=hz2,nz2=-hx2,big=W2>6,fy2=P.y[i];
-    if(s<55)continue;   /* nel salone d'ingresso niente stalattiti: l'acqua scorreva troppo veloce */
-    var ns=big?5:2;for(var q=0;q<ns;q++){var lat=(r()-.5)*W2*1.4,top=fy2+H2*(.32+.82*Math.sqrt(Math.max(0,1-Math.pow(lat/W2,2))))*.92;if(Math.abs(lat)<.9&&s<330)lat+=lat<0?-1:1;
-      cone(P.x[i]+nx2*lat,top,P.z[i]+nz2*lat,.08+r()*.18,.4+r()*(big?2.4:1),true,cream[Math.floor(r()*4)]);}
-    if(r()<.5){var la=(r()<.5?-1:1)*(W2*.55+r()*W2*.2);cone(P.x[i]+nx2*la,fy2-.1,P.z[i]+nz2*la,.15+r()*.25,.4+r()*1.4,false,cream[Math.floor(r()*4)]);}
-    if(s>150&&s<185&&i%3===0){var lc=(i%2?-1:1)*W2*.62,cx=P.x[i]+nx2*lc,cz=P.z[i]+nz2*lc;for(var t=0;t<8;t++){var a3=t/8*Math.PI*2,a4=(t+1)/8*Math.PI*2,R0=.7,R1=.45;B.quad([[cx+Math.cos(a3)*R0,fy2-.2,cz+Math.sin(a3)*R0],[cx+Math.cos(a4)*R0,fy2-.2,cz+Math.sin(a4)*R0],[cx+Math.cos(a4)*R1,fy2+H2*1.3,cz+Math.sin(a4)*R1],[cx+Math.cos(a3)*R1,fy2+H2*1.3,cz+Math.sin(a3)*R1]],[Math.cos(a3),0,Math.sin(a3)],N4,hc(0xc4a880));}}}
-  g.add(B.mesh(new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true})));
-  /* il torrente sotterraneo, sul lato sinistro, che scorre verso l'uscita; la passerella sul lato destro nel salone */
-  var wp=[],wu=[],wi=[];for(i=0;i<P.n;i++){var hx3=Math.sin(P.h[i]),hz3=Math.cos(P.h[i]),nx3=hz3,nz3=-hx3,W3=P.w[i],a5=-W3*.62,b5=-W3*.12;
-    [a5,b5].forEach(function(l,k){wp.push(P.x[i]+nx3*l,P.y[i]+.06,P.z[i]+nz3*l);wu.push(k,P.s[i]/3);});}
-  for(i=0;i<P.n-1;i++){var o=i*2;wi.push(o,o+2,o+1,o+1,o+2,o+3);}
-  var wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));wg.setAttribute('uv',new THREE.Float32BufferAttribute(wu,2));wg.setIndex(wi);wg.computeVertexNormals();
+    B.quad(down?[p1,p0,tip,tip]:[p0,p1,tip,tip],[Math.cos((a+b)/2),0,Math.sin((a+b)/2)],N4,hc(cl));}if(down)tips.push(tip);}
+  function curtain(x,z,y,ux,uz,len,cl){var n=Math.round(len/.3),prev=null;for(var q=0;q<=n;q++){var t=q*.3,px=x+ux*t+Math.sin(q*1.9)*.08*uz,pz=z+uz*t-Math.sin(q*1.9)*.08*ux,bot=y-(1.2+Math.sin(q*.9)*.5+Math.sin(q*2.3)*.25);
+    if(prev)B.quad([[prev[0],y,prev[1]],[px,y,pz],[px,bot,pz],[prev[0],prev[2],prev[1]]],[uz,0,-ux],N4,hc(cl));prev=[px,pz,bot];}}
+  for(i=2;i<P.n-2;i++){var s=P.s[i],sc=P.sec[i],A={fy:P.fy[i],ht:P.ht[i],w:P.w[i]},W2=P.w[i],hx2=Math.sin(P.h[i]),hz2=Math.cos(P.h[i]),nx2=hz2,nz2=-hx2;
+    if(/salone|gal1|disc|art/.test(sc))continue;   /* nel salone l'acqua correva troppo forte; le gallerie sono scavate dall'uomo */
+    var dens=sc==='lago'?.9:sc==='grandi'?1.1:sc==='bypass'?.12:.55,big=sc==='grandi'||sc==='lago';
+    if(r()<dens*2){var ns=big?3:1;for(var q=0;q<ns;q++){var lat=(r()-.5)*W2*1.5;if(Math.abs(lat-P.pl[i])<.8)lat+=lat<P.pl[i]?-1:1;
+      cone(P.x[i]+nx2*lat,cvCeil(A,lat),P.z[i]+nz2*lat,.07+r()*(big?.3:.14),.3+r()*(big?4:1.1),true,cream[Math.floor(r()*4)]);}}
+    if(r()<dens*.5&&sc!=='lago'){var la=(r()<.5?-1:1)*(W2*.55+r()*W2*.25);if(Math.abs(la-P.pl[i])>1)cone(P.x[i]+nx2*la,P.fy[i]+.1,P.z[i]+nz2*la,.15+r()*(big?.6:.25),.4+r()*(big?3:1.2),false,cream[Math.floor(r()*4)]);}
+    if(sc==='grandi'&&i%9===0){var lc=(i%2?-1:1)*W2*.6,cx=P.x[i]+nx2*lc,cz=P.z[i]+nz2*lc,top=cvCeil(A,lc);for(var t=0;t<8;t++){var a3=t/8*Math.PI*2,a4=(t+1)/8*Math.PI*2,R0=.9,R1=.55;B.quad([[cx+Math.cos(a3)*R0,P.fy[i]-.2,cz+Math.sin(a3)*R0],[cx+Math.cos(a4)*R0,P.fy[i]-.2,cz+Math.sin(a4)*R0],[cx+Math.cos(a4)*R1,top,cz+Math.sin(a4)*R1],[cx+Math.cos(a3)*R1,top,cz+Math.sin(a3)*R1]],[Math.cos(a3),0,Math.sin(a3)],N4,hc(0xc4a880));}}
+    if((sc==='att'||sc==='grandi')&&i%14===5){var lc2=(i%28<14?-1:1)*W2*.55;curtain(P.x[i]+nx2*lc2,P.z[i]+nz2*lc2,cvCeil(A,lc2)-.05,hx2,hz2,2.5+r()*2.5,0xeadfc6);}
+    if(sc==='stretta'&&r()<.5){var lc3=(r()<.5?-1:1)*W2*.7;cone(P.x[i]+nx2*lc3,P.fy[i],P.z[i]+nz2*lc3,.3,1.1,false,0xe6d8b8);}}
+  g.add(B.mesh(new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:30,specular:0x333333})));
+  /* l'acqua: il laghetto del salone, il Lago Blu, e il fiume che scorre sempre sotto i piedi nel ramo attivo */
   CAVE.wt=watTex.clone();CAVE.wt.needsUpdate=true;CAVE.wt.wrapS=CAVE.wt.wrapT=THREE.RepeatWrapping;
-  g.add(new THREE.Mesh(wg,new THREE.MeshPhongMaterial({map:CAVE.wt,color:0x7fa3ae,specular:0x556066,shininess:60,transparent:true,opacity:.85,side:THREE.DoubleSide})));
-  var BW=new GB(),wood=hc(0x6a4a30),rail=hc(0x3a2a1c);for(i=0;i<36;i++){var a6=caveAt(i*2),a7=caveAt(i*2+2),n6=[Math.cos(a6.h),-Math.sin(a6.h)],n7=[Math.cos(a7.h),-Math.sin(a7.h)];
-    BW.quad([[a6.x+n6[0]*.2,a6.y+.35,a6.z+n6[1]*.2],[a6.x+n6[0]*1.8,a6.y+.35,a6.z+n6[1]*1.8],[a7.x+n7[0]*1.8,a7.y+.35,a7.z+n7[1]*1.8],[a7.x+n7[0]*.2,a7.y+.35,a7.z+n7[1]*.2]],[0,1,0],N4,wood);
-    BW.quad([[a6.x+n6[0]*.2,a6.y+1.25,a6.z+n6[1]*.2],[a7.x+n7[0]*.2,a7.y+1.25,a7.z+n7[1]*.2],[a7.x+n7[0]*.2,a7.y+1.32,a7.z+n7[1]*.2],[a6.x+n6[0]*.2,a6.y+1.32,a6.z+n6[1]*.2]],[-n6[0],0,-n6[1]],N4,rail);
-    if(i%3===0)cbox(BW,a6.x+n6[0]*.2,a6.y+.8,a6.z+n6[1]*.2,.06,.9,.06,rail);}
-  g.add(BW.mesh(new THREE.MeshLambertMaterial({vertexColors:true})));
-  /* luci della visita turistica, solo nella parte aperta al pubblico */
-  CAVE.L=[];for(var sl=6;sl<240;sl+=14){var A=caveAt(sl),nx4=Math.cos(A.h),nz4=-Math.sin(A.h),la4=A.w*.8,sp=nwSprite(lampGlowTex(),0xffc27a,1.4,.9);sp.position.set(A.x+nx4*la4,A.y+.6,A.z+nz4*la4);g.add(sp);CAVE.L.push([sp.position.x,sp.position.y,sp.position.z]);}
-  CAVE.lamps=[0,1,2].map(function(){var L=new THREE.PointLight(0xffc27a,0,22,1.4);g.add(L);return L;});
-  /* in fondo, la luce del giorno che entra dall'uscita */
-  var E=caveAt(P.len-2),ex=nwSprite(lampGlowTex(),0xdff2ff,9,1);ex.position.set(E.x+Math.sin(E.h)*3,E.y+1.6,E.z+Math.cos(E.h)*3);g.add(ex);CAVE.exit=ex;
-  /* pipistrelli appesi e in volo nella loro sala */
-  var bm=new THREE.MeshBasicMaterial({color:0x151214,side:THREE.DoubleSide});CAVE.bats=[];for(i=0;i<14;i++){var b=new THREE.Group(),bd=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.18),bm);b.add(bd);[-1,1].forEach(function(sd){var w=new THREE.Mesh(new THREE.PlaneGeometry(.26,.12),bm);w.geometry.translate(sd*.13,0,0);w.rotation.x=-Math.PI/2;var pv=new THREE.Group();pv.add(w);b.add(pv);});
-    b.userData={s:195+r()*20,ph:r()*6,o:(r()-.5)*4,hh:2+r()*4};g.add(b);CAVE.bats.push(b);}
+  var wp=[],wu=[],wi=[],nv=0;
+  for(i=0;i<P.n-1;i++){if(!isFinite(P.wl[i])||!isFinite(P.wl[i+1]))continue;
+    [i,i+1].forEach(function(q){var hx3=Math.sin(P.h[q]),hz3=Math.cos(P.h[q]),nx3=hz3,nz3=-hx3,W3=P.w[q]*1.1,a5=-W3,b5=P.sec[q]==='salone'?P.pl[q]-1.2:W3;
+      wp.push(P.x[q]+nx3*a5,P.wl[q],P.z[q]+nz3*a5,P.x[q]+nx3*b5,P.wl[q],P.z[q]+nz3*b5);wu.push(0,P.s[q]/3,1,P.s[q]/3);});
+    wi.push(nv,nv+2,nv+1,nv+1,nv+2,nv+3);nv+=4;}
+  var wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));wg.setAttribute('uv',new THREE.Float32BufferAttribute(wu,2));wg.setIndex(wi);wg.computeVertexNormals();
+  g.add(new THREE.Mesh(wg,new THREE.MeshPhongMaterial({map:CAVE.wt,color:0x6f9cab,specular:0x8aa0a8,shininess:90,transparent:true,opacity:.82,side:THREE.DoubleSide})));
+  /* cascate: nel Lago Blu dalla volta, poi il salto di cinque metri del ramo attivo */
+  CAVE.ft=foamTex.clone();CAVE.ft.needsUpdate=true;CAVE.ft.wrapS=CAVE.ft.wrapT=THREE.RepeatWrapping;var fm=new THREE.MeshBasicMaterial({map:CAVE.ft,color:0xd8e6ea,transparent:true,opacity:.85,side:THREE.DoubleSide});
+  function fall(s,lat0,lat1,ytop,ybot,face){var A=caveAt(s),nx=Math.cos(A.h),nz=-Math.sin(A.h),fx=Math.sin(A.h),fz=Math.cos(A.h),G2=new THREE.BufferGeometry(),p=[],ox=face?fx*.0:0;
+    p.push(A.x+nx*lat0,ytop,A.z+nz*lat0,A.x+nx*lat1,ytop,A.z+nz*lat1,A.x+nx*lat1+fx*face,ybot,A.z+nz*lat1+fz*face,A.x+nx*lat0+fx*face,ybot,A.z+nz*lat0+fz*face);
+    G2.setAttribute('position',new THREE.Float32BufferAttribute(p,3));G2.setAttribute('uv',new THREE.Float32BufferAttribute([0,(ytop-ybot)/4,Math.abs(lat1-lat0)/3,(ytop-ybot)/4,Math.abs(lat1-lat0)/3,0,0,0],2));G2.setIndex([0,1,2,0,2,3]);g.add(new THREE.Mesh(G2,fm));return A;}
+  var Lb=caveAt(104);CAVE.fall1=fall(104,-Lb.w*.95,-Lb.w*.55,Lb.fy+Lb.ht*.95,Lb.wl,0);
+  var Cs=caveAt(484);CAVE.fall2=fall(484,-Cs.w*.95,Cs.w*.15,caveAt(478).wl+.02,caveAt(492).wl,1.2);
+  /* passerelle: grigliato d'acciaio e ringhiera rossa; nel Lago Blu sporge a sbalzo dalla parete */
+  var BW=new GB(),deck=hc(0x5d6066),rail=hc(0xb02a22),beam=hc(0x3a3d42);
+  for(var sd=0;sd<146;sd+=1.5){var a6=caveAt(sd),a7=caveAt(sd+1.5);if(a6.sec==='gal1'||a6.sec==='disc')continue;
+    var n6=[Math.cos(a6.h),-Math.sin(a6.h)],n7=[Math.cos(a7.h),-Math.sin(a7.h)],w=.7;
+    function P6(A,n,l,y){return[A.x+n[0]*(A.pl+l),y,A.z+n[1]*(A.pl+l)];}
+    BW.quad([P6(a6,n6,-w,a6.py),P6(a6,n6,w,a6.py),P6(a7,n7,w,a7.py),P6(a7,n7,-w,a7.py)],[0,1,0],N4,deck);
+    [-w,w].forEach(function(l){BW.quad([P6(a6,n6,l,a6.py+.98),P6(a7,n7,l,a7.py+.98),P6(a7,n7,l,a7.py+1.05),P6(a6,n6,l,a6.py+1.05)],[n6[0],0,n6[1]],N4,rail);
+      if(Math.round(sd/1.5)%2===0)cbox(BW,a6.x+n6[0]*(a6.pl+l),a6.py+.52,a6.z+n6[1]*(a6.pl+l),.05,1.05,.05,rail);});
+    if(a6.sec==='lago'&&Math.round(sd/1.5)%2===0){var wx=a6.x+n6[0]*a6.w*.92,wz=a6.z+n6[1]*a6.w*.92,dx=P6(a6,n6,0,0);BW.quad([[dx[0],a6.py-.05,dx[2]],[wx,a6.py-.05,wz],[wx,a6.py-2.2,wz],[dx[0],a6.py-.3,dx[2]]],[0,0,1],N4,beam);}
+    if(a6.sec==='salone'&&Math.round(sd/1.5)%3===0)cbox(BW,a6.x+n6[0]*a6.pl,(a6.fy+a6.py)/2,a6.z+n6[1]*a6.pl,.12,a6.py-a6.fy,.12,beam);}
+  var Pf=caveAt(142);cbox(BW,Pf.x,Pf.py-.05,Pf.z,3,.1,3,deck);   /* la piattaforma in fondo al percorso turistico */
+  g.add(BW.mesh(new THREE.MeshPhongMaterial({vertexColors:true,shininess:40})));
+  /* luci della visita turistica, solo fino alla piattaforma */
+  CAVE.L=[];for(var sl=4;sl<144;sl+=10){var A=caveAt(sl),nx4=Math.cos(A.h),nz4=-Math.sin(A.h),la4=A.pl+(A.sec==='lago'?1:.8),sp=nwSprite(lampGlowTex(),0xffc27a,1.2,.9);sp.position.set(A.x+nx4*la4,A.py+.3,A.z+nz4*la4);g.add(sp);CAVE.L.push([sp.position.x,sp.position.y,sp.position.z]);}
+  [[30,-6,6],[95,-6,9],[104,-9,4]].forEach(function(q){var A=caveAt(q[0]),n=[Math.cos(A.h),-Math.sin(A.h)],sp=nwSprite(lampGlowTex(),0xffd6a0,q[2],.55);sp.position.set(A.x+n[0]*q[1],A.fy+A.ht*.5,A.z+n[1]*q[1]);g.add(sp);CAVE.L.push([sp.position.x,sp.position.y,sp.position.z]);});   /* luci scenografiche */
+  CAVE.lamps=[0,1,2,3].map(function(){var L=new THREE.PointLight(0xffc27a,0,30,1.4);g.add(L);return L;});
+  var E=caveAt(P.len-1),ex=nwSprite(lampGlowTex(),0xdff2ff,10,1);ex.position.set(E.x+Math.sin(E.h)*4,E.py+1.6,E.z+Math.cos(E.h)*4);g.add(ex);CAVE.exit=ex;
+  caveBatsBuild(g);caveDropsBuild(g);
   g.visible=false;scene.add(g);CAVE.g=g;
 }
-/* ---------- suoni: gocce, eco, il torrente ---------- */
+/* ---------- pipistrelli: dormono appesi a testa in giù; ogni tanto qualcuno vola; se parli scappano tutti ---------- */
+function caveBatsBuild(g){
+  var bm=new THREE.MeshLambertMaterial({color:0x2a2226,side:THREE.DoubleSide}),em=new THREE.SpriteMaterial({map:lampGlowTex(),color:0xff4a2a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false,opacity:.9}),r=rng(313);CAVE.bats=[];
+  [[12,62,14],[86,122,12],[150,225,10],[240,320,12],[372,462,16],[505,560,6]].forEach(function(z){for(var i=0;i<z[2];i++){
+    var b=new THREE.Group();b.rotation.order='YXZ';var bd=new THREE.Mesh(new THREE.BoxGeometry(.07,.17,.07),bm);b.add(bd);var hd=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,.06),bm);hd.position.y=.11;b.add(hd);
+    var wings=[-1,1].map(function(sd){var w=new THREE.Mesh(new THREE.PlaneGeometry(.3,.15),bm);w.geometry.translate(sd*.15,0,0);var pv=new THREE.Group();pv.add(w);b.add(pv);return pv;});
+    var eye=new THREE.Sprite(em);eye.scale.set(.09,.09,1);eye.position.set(0,.12,.035);b.add(eye);
+    var s=z[0]+r()*(z[1]-z[0]),A=caveAt(s),lat=(r()-.5)*A.w*.9,n=[Math.cos(A.h),-Math.sin(A.h)],rx=A.x+n[0]*lat,rz=A.z+n[1]*lat,ry=cvCeil(A,lat)-.3;
+    if(i%3&&b.userData)/* a grappoli */{}
+    b.scale.setScalar(2);b.userData={rs:s,rx:rx,ry:ry,rz:rz,st:'hang',t:0,ph:r()*6.3,w:.25+r()*.25,R:6+r()*12,wings:wings,yaw:r()*6.3};
+    b.position.set(rx,ry,rz);b.rotation.set(Math.PI,b.userData.yaw,0);wings.forEach(function(w,k){w.rotation.y=(k?-1:1)*1.25;});g.add(b);CAVE.bats.push(b);}});
+}
+function caveBatFly(b,panic){var u=b.userData;if(u.st==='fly'&&!panic)return;u.st='fly';u.t=0;u.dur=panic?6+Math.random()*4:5+Math.random()*7;u.panic=!!panic;u.tf=Math.random()*6;}
+function caveBatsTick(dt){
+  CAVE.batT-=dt;if(CAVE.batT<=0){CAVE.batT=10+Math.random()*16;   /* ogni tanto qualcuno si sveglia e fa un giro */
+    var near=CAVE.bats.filter(function(b){return b.userData.st==='hang'&&Math.abs(b.userData.rs-CAVE.s)<45;}),n=Math.min(near.length,2+Math.floor(Math.random()*4));
+    for(var i=0;i<n;i++)caveBatFly(near.splice(Math.floor(Math.random()*near.length),1)[0],false);if(n)caveChirp(4+n*2,.5);}
+  CAVE.bats.forEach(function(b){var u=b.userData;if(u.st==='hang'){if(Math.abs(u.rs-CAVE.s)<70){b.visible=true;var sw=Math.sin(gameT*.7+u.ph)*.05;b.rotation.set(Math.PI+sw,u.yaw,0);}else b.visible=false;return;}
+    b.visible=true;u.t+=dt;u.tf+=dt*(u.panic?1.8:1);
+    var tx,ty,tz;
+    if(u.st==='fly'){var s=clamp(u.rs+Math.sin(u.tf*u.w+u.ph)*(u.panic?u.R*2:u.R),2,CAVLEN-4),A=caveAt(s),lat=Math.sin(u.tf*1.7+u.ph)*A.w*.55,n=[Math.cos(A.h),-Math.sin(A.h)];
+      tx=A.x+n[0]*lat;tz=A.z+n[1]*lat;ty=Math.max(A.py+1.2,cvCeil(A,lat)-1-Math.abs(Math.sin(u.tf*1.1+u.ph))*Math.min(4,A.ht*.35));if(u.t>u.dur)u.st='ret';}
+    else{tx=u.rx;ty=u.ry;tz=u.rz;}
+    var k=Math.min(1,dt*(u.st==='ret'?2.5:u.panic?5:3.5)),dx=(tx-b.position.x)*k,dy=(ty-b.position.y)*k,dz=(tz-b.position.z)*k;b.position.x+=dx;b.position.y+=dy;b.position.z+=dz;
+    if(u.st==='ret'&&Math.hypot(tx-b.position.x,ty-b.position.y,tz-b.position.z)<.12){u.st='hang';b.position.set(u.rx,u.ry,u.rz);b.rotation.set(Math.PI,u.yaw,0);u.wings.forEach(function(w,q){w.rotation.y=(q?-1:1)*1.25;});return;}   /* di nuovo a dormire, a testa in giù */
+    if(Math.abs(dx)+Math.abs(dz)>1e-4)u.yaw=Math.atan2(dx,dz);b.rotation.set(Math.PI/2+clamp(-dy*4,-.5,.5),u.yaw,0);
+    var fl=Math.sin(gameT*(u.panic?26:18)+u.ph)*.9;u.wings[0].rotation.y=fl;u.wings[1].rotation.y=-fl;});
+}
+/* parli (microfono) o gridi: scappano tutti quelli vicini */
+function caveShout(){if(gameT-CAVE.shoutT<4)return;CAVE.shoutT=gameT;var n=0;CAVE.bats.forEach(function(b){if(Math.abs(b.userData.rs-CAVE.s)<90){caveBatFly(b,true);n++;}});
+  if(n){if(typeof batSound==='function')batSound();say('I pipistrelli scappano tutti… poi torneranno a dormire a testa in giù','warn',3200);}}
+function caveChirp(n,vol){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t0=AC.currentTime+.05;for(var j=0;j<n;j++){var ts=t0+Math.random()*1.5,f0=4500+Math.random()*3500,du=.04+Math.random()*.07,o=AC.createOscillator(),g=AC.createGain();
+  o.frequency.setValueAtTime(f0,ts);o.frequency.exponentialRampToValueAtTime(f0*.5,ts+du);g.gain.setValueAtTime(0,ts);g.gain.linearRampToValueAtTime(.07*vol,ts+.006);g.gain.exponentialRampToValueAtTime(.0005,ts+du);o.connect(g);g.connect(au.master);o.start(ts);o.stop(ts+du+.02);}}
+/* ---------- gocce che cadono dalle stalattiti e dalla volta ---------- */
+function caveDropsBuild(g){
+  var dm=new THREE.MeshBasicMaterial({color:0xbfdde8,transparent:true,opacity:.8}),rm=new THREE.MeshBasicMaterial({color:0xcfe6ee,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}),dg=new THREE.BoxGeometry(.018,.07,.018),rg=new THREE.RingGeometry(.03,.06,16);rg.rotateX(-Math.PI/2);
+  CAVE.drops=[];for(var i=0;i<26;i++){var d=new THREE.Mesh(dg,dm);d.visible=false;g.add(d);CAVE.drops.push({m:d,on:false});}
+  CAVE.rings=[];for(i=0;i<16;i++){var m=new THREE.Mesh(rg,rm.clone());m.visible=false;g.add(m);CAVE.rings.push({m:m,t:9});}
+}
+function caveRing(x,y,z,big){var R=CAVE.rings.filter(function(q){return q.t>.9;})[0];if(!R)return;R.t=0;R.big=big;R.m.position.set(x,y+.01,z);R.m.visible=true;}
+function caveDropsTick(dt){
+  CAVE.drip-=dt;if(CAVE.drip<=0){CAVE.drip=.18+Math.random()*.5;var D=CAVE.drops.filter(function(q){return !q.on;})[0];
+    if(D){var s=clamp(CAVE.s-3+Math.random()*16,1,CAVLEN-2),A=caveAt(s),sx,sy,sz,tip=null;
+      for(var k=0;k<6&&!tip;k++){var t=CAVE.tips[Math.floor(Math.random()*CAVE.tips.length)];if(t&&Math.hypot(t[0]-A.x,t[2]-A.z)<12)tip=t;}
+      if(tip){sx=tip[0];sy=tip[1];sz=tip[2];}else{var lat=(Math.random()-.5)*A.w*1.2,n=[Math.cos(A.h),-Math.sin(A.h)];sx=A.x+n[0]*lat;sz=A.z+n[1]*lat;sy=cvCeil(A,lat)-.05;}
+      var bot=isFinite(A.wl)?A.wl:A.fy+.05;if(Math.abs(Math.hypot(sx-A.x,sz-A.z)-Math.abs(A.pl))<.9&&A.sec==='salone'||A.sec==='lago'&&Math.hypot(sx-A.x,sz-A.z)>A.pl-1)bot=Math.max(bot,A.py);
+      D.on=true;D.x=sx;D.y=sy;D.z=sz;D.v=0;D.bot=bot;D.m.visible=true;D.m.position.set(sx,sy,sz);}}
+  var cp=camera.position;
+  CAVE.drops.forEach(function(D){if(!D.on)return;D.v+=9.8*dt;D.y-=D.v*dt;D.m.position.y=D.y;
+    if(D.y<=D.bot){D.on=false;D.m.visible=false;caveRing(D.x,D.bot,D.z,false);var d=Math.hypot(D.x-cp.x,D.bot-cp.y,D.z-cp.z);if(d<16)caveDrip(Math.max(0,1-d/16),D.x,D.z);}});
+  CAVE.rings.forEach(function(R){if(R.t>.9){R.m.visible=false;return;}R.t+=dt;var k=R.big?1+R.t*14:1+R.t*7;R.m.scale.set(k,1,k);R.m.material.opacity=.6*(1-R.t/.9);});
+}
+/* ---------- suoni: il fiume e le cascate, le gocce con l'eco, i passi nell'acqua ---------- */
 function caveSnd(on){
   if(!on){var A=CAVE.au;CAVE.au=null;if(A){try{A.g.gain.setTargetAtTime(0,AC.currentTime,.4);setTimeout(function(){try{A.s.stop();}catch(e){}A.g.disconnect();},2000);}catch(e){}}return;}
   if(!AC||!au||!opts.snd||AC.state!=='running'||CAVE.au)return;
-  try{var len=AC.sampleRate*2,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0),l=0;for(var i=0;i<len;i++){l=(l+(Math.random()*2-1)*.06)*.985;d[i]=l*3;}
-    var s=AC.createBufferSource();s.buffer=b;s.loop=true;var f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=700;var g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(au.master);s.start();CAVE.au={s:s,g:g};}catch(e){}
+  try{var len=AC.sampleRate*2,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0),l=0;for(var i=0;i<len;i++){l=(l+(Math.random()*2-1)*.06)*.985;d[i]=l*3+(Math.random()*2-1)*.08;}
+    var s=AC.createBufferSource();s.buffer=b;s.loop=true;var f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=700;var g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(au.master);s.start();CAVE.au={s:s,g:g,f:f};}catch(e){}
 }
-function caveDrip(){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t=AC.currentTime+.02,f=900+Math.random()*1400;
-  for(var e=0;e<3;e++){var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(f*(1+e*.02),t+e*.17);o.frequency.exponentialRampToValueAtTime(f*1.6,t+e*.17+.05);g.gain.setValueAtTime(0,t+e*.17);g.gain.linearRampToValueAtTime(.09/(1+e*1.8),t+e*.17+.005);g.gain.exponentialRampToValueAtTime(.0005,t+e*.17+.12);o.connect(g);g.connect(au.master);o.start(t+e*.17);o.stop(t+e*.17+.15);}}
+function caveDrip(vol,x,z){if(!AC||!au||!opts.snd||AC.state!=='running')return;vol=vol==null?1:vol;var t=AC.currentTime+.02,f=900+Math.random()*1400,out=au.master;
+  if(x!=null&&AC.createStereoPanner){var p=AC.createStereoPanner(),cp=camera.position,h=Math.atan2(x-cp.x,z-cp.z)-CAVE.yaw;p.pan.value=clamp(-Math.sin(h),-1,1)*.8;p.connect(au.master);out=p;}
+  for(var e=0;e<4;e++){var o=AC.createOscillator(),g=AC.createGain(),te=t+e*.16;o.type='sine';o.frequency.setValueAtTime(f*(1+e*.02),te);o.frequency.exponentialRampToValueAtTime(f*1.7,te+.05);g.gain.setValueAtTime(0,te);g.gain.linearRampToValueAtTime(.12*vol/(1+e*1.6),te+.004);g.gain.exponentialRampToValueAtTime(.0005,te+.13);o.connect(g);g.connect(out);o.start(te);o.stop(te+.16);}}
+function caveSplash(){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t=AC.currentTime+.01,len=Math.floor(AC.sampleRate*.25),b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);
+  var s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=900+Math.random()*700;f.Q.value=1.2;g.gain.value=.35;s.connect(f);f.connect(g);g.connect(au.master);s.start(t);}
+/* ---------- il microfono: se parli, i pipistrelli scappano ---------- */
+function caveMic(on){
+  if(!on){var M=CAVE.mic;CAVE.mic=null;CAVE.micOn=false;if(M){try{M.st.getTracks().forEach(function(t){t.stop();});M.src.disconnect();}catch(e){}}caveBarSync();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){say('Su questo dispositivo il microfono non si può usare: tocca «Grida»','',3200);return;}
+  audioInit();navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}}).then(function(st){
+    if(!CAVE.on){st.getTracks().forEach(function(t){t.stop();});return;}
+    var src=AC.createMediaStreamSource(st),an=AC.createAnalyser();an.fftSize=1024;src.connect(an);CAVE.mic={st:st,src:src,an:an,buf:new Float32Array(1024),base:.01,hot:0};CAVE.micOn=true;caveBarSync();
+    say('Microfono acceso: parla ad alta voce e i pipistrelli scapperanno','good',3000);
+  }).catch(function(){say('Microfono non disponibile o permesso negato: tocca «Grida»','',3200);caveBarSync();});
+}
+function caveMicTick(dt){var M=CAVE.mic;if(!M)return;M.an.getFloatTimeDomainData(M.buf);var s=0;for(var i=0;i<M.buf.length;i++)s+=M.buf[i]*M.buf[i];var rms=Math.sqrt(s/M.buf.length);
+  if(rms<M.base*2)M.base+=(rms-M.base)*Math.min(1,dt*.8);   /* il rumore di fondo */
+  if(rms>Math.max(.045,M.base*5)){M.hot+=dt;if(M.hot>.15){M.hot=0;caveShout();}}else M.hot=Math.max(0,M.hot-dt);}
 /* ---------- entrare e uscire ---------- */
 function caveMouth(){var p=typeof batPoi==='function'?batPoi():null;return p&&p.mouth;}
 function caveExitObj(){var L=typeof plAll==='function'?plAll('G'):[];var e=L.filter(function(x){return x.pk==='G:sorgente';})[0]||L[0];return e?plPos(e.o):null;}
+function caveBank(x0,z0,hx,hz){   /* un punto asciutto e camminabile vicino (mai nel torrente) */
+  for(var d=3;d<=14;d+=1.5)for(var k=0;k<12;k++){var a=k/12*Math.PI*2,x=x0+hx*d*.5+Math.cos(a)*d,z=z0+hz*d*.5+Math.sin(a)*d;
+    if(typeof wOn==='function'&&wOn(x,z,.6))continue;var g=gndY(x,z);if(!isFinite(g))continue;var w=walkPush(x,z);if(Math.hypot(w[0]-x,w[1]-z)>.05)continue;return[x,z];}
+  return[x0+hx*6,z0+hz*6];}
 function caveStart(){
   if(CAVE.on||!caveMouth()||!caveExitObj())return;
   if(!PW.on)pwStart(null);if(!PW.on)return;
-  caveWorldBuild();CAVE.on=true;CAVE.s=1;CAVE.hall='';CAVE.drip=1;CAVE.vis=[];
+  caveWorldBuild();CAVE.on=true;CAVE.s=1;CAVE.hall='';CAVE.drip=.5;CAVE.vis=[];CAVE.wet=false;CAVE.dark=false;CAVE.yaw=0;
   scene.children.forEach(function(o){CAVE.vis.push([o,o.visible]);});
   game.classList.add('cave');caveBar();look.yaw=look.pitch=0;caveSnd(true);
-  say('Dentro le Grotte di Pastena: AVANTI per camminare, trascina per guardarti intorno. La torcia è accesa','good',4200);
+  say('Dentro le Grotte di Pastena: AVANTI per camminare, trascina per guardarti intorno','good',4200);
 }
 function caveStop(out){
-  if(!CAVE.on)return;CAVE.on=false;caveSnd(false);game.classList.remove('cave');
-  CAVE.vis.forEach(function(v){v[0].visible=v[1];});if(TORCH){TORCH.angle=.42;TORCH.penumbra=.55;TORCH.distance=34;}CAVE.g.visible=false;CAVE.vis=null;applyLight();
-  var m=caveMouth(),x,z,yaw;
-  if(out){var E=caveExitObj();x=E.x+E.ux*5+E.uz*2.4;z=E.z+E.uz*5-E.ux*2.4;yaw=Math.atan2(E.ux,E.uz);}
-  else{x=m.x+m.hx*4;z=m.z+m.hz*4;yaw=Math.atan2(m.hx,m.hz);}
-  PW.x=x;PW.z=z;PW.y=gndY(x,z);PW.yaw=yaw;car.x=x;car.z=z;car.y=car.gy=PW.y;OX=car.x;OZ=car.z;netSync(true);look.yaw=look.pitch=0;
+  if(!CAVE.on)return;CAVE.on=false;caveSnd(false);caveMic(false);game.classList.remove('cave');
+  CAVE.vis.forEach(function(v){v[0].visible=v[1];});CAVE.g.visible=false;CAVE.vis=null;if(TORCH){TORCH.angle=.42;TORCH.penumbra=.55;TORCH.distance=34;}applyLight();
+  var m=caveMouth(),x,z,yaw,b;
+  if(out){var E=caveExitObj();b=caveBank(E.x+E.ux*4,E.z+E.uz*4,E.ux,E.uz);yaw=Math.atan2(E.ux,E.uz);}
+  else{b=caveBank(m.x+m.hx*3,m.z+m.hz*3,m.hx,m.hz);yaw=Math.atan2(m.hx,m.hz);}
+  x=b[0];z=b[1];PW.x=x;PW.z=z;PW.y=gndY(x,z);PW.yaw=yaw;car.x=x;car.z=z;car.y=car.gy=PW.y;OX=car.x;OZ=car.z;netSync(true);look.yaw=look.pitch=0;
   if(out){OBACO.x=x;OBACO.z=z;var pts=SC.found[OBACO.id]?0:scFound(OBACO,true);setTimeout(function(){scCard(OBACO,{pts:pts});},600);say('Sei uscito al Rio Obaco: l’acqua è gelida!','good',3500);}
   else say('Di nuovo all’ingresso delle grotte','',2000);
 }
 function caveBar(){
   var b=$('caveBar');
   if(!b){b=document.createElement('div');b.id='caveBar';b.className='hud';b.setAttribute('role','group');b.setAttribute('aria-label','Nella grotta');
-    b.innerHTML='<div class="wt">Grotte di Pastena</div><div class="cs" id="caveSala"></div><div class="wr"><span class="wl">Passo</span><button type="button" data-cm="1">×1</button><button type="button" data-cm="2">×2</button><button type="button" data-cm="4">×4</button></div><div class="wr"><button type="button" id="caveBack" class="wbk">Torna all’ingresso</button></div>';
+    b.innerHTML='<div class="wt">Grotte di Pastena</div><div class="cs" id="caveSala"></div><div class="wr"><span class="wl">Passo</span><button type="button" data-cm="1">×1</button><button type="button" data-cm="2">×2</button><button type="button" data-cm="4">×4</button></div><div class="wr"><button type="button" id="caveShout">Grida</button><button type="button" id="caveMic" aria-pressed="false">Microfono</button></div><div class="wr"><button type="button" id="caveBack" class="wbk">Torna all’ingresso</button></div>';
     $('game').appendChild(b);
     var st=document.createElement('style');st.textContent='#caveBar{display:none;position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:16px;width:min(46%,300px);padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);gap:6px;z-index:4}#game.cave #caveBar{display:grid}#game.cave #pwBar,#game.cave #btnPw,#game.cave #btnCave,#game.cave #btnCam,#game.cave #nav,#game.cave #cluster,#game.cave #btnDisc{display:none!important}#caveBar .wt{font:700 15px/1.15 var(--font-d)}#caveBar .cs{font:500 13px/1.25 var(--font-d);opacity:.85;min-height:16px}#caveBar .wr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#caveBar .wl{font:600 11px var(--font-d);letter-spacing:.08em;text-transform:uppercase;opacity:.75}#caveBar button{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;padding:5px 11px;font:700 13px var(--font-d);cursor:pointer;min-height:32px}#caveBar button[aria-pressed=true],#caveBar .wbk{background:var(--amber);color:#1a1206;border-color:var(--amber)}#btnCave{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(288px + env(safe-area-inset-top,0px));z-index:3;background:#3b2a1a;color:#fff;border-color:#8a6a3a}';
     document.head.appendChild(st);
     b.addEventListener('pointerdown',function(e){e.stopPropagation();});
-    b.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;if(t.id==='caveBack'){caveStop(false);return;}if(t.dataset.cm){CAVE.mult=+t.dataset.cm;caveBarSync();}});}
+    b.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;if(t.id==='caveBack'){caveStop(false);return;}if(t.id==='caveShout'){if(typeof pwVoice==='function')pwVoice('Ehi!','me',false);caveShout();return;}if(t.id==='caveMic'){caveMic(!CAVE.micOn);return;}if(t.dataset.cm){CAVE.mult=+t.dataset.cm;caveBarSync();}});}
   caveBarSync();
 }
-function caveBarSync(){var b=$('caveBar');if(!b)return;b.querySelectorAll('[data-cm]').forEach(function(x){x.setAttribute('aria-pressed',+x.dataset.cm===CAVE.mult?'true':'false');});}
+function caveBarSync(){var b=$('caveBar');if(!b)return;b.querySelectorAll('[data-cm]').forEach(function(x){x.setAttribute('aria-pressed',+x.dataset.cm===CAVE.mult?'true':'false');});var m=$('caveMic');if(m)m.setAttribute('aria-pressed',CAVE.micOn?'true':'false');}
 /* ---------- un passo nella grotta ---------- */
 function caveFrame(dt){
   gameT+=dt;if(sayT>0){sayT-=dt;if(sayT<=0)$('hint').hidden=true;}
-  var f=((inp.gas||inp.kbGas)?1:0)-((inp.brake||inp.kbBrake)?1:0),v=f>0?1.4*CAVE.mult:f<0?-.9:0;
+  var f=((inp.gas||inp.kbGas)?1:0)-((inp.brake||inp.kbBrake)?1:0),A0=caveAt(CAVE.s),wet=isFinite(A0.wl)&&A0.sec!=='salone'&&A0.sec!=='lago',v=f>0?(wet?1.1:1.4)*CAVE.mult:f<0?-.9:0;
   CAVE.s=clamp(CAVE.s+v*dt,0,CAVE.P.len);if(CAVE.s>=CAVE.P.len-1){caveStop(true);return;}
   if(CAVE.s<=0&&f<0){caveStop(false);return;}
-  if(Math.abs(v)>0){CAVE.stp=(CAVE.stp||0)+Math.abs(v)*dt;if(CAVE.stp>.75){CAVE.stp=0;if(typeof walkStepSnd==='function')walkStepSnd(1);}}
-  /* la sala in cui si è */
-  var hn='';CAVEHALLS.forEach(function(h){if(CAVE.s>=h[0])hn=h[1];});if(hn!==CAVE.hall){CAVE.hall=hn;$('caveSala').textContent=hn;say(hn,'good',3000);}
-  CAVE.drip-=dt;if(CAVE.drip<=0){CAVE.drip=.6+Math.random()*2.2;caveDrip();}
-  if(CAVE.au&&AC){var A=caveAt(CAVE.s),near=CAVE.s>255?1:.55;CAVE.au.g.gain.setTargetAtTime(.22*near,AC.currentTime,.4);}
-  if(CAVE.wt)CAVE.wt.offset.y-=dt*.5;
-  /* luci turistiche più vicine */
+  if(wet&&!CAVE.wet)say('Da qui si cammina nell’acqua: è gelida','',2600);CAVE.wet=wet;
+  if(Math.abs(v)>0){CAVE.stp=(CAVE.stp||0)+Math.abs(v)*dt;if(CAVE.stp>.75){CAVE.stp=0;if(wet){caveSplash();var A=caveAt(CAVE.s);caveRing(camera.position.x,A.wl,camera.position.z,true);}else if(typeof walkStepSnd==='function')walkStepSnd(1);}}
+  var hn='';CAVEHALLS.forEach(function(h){if(CAVE.s>=h[0])hn=h[1];});if(hn!==CAVE.hall){CAVE.hall=hn;$('caveSala').textContent=hn;say(hn,'good',3200);}
+  caveDropsTick(dt);caveBatsTick(dt);caveMicTick(dt);
+  if(CAVE.au&&AC){var s=CAVE.s,sc=A0.sec,base={salone:.12,gal1:.08,lago:.2,disc:.1,art:.2,att:.24,stretta:.28,grandi:.36,casc:.3,bypass:.22}[sc]||.2,ff=Math.exp(-Math.pow((s-104)/18,2))*.3+Math.exp(-Math.pow((s-484)/16,2))*.5;
+    CAVE.au.g.gain.setTargetAtTime(base+ff,AC.currentTime,.4);CAVE.au.f.frequency.setTargetAtTime(500+(base+ff)*2600,AC.currentTime,.4);}
+  if(CAVE.wt)CAVE.wt.offset.y-=dt*.45;if(CAVE.ft)CAVE.ft.offset.y+=dt*1.6;
   var C=caveAt(CAVE.s),Ls=CAVE.L.slice().sort(function(a,b){return Math.hypot(a[0]-C.x,a[2]-C.z)-Math.hypot(b[0]-C.x,b[2]-C.z);});
-  CAVE.lamps.forEach(function(L,i){var p=Ls[i];if(p&&Math.hypot(p[0]-C.x,p[2]-C.z)<30){L.position.set(p[0],p[1]+.5,p[2]);L.intensity=2.2;}else L.intensity=0;});
-  CAVE.bats.forEach(function(b){var u=b.userData,s=u.s+Math.sin(gameT*.6+u.ph)*8,A=caveAt(s),n=[Math.cos(A.h),-Math.sin(A.h)];b.position.set(A.x+n[0]*(u.o+Math.sin(gameT*1.3+u.ph)),A.y+A.ht*.8+Math.sin(gameT*2+u.ph)*.6,A.z+n[1]*(u.o+Math.sin(gameT*1.3+u.ph)));b.rotation.y=A.h+(Math.cos(gameT*.6+u.ph)>0?0:Math.PI);b.children[1].rotation.z=Math.sin(gameT*16+u.ph)*.9;b.children[2].rotation.z=-Math.sin(gameT*16+u.ph)*.9;});
+  CAVE.lamps.forEach(function(L,i){var p=Ls[i];if(p&&Math.hypot(p[0]-C.x,p[2]-C.z)<40){L.position.set(p[0],p[1]+.4,p[2]);L.intensity=.7;}else L.intensity=0;});
 }
 function caveCam(){
-  /* solo la grotta e le sue luci: il resto del mondo resta fuori */
   scene.children.forEach(function(o){o.visible=o===CAVE.g||o===hemi||o===sun||o===TORCH||(TORCH&&o===TORCH.target)||o===camera;});CAVE.g.visible=true;
-  hemi.intensity=.42;sun.intensity=0;scene.background.setHex(0x000000);scene.fog.color.setHex(0x000000);scene.fog.near=6;scene.fog.far=48;
-  var A=caveAt(CAVE.s),B=caveAt(Math.min(CAVE.P.len,CAVE.s+3)),hd=Math.atan2(B.x-A.x,B.z-A.z),nx=Math.cos(A.h),nz=-Math.sin(A.h),lat=CAVE.s<72?.9:.25,h=hd+look.yaw,pc=look.pitch;
-  var ex=A.x+nx*lat,ez=A.z+nz*lat,ey=A.y+1.65+(CAVE.s<72?.35:0);
-  camera.position.set(ex,ey,ez);camera.near=.1;camera.lookAt(ex+Math.sin(h)*10,ey-.3-Math.tan(pc)*10,ez+Math.cos(h)*10);camera.updateProjectionMatrix();
-  if(TORCH){TORCH.position.set(ex+Math.cos(h)*.3,ey-.3,ez-Math.sin(h)*.3);TORCH.target.position.set(ex+Math.sin(h)*10,ey-.6-Math.tan(pc+.1)*10,ez+Math.cos(h)*10);TORCH.intensity=4.2;TORCH.distance=55;TORCH.angle=.62;TORCH.penumbra=.6;}
+  var s=CAVE.s,dark=cvDark(s),endF=clamp((s-(CAVLEN-35))/30,0,1);
+  hemi.intensity=dark?.02+endF*.35:.16;sun.intensity=0;scene.background.setHex(0x000000);scene.fog.color.setRGB(endF*.25,endF*.3,endF*.33);scene.fog.near=dark?3:10;scene.fog.far=dark?26+endF*40:75;
+  var A=caveAt(s),B=caveAt(Math.min(CAVLEN,s+3)),nA=[Math.cos(A.h),-Math.sin(A.h)],nB=[Math.cos(B.h),-Math.sin(B.h)],ax=A.x+nA[0]*A.pl,az=A.z+nA[1]*A.pl,bx=B.x+nB[0]*B.pl,bz=B.z+nB[1]*B.pl,hd=Math.atan2(bx-ax,bz-az),h=hd+look.yaw,pc=look.pitch;
+  var ey=A.py+1.62+(isFinite(A.wl)&&A.sec!=='salone'&&A.sec!=='lago'?.05:0);CAVE.yaw=h;
+  camera.position.set(ax,ey,az);camera.near=.08;camera.lookAt(ax+Math.sin(h)*10,ey-.3-Math.tan(pc)*10,az+Math.cos(h)*10);camera.updateProjectionMatrix();
+  if(TORCH){TORCH.position.set(ax+Math.cos(h)*.3,ey-.3,az-Math.sin(h)*.3);TORCH.target.position.set(ax+Math.sin(h)*10,ey-.7-Math.tan(pc+.1)*10,az+Math.cos(h)*10);TORCH.intensity=dark?4:1.2;TORCH.distance=dark?40:30;TORCH.angle=dark?.5:.62;TORCH.penumbra=.55;}
 }
 /* ---------- il pulsante, vicino all'imbocco ---------- */
 function caveNearTick(dt){
@@ -9776,14 +9885,21 @@ function caveNearTick(dt){
   var b=$('btnCave');if(!b){if(world!=='net'||!NET)return;b=document.createElement('button');b.id='btnCave';b.className='chip hud';b.type='button';b.textContent='Entra nelle Grotte di Pastena';b.hidden=true;$('game').appendChild(b);caveBar();
     b.addEventListener('pointerdown',function(e){e.stopPropagation();});b.addEventListener('click',function(){caveStart();});}
   var m=caveMouth();if(!m||CAVE.on||world!=='net'||state!=='drive'||BINO.on||WALK.on||(typeof GOD!=='undefined'&&GOD.on)){b.hidden=true;return;}
-  var px=PW.on?PW.x:car.x,pz=PW.on?PW.z:car.z,d=Math.hypot(px-m.x,pz-m.z);b.hidden=!(d<(PW.on?14:40)&&(PW.on||Math.hypot(car.vx,car.vz)<4));
+  var px=PW.on?PW.x:car.x,pz=PW.on?PW.z:car.z,d=Math.hypot(px-m.x,pz-m.z);b.hidden=!(d<(PW.on?16:40)&&(PW.on||Math.hypot(car.vx,car.vz)<4));
 }
+/* fuori: ogni tanto qualche pipistrello esce dalla grotta; se saluti (Yu-huuu!) vicino all'ingresso, esce lo sciame */
+function caveOutTick(dt){
+  if(CAVE.on||world!=='net'||state!=='drive'||typeof BATS==='undefined'||BATS.on)return;var m=caveMouth();if(!m)return;
+  var d=Math.hypot(car.x-m.x,car.z-m.z);if(d>180)return;CAVE.outT=(CAVE.outT==null?20:CAVE.outT)-dt;
+  if(CAVE.outT<=0){CAVE.outT=35+Math.random()*55;batStart(batPoi(),5+Math.floor(Math.random()*12),true);}
+}
+var pwGreet0=pwGreet;pwGreet=function(){pwGreet0();var m=caveMouth();if(m&&typeof BATS!=='undefined'&&!BATS.on&&Math.hypot(PW.x-m.x,PW.z-m.z)<60)setTimeout(function(){batStart(batPoi());},500);};
 /* il Rio Obaco: l'acqua è gelida, e lo si sente */
 function obacoTick(dt){
   if(!PW.on||CAVE.on)return;var E=caveExitObj();if(!E)return;var dx=PW.x-E.x,dz=PW.z-E.z,a=dx*E.ux+dz*E.uz,l=Math.abs(dx*E.uz-dz*E.ux);
   if(a>0&&a<16&&l<1.6){CAVE.cold=(CAVE.cold||0)-dt;if(CAVE.cold<=0){CAVE.cold=25;say('Brrr! L’acqua del Rio Obaco è gelida','',2600);if(typeof pwSnd==='function')pwSnd('grido');}}
 }
-var caveTr0=trSync;trSync=function(dt){caveTr0(dt);caveNearTick(dt);obacoTick(dt);};
+var caveTr0=trSync;trSync=function(dt){caveTr0(dt);caveNearTick(dt);caveOutTick(dt);obacoTick(dt);};
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
