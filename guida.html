@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 17:25</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 18:59</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -9515,7 +9515,7 @@ function plPark(G,o){   /* piazzola di sosta: asfalto con quattro stalli bianchi
   B.quad([P(-W/2+.1,L-.26,.09),P(W/2-.1,L-.26,.09),P(W/2-.1,L-.14,.09),P(-W/2+.1,L-.14,.09)],[0,1,0],N4,wh);
   G.add(B.mesh(PLMpad));}
 function plRebuild(){
-  while(PLG.children.length){var c=PLG.children.pop();if(!c.userData.keep)c.traverse(function(o){if(o.geometry)o.geometry.dispose();});}
+  while(PLG.children.length){var c=PLG.children.pop();if(!c.userData.keep)c.traverse(function(o){if(o.geometry)o.geometry.dispose();});else if(c.userData.own)c.userData.own.traverse(function(o){if(o.geometry)o.geometry.dispose();});}
   plAll('L').forEach(function(e){plLamp(PLG,e.o);});plAll('Q').forEach(function(e){plPark(PLG,e.o);});plAll('G').forEach(function(e){plCave(PLG,e.o);});
   /* i parcheggi aggiunti diventano anche cartelli P, da cui si parte a piedi */
   if(typeof pwSigns==='function'&&NET){var S=pwSigns()||[];for(var i=S.length-1;i>=0;i--)if(S[i].user)S.splice(i,1);
@@ -9568,8 +9568,8 @@ function plCaveGeo(){
   R(0,6.3,-.5,3.6,1.6,2.2,rock);R(-1.2,7.6,-1,3,1.8,2.4,mossR);R(1.6,7.9,-1.2,3,1.6,2.4,moss);
   R(0,1,-5,8,7,4,rock);R(-4,3,-4,5,6,3,mossR);R(4,3,-4,5,6,3,rock);
   /* muschio a terra sulle sponde e sassi nel torrente */
-  for(i=0;i<9;i++){var sd=i%2?1:-1;R(sd*(2.2+r()*2.2),-.15,2+i*1.4,1.4+r(),.45,1.2+r()*.6,r()<.6?moss2:moss);}
-  for(i=0;i<10;i++)R((r()-.5)*1.9,-.12,1.5+r()*11,.25+r()*.3,.22+r()*.12,.25+r()*.3,r()<.5?mossR:rock);
+  var SM=[];for(i=0;i<9;i++){var sd=i%2?1:-1;SM.push([sd*(2.2+r()*2.2),2+i*1.4,1.4+r(),.45,1.2+r()*.6,r()<.6?moss2:moss]);}
+  for(i=0;i<10;i++)SM.push([(r()-.5)*1.9,1.5+r()*11,.25+r()*.3,.22+r()*.12,.25+r()*.3,r()<.5?mossR:rock]);
   /* l'imbocco: un arco nero alto e stretto che si chiude in un antro buio */
   var blk=hc(0x050505),W=1.3,H=4.4;
   for(i=0;i<12;i++){var a0=i/12*Math.PI,a1=(i+1)/12*Math.PI;D.quad([[-W*Math.cos(a0),H-1.2+Math.sin(a0)*1.2,.2],[-W*Math.cos(a1),H-1.2+Math.sin(a1)*1.2,.2],[-W*Math.cos(a1),-.2,.2],[-W*Math.cos(a0),-.2,.2]],[0,0,1],N4,blk);}
@@ -9580,12 +9580,16 @@ function plCaveGeo(){
   var FG=new GB(),fw=hc(0xffffff);for(i=0;i<26;i++){var fx=(r()-.5)*2,fz=.8+r()*12,fs=.15+r()*.35;FG.quad([[fx-fs,.13-fz*.03,fz-fs*.6],[fx+fs,.13-fz*.03,fz-fs*.6],[fx+fs,.13-fz*.03,fz+fs*.6],[fx-fs,.13-fz*.03,fz+fs*.6]],[0,1,0],N4,fw);}
   /* felci e ciuffi d'erba sulla roccia */
   for(i=0;i<16;i++){var bx=(r()<.5?-1:1)*(2+r()*4),by=r()*6,bz=.6+r()*.8;cbox(B,bx,by,bz,.5+r()*.5,.3+r()*.3,.4,hc(r()<.5?0x2f5a1c:0x416d24));}
-  PL.cg={G:G,B:B.i.length?B.mesh(hwFlatM).geometry:null,D:D.mesh(new THREE.MeshBasicMaterial({color:0x050505})).geometry,W:WG,F:FG.mesh(PLFM).geometry};return PL.cg;
+  PL.cg={SM:SM,G:G,B:B.i.length?B.mesh(hwFlatM).geometry:null,D:D.mesh(new THREE.MeshBasicMaterial({color:0x050505})).geometry,W:WG,F:FG.mesh(PLFM).geometry};return PL.cg;
 }
 var PLROCKM=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true}),PLBLKM=new THREE.MeshBasicMaterial({vertexColors:true});
 function plCave(G0,o){var C=plCaveGeo(),p=plPos(o),g=new THREE.Group();
   C.G.forEach(function(geo){g.add(new THREE.Mesh(geo,PLROCKM));});if(C.B)g.add(new THREE.Mesh(C.B,hwFlatM));g.add(new THREE.Mesh(C.D,PLBLKM));g.add(new THREE.Mesh(C.W,PLWM));g.add(new THREE.Mesh(C.F,PLFM));
-  g.position.set(p.x,gndY(p.x,p.z)+p.dy-.1,p.z);g.rotation.y=Math.atan2(p.ux,p.uz);g.userData.keep=1;G0.add(g);}
+  var gy0=gndY(p.x,p.z)+p.dy-.1,th=Math.atan2(p.ux,p.uz),ct=Math.cos(th),st=Math.sin(th),rr=rng(4401),SG=[];
+  /* sassi e muschio delle sponde: ognuno appoggiato al terreno vero sotto di sé */
+  C.SM.forEach(function(q){var wx=p.x+q[0]*ct+q[1]*st,wz=p.z-q[0]*st+q[1]*ct,ly=gndY(wx,wz)-gy0-q[3]*.35,wy=.08-Math.max(0,q[1])*.03;if(Math.abs(ly+q[3]*.35-wy)>.45)return;SG.push(p3Rock(F0,q[0],ly,q[1],q[2],q[3],q[4],q[5],rr));});
+  var sg=new THREE.Group();SG.forEach(function(geo){sg.add(new THREE.Mesh(geo,PLROCKM));});g.add(sg);
+  g.position.set(p.x,gy0,p.z);g.rotation.y=th;g.userData.keep=1;g.userData.own=sg;G0.add(g);}
 /* la prima grotta: vicino all'imbocco delle Grotte di Pastena, da spostare a piacere */
 function plCaveDefault(){if(PL.gdef!==undefined)return PL.gdef;var c=typeof batPoi==='function'?batPoi():null,m=c&&c.mouth;if(!m)return null;
   var sx=-m.hz,sz=m.hx,x=m.x+m.hx*14+sx*28,z=m.z+m.hz*14+sz*28;PL.gdef={x:Math.round(x),z:Math.round(z),dx:0,dz:0,dy:0,rot:Math.round(Math.atan2(m.hx,m.hz)*180/Math.PI)};return PL.gdef;}
@@ -9691,7 +9695,7 @@ function cavePath(){
   var r=rng(5150),N=Math.round(CAVLEN/CAVDS)+1,P={x:[],z:[],h:[],w:[],ht:[],fy:[],py:[],pl:[],wl:[],sec:[],s:[],n:N},h=0,x=0,z=0,i;
   for(i=0;i<N;i++){var s=i*CAVDS,sc=cvSec(s),art=/gal1|disc|art|bypass/.test(sc);
     h+=(art?.15:1)*(Math.sin(s/23)*.035+Math.sin(s/9.3+1)*.02+(r()-.5)*.02);x+=Math.sin(h)*CAVDS;z+=Math.cos(h)*CAVDS;
-    var yb=CAVY-.01*s-clamp((s-125)/20,0,1)*6-clamp((s-478)/14,0,1)*5,W,H,fy=yb,py=yb,pl=0,wl=yb+.28;
+    var yb=CAVY-.01*s-clamp((s-125)/20,0,1)*6-clamp((s-480)/8,0,1)*5,W,H,fy=yb,py=yb,pl=0,wl=yb+.28;
     if(sc==='salone'){W=13;H=17;py=yb+.5;pl=7;wl=yb+.3;}
     else if(sc==='gal1'){W=2.2;H=2.6;wl=NaN;}
     else if(sc==='lago'){W=12;H=19;fy=yb-9;py=yb+.5;pl=8.4;wl=yb-7;}
@@ -9705,7 +9709,7 @@ function cavePath(){
     P.x.push(x);P.z.push(z);P.h.push(h);P.w.push(W);P.ht.push(H);P.fy.push(fy);P.py.push(py);P.pl.push(pl);P.wl.push(wl);P.sec.push(sc);P.s.push(s);}
   /* raccordi morbidi tra un ambiente e l'altro */
   ['w','ht','fy','py','pl'].forEach(function(k){var A=P[k],B=A.slice();for(i=0;i<N;i++){var t=0,c=0;for(var j=-3;j<=3;j++){var q=i+j;if(q<0||q>=N)continue;t+=A[q];c++;}B[i]=t/c;}P[k]=B;});
-  for(i=0;i<N;i++){var lim=P.w[i]*.62;P.pl[i]=clamp(P.pl[i],-lim,lim);if(isFinite(P.wl[i])&&P.sec[i]!=='lago'&&P.sec[i]!=='salone')P.wl[i]=P.fy[i]+.28;}
+  for(i=0;i<N;i++){var lim=P.w[i]*.62;P.pl[i]=clamp(P.pl[i],-lim,lim);var cn=Math.cos(P.h[i]),sn=-Math.sin(P.h[i]);P.x[i]-=cn*P.pl[i];P.z[i]-=sn*P.pl[i];if(isFinite(P.wl[i])&&P.sec[i]!=='lago'&&P.sec[i]!=='salone')P.wl[i]=P.fy[i]+.28;}
   P.len=(N-1)*CAVDS;return P;
 }
 function caveAt(s){var P=CAVE.P,f=clamp(s/CAVDS,0,P.n-1.001),i=Math.floor(f),u=f-i;function L(a){return a[i]+(a[i+1]-a[i])*u;}
@@ -9755,17 +9759,22 @@ function caveWorldBuild(){
     p.push(A.x+nx*lat0,ytop,A.z+nz*lat0,A.x+nx*lat1,ytop,A.z+nz*lat1,A.x+nx*lat1+fx*face,ybot,A.z+nz*lat1+fz*face,A.x+nx*lat0+fx*face,ybot,A.z+nz*lat0+fz*face);
     G2.setAttribute('position',new THREE.Float32BufferAttribute(p,3));G2.setAttribute('uv',new THREE.Float32BufferAttribute([0,(ytop-ybot)/4,Math.abs(lat1-lat0)/3,(ytop-ybot)/4,Math.abs(lat1-lat0)/3,0,0,0],2));G2.setIndex([0,1,2,0,2,3]);g.add(new THREE.Mesh(G2,fm));return A;}
   var Lb=caveAt(104);CAVE.fall1=fall(104,-Lb.w*.95,-Lb.w*.55,Lb.fy+Lb.ht*.95,Lb.wl,0);
-  var Cs=caveAt(484);CAVE.fall2=fall(484,-Cs.w*.95,Cs.w*.15,caveAt(478).wl+.02,caveAt(492).wl,1.2);
+  /* il salto di cinque metri: schiuma che scivola sul fondo in pendenza, a filo dell'acqua */
+  var fp=[],fu=[],fi=[],fn=0;for(i=0;i<P.n-1;i++){if(P.s[i]<470||P.s[i]>500)continue;
+    [i,i+1].forEach(function(q){var nx5=Math.cos(P.h[q]),nz5=-Math.sin(P.h[q]),W5=P.w[q]*1.05,y5=P.wl[q]+.05;fp.push(P.x[q]-nx5*W5,y5,P.z[q]-nz5*W5,P.x[q]+nx5*W5,y5,P.z[q]+nz5*W5);fu.push(0,P.s[q]/2.5,W5/1.5,P.s[q]/2.5);});
+    fi.push(fn,fn+2,fn+1,fn+1,fn+2,fn+3);fn+=4;}
+  var fg2=new THREE.BufferGeometry();fg2.setAttribute('position',new THREE.Float32BufferAttribute(fp,3));fg2.setAttribute('uv',new THREE.Float32BufferAttribute(fu,2));fg2.setIndex(fi);
+  var fm2=fm.clone();fm2.opacity=.5;fm2.depthWrite=false;CAVE.fall2=new THREE.Mesh(fg2,fm2);CAVE.fall2.renderOrder=2;g.add(CAVE.fall2);
   /* passerelle: grigliato d'acciaio e ringhiera rossa; nel Lago Blu sporge a sbalzo dalla parete */
   var BW=new GB(),deck=hc(0x5d6066),rail=hc(0xb02a22),beam=hc(0x3a3d42);
-  for(var sd=0;sd<146;sd+=1.5){var a6=caveAt(sd),a7=caveAt(sd+1.5);if(a6.sec==='gal1'||a6.sec==='disc')continue;
+  for(var sd=0;sd<146;sd+=1.5){var a6=caveAt(sd),a7=caveAt(sd+1.5);
     var n6=[Math.cos(a6.h),-Math.sin(a6.h)],n7=[Math.cos(a7.h),-Math.sin(a7.h)],w=.7;
     function P6(A,n,l,y){return[A.x+n[0]*(A.pl+l),y,A.z+n[1]*(A.pl+l)];}
     BW.quad([P6(a6,n6,-w,a6.py),P6(a6,n6,w,a6.py),P6(a7,n7,w,a7.py),P6(a7,n7,-w,a7.py)],[0,1,0],N4,deck);
     [-w,w].forEach(function(l){BW.quad([P6(a6,n6,l,a6.py+.98),P6(a7,n7,l,a7.py+.98),P6(a7,n7,l,a7.py+1.05),P6(a6,n6,l,a6.py+1.05)],[n6[0],0,n6[1]],N4,rail);
       if(Math.round(sd/1.5)%2===0)cbox(BW,a6.x+n6[0]*(a6.pl+l),a6.py+.52,a6.z+n6[1]*(a6.pl+l),.05,1.05,.05,rail);});
     if(a6.sec==='lago'&&Math.round(sd/1.5)%2===0){var wx=a6.x+n6[0]*a6.w*.92,wz=a6.z+n6[1]*a6.w*.92,dx=P6(a6,n6,0,0);BW.quad([[dx[0],a6.py-.05,dx[2]],[wx,a6.py-.05,wz],[wx,a6.py-2.2,wz],[dx[0],a6.py-.3,dx[2]]],[0,0,1],N4,beam);}
-    if(a6.sec==='salone'&&Math.round(sd/1.5)%3===0)cbox(BW,a6.x+n6[0]*a6.pl,(a6.fy+a6.py)/2,a6.z+n6[1]*a6.pl,.12,a6.py-a6.fy,.12,beam);}
+    if((a6.sec==='salone'||a6.py-a6.fy>.6&&a6.sec!=='lago')&&Math.round(sd/1.5)%3===0)cbox(BW,a6.x+n6[0]*a6.pl,(a6.fy+a6.py)/2,a6.z+n6[1]*a6.pl,.12,a6.py-a6.fy,.12,beam);}
   var Pf=caveAt(142);cbox(BW,Pf.x,Pf.py-.05,Pf.z,3,.1,3,deck);   /* la piattaforma in fondo al percorso turistico */
   g.add(BW.mesh(new THREE.MeshPhongMaterial({vertexColors:true,shininess:40})));
   /* luci della visita turistica, solo fino alla piattaforma */
@@ -9867,7 +9876,7 @@ function caveStart(){
   if(!PW.on)pwStart(null);if(!PW.on)return;
   caveWorldBuild();CAVE.on=true;CAVE.s=1;CAVE.hall='';CAVE.drip=.5;CAVE.vis=[];CAVE.wet=false;CAVE.dark=false;CAVE.yaw=0;
   scene.children.forEach(function(o){CAVE.vis.push([o,o.visible]);});
-  game.classList.add('cave');caveBar();look.yaw=look.pitch=0;caveSnd(true);
+  game.classList.add('cave');caveBar();if(typeof pwBarSync==='function')pwBarSync();look.yaw=look.pitch=0;caveSnd(true);
   say('Dentro le Grotte di Pastena: AVANTI per camminare, trascina per guardarti intorno','good',4200);
 }
 function caveStop(out){
@@ -9885,7 +9894,7 @@ function caveBar(){
   if(!b){b=document.createElement('div');b.id='caveBar';b.className='hud';b.setAttribute('role','group');b.setAttribute('aria-label','Nella grotta');
     b.innerHTML='<div class="wt">Grotte di Pastena</div><div class="cs" id="caveSala"></div><div class="wr"><span class="wl">Passo</span><button type="button" data-cm="1">×1</button><button type="button" data-cm="2">×2</button><button type="button" data-cm="4">×4</button></div><div class="wr"><button type="button" id="caveShout">Grida</button><button type="button" id="caveMic" aria-pressed="false">Microfono</button></div><div class="wr"><button type="button" id="caveBack" class="wbk">Torna all’ingresso</button></div>';
     $('game').appendChild(b);
-    var st=document.createElement('style');st.textContent='#caveBar{display:none;position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:16px;width:min(46%,300px);padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);gap:6px;z-index:4}#game.cave #caveBar{display:grid}#game.cave #pwBar,#game.cave #btnPw,#game.cave #btnCave,#game.cave #btnCam,#game.cave #nav,#game.cave #cluster,#game.cave #btnDisc{display:none!important}#caveBar .wt{font:700 15px/1.15 var(--font-d)}#caveBar .cs{font:500 13px/1.25 var(--font-d);opacity:.85;min-height:16px}#caveBar .wr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#caveBar .wl{font:600 11px var(--font-d);letter-spacing:.08em;text-transform:uppercase;opacity:.75}#caveBar button{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;padding:5px 11px;font:700 13px var(--font-d);cursor:pointer;min-height:32px}#caveBar button[aria-pressed=true],#caveBar .wbk{background:var(--amber);color:#1a1206;border-color:var(--amber)}#btnCave{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(288px + env(safe-area-inset-top,0px));z-index:6;background:#3b2a1a;color:#fff;border-color:#8a6a3a}';
+    var st=document.createElement('style');st.textContent='#caveBar{display:none;position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:16px;width:min(46%,300px);padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);gap:6px;z-index:4}#game.cave #caveBar{display:grid}#game.cave #pwBar,#game.cave #btnPw,#game.cave #btnCave,#game.cave #nav,#game.cave #cluster,#game.cave #btnDisc{display:none!important}#caveBar .wt{font:700 15px/1.15 var(--font-d)}#caveBar .cs{font:500 13px/1.25 var(--font-d);opacity:.85;min-height:16px}#caveBar .wr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#caveBar .wl{font:600 11px var(--font-d);letter-spacing:.08em;text-transform:uppercase;opacity:.75}#caveBar button{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;padding:5px 11px;font:700 13px var(--font-d);cursor:pointer;min-height:32px}#caveBar button[aria-pressed=true],#caveBar .wbk{background:var(--amber);color:#1a1206;border-color:var(--amber)}#btnCave{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(288px + env(safe-area-inset-top,0px));z-index:6;background:#3b2a1a;color:#fff;border-color:#8a6a3a}';
     document.head.appendChild(st);
     b.addEventListener('pointerdown',function(e){e.stopPropagation();});
     b.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;if(t.id==='caveBack'){caveStop(false);return;}if(t.id==='caveShout'){if(typeof pwVoice==='function')pwVoice('Ehi!','me',false);caveShout();return;}if(t.id==='caveMic'){caveMic(!CAVE.micOn);return;}if(t.dataset.cm){CAVE.mult=+t.dataset.cm;caveBarSync();}});}
@@ -9897,7 +9906,7 @@ function caveFrame(dt){
   gameT+=dt;if(sayT>0){sayT-=dt;if(sayT<=0)$('hint').hidden=true;}
   var trn=footInput();if(trn)look.yaw=clamp(look.yaw+trn*dt*1.6,-2.9,2.9);
   var f=((inp.gas||inp.kbGas)?1:0)-((inp.brake||inp.kbBrake)?1:0),A0=caveAt(CAVE.s),wet=isFinite(A0.wl)&&A0.sec!=='salone'&&A0.sec!=='lago',v=f>0?(wet?1.1:1.4)*CAVE.mult:f<0?-.9:0;
-  CAVE.s=clamp(CAVE.s+v*dt,0,CAVE.P.len);if(CAVE.s>=CAVE.P.len-1){caveStop(true);return;}
+  CAVE.s=clamp(CAVE.s+v*dt,0,CAVE.P.len);CAVE.mv=v!==0;if(CAVE.s>=CAVE.P.len-1){caveStop(true);return;}
   if(CAVE.s<=0&&f<0){caveStop(false);return;}
   if(wet&&!CAVE.wet)say('Da qui si cammina nell’acqua: è gelida','',2600);CAVE.wet=wet;
   if(Math.abs(v)>0){CAVE.stp=(CAVE.stp||0)+Math.abs(v)*dt;if(CAVE.stp>.75){CAVE.stp=0;if(wet){caveSplash();var A=caveAt(CAVE.s);caveRing(camera.position.x,A.wl,camera.position.z,true);}else if(typeof walkStepSnd==='function')walkStepSnd(1);}}
@@ -9910,13 +9919,18 @@ function caveFrame(dt){
   CAVE.lamps.forEach(function(L,i){var p=Ls[i];if(p&&Math.hypot(p[0]-C.x,p[2]-C.z)<40){L.position.set(p[0],p[1]+.4,p[2]);L.intensity=.7;}else L.intensity=0;});
 }
 function caveCam(){
-  scene.children.forEach(function(o){o.visible=o===CAVE.g||o===hemi||o===sun||o===TORCH||(TORCH&&o===TORCH.target)||o===camera;});CAVE.g.visible=true;
+  var tp=!PW.fp&&PW.av;scene.children.forEach(function(o){o.visible=o===CAVE.g||o===hemi||o===sun||o===TORCH||(TORCH&&o===TORCH.target)||o===camera||(tp&&o===PW.av.g);});CAVE.g.visible=true;
   var s=CAVE.s,dark=cvDark(s),endF=clamp((s-(CAVLEN-35))/30,0,1);
   hemi.intensity=dark?.02+endF*.35:.16;sun.intensity=0;scene.background.setHex(0x000000);scene.fog.color.setRGB(endF*.25,endF*.3,endF*.33);scene.fog.near=dark?3:10;scene.fog.far=dark?26+endF*40:75;
   var A=caveAt(s),B=caveAt(Math.min(CAVLEN,s+3)),nA=[Math.cos(A.h),-Math.sin(A.h)],nB=[Math.cos(B.h),-Math.sin(B.h)],ax=A.x+nA[0]*A.pl,az=A.z+nA[1]*A.pl,bx=B.x+nB[0]*B.pl,bz=B.z+nB[1]*B.pl,hd=Math.atan2(bx-ax,bz-az),h=hd+look.yaw,pc=look.pitch;
   var ey=A.py+1.62+(isFinite(A.wl)&&A.sec!=='salone'&&A.sec!=='lago'?.05:0);CAVE.yaw=h;
-  camera.position.set(ax,ey,az);camera.near=.08;camera.lookAt(ax+Math.sin(h)*10,ey-.3-Math.tan(pc)*10,az+Math.cos(h)*10);camera.updateProjectionMatrix();
-  if(TORCH){TORCH.position.set(ax+Math.cos(h)*.3,ey-.3,az-Math.sin(h)*.3);TORCH.target.position.set(ax+Math.sin(h)*10,ey-.7-Math.tan(pc+.1)*10,az+Math.cos(h)*10);TORCH.intensity=dark?4:1.2;TORCH.distance=dark?40:30;TORCH.angle=dark?.5:.62;TORCH.penumbra=.55;}
+  if(tp){   /* terza persona: l'omino con lo stemma davanti, la telecamera dietro, sotto la volta */
+    var G=PW.av.g,fy0=A.py;G.position.set(ax,fy0+(isFinite(A.wl)&&A.sec!=='salone'&&A.sec!=='lago'?-.12:0),az);G.rotation.y=hd;pwAnim(PW.av,CAVE.s*3.2,CAVE.mv?.65:0);if(PW.av.tg)PW.av.tg.visible=true;
+    var C0=caveAt(Math.max(0,s-3.4)),nC=[Math.cos(C0.h),-Math.sin(C0.h)],cxp=C0.x+nC[0]*C0.pl,czp=C0.z+nC[1]*C0.pl,dd=3.4,bx2=ax-Math.sin(h)*dd,bz2=az-Math.cos(h)*dd;
+    var w=Math.min(1,Math.abs(look.yaw)/1.2);cxp=cxp+(bx2-cxp)*w;czp=czp+(bz2-czp)*w;var cyp=Math.min(fy0+2.3-pc*2,cvCeil(C0,C0.pl)-.35);cyp=Math.max(cyp,fy0+1.2);
+    camera.position.set(cxp,cyp,czp);camera.near=.08;camera.lookAt(ax,fy0+1.3,az);camera.updateProjectionMatrix();ey=cyp;
+  }else{camera.position.set(ax,ey,az);camera.near=.08;camera.lookAt(ax+Math.sin(h)*10,ey-.3-Math.tan(pc)*10,az+Math.cos(h)*10);camera.updateProjectionMatrix();}
+  if(TORCH){var tyy=tp?A.py+1.25:ey-.3;if(tp)TORCH.position.copy(camera.position);else TORCH.position.set(ax+Math.cos(h)*.3,tyy,az-Math.sin(h)*.3);TORCH.target.position.set(ax+Math.sin(h)*10,tyy-.4-Math.tan(pc+.1)*10,az+Math.cos(h)*10);TORCH.intensity=dark?4:1.2;TORCH.distance=dark?40:30;TORCH.angle=dark?.5:.62;TORCH.penumbra=.55;}
 }
 /* ---------- il pulsante, vicino all'imbocco ---------- */
 function caveNearTick(dt){
