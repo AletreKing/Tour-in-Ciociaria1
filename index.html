@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 26.10 15:57</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 26.10 16:20</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8313,7 +8313,9 @@ function caveBuild(g,B,G,q,x,z,y,ox,oz,obs,r){
     for(var i=0;i<N;i++){var a0=i/N*Math.PI,a1=(i+1)/N*Math.PI;Q(pt(a0,d0),pt(a1,d0),pt(a1,d1),pt(a0,d1),col);}
     Q(pt(0,d0),pt(0,d1),pt(Math.PI,d1),pt(Math.PI,d0),hc(0x080706));}
   /* l'antro è buio fino in fondo: un velo nero appena dentro l'imbocco copre il pendio che c'è dietro */
-  var Dp=1.4,cP=[lx+ux*Dp,gy+R*HK*.35,lz+uz*Dp];for(var ip=0;ip<N;ip++){var q0=pt(ip/N*Math.PI,Dp),q1=pt((ip+1)/N*Math.PI,Dp);Q(cP,q0,q1,cP,hc(0x000000));}Q(cP,pt(Math.PI,Dp),pt(0,Dp),cP,hc(0x000000));
+  var Dp=-.55,cP=[lx+ux*Dp,gy+R*HK*.35,lz+uz*Dp];function pv(a){var p=pt(a,Dp);return[cP[0]+(p[0]-cP[0])*1.1,p[1]<gy+.05?gy-2.5:cP[1]+(p[1]-cP[1])*1.1,cP[2]+(p[2]-cP[2])*1.1];}   /* il velo nero sta sul filo della parete e scende sotto terra: tutto l'imbocco è buio */
+  for(var ip=0;ip<N;ip++){var q0=pv(ip/N*Math.PI),q1=pv((ip+1)/N*Math.PI);Q(cP,q0,q1,cP,hc(0x000000));}Q(cP,pv(Math.PI),pv(0),cP,hc(0x000000));
+  var b0=pv(0),b1=pv(Math.PI);Q([b0[0],gy-2.5,b0[2]],[b1[0],gy-2.5,b1[2]],[b1[0],gy+.2,b1[2]],[b0[0],gy+.2,b0[2]],hc(0x000000));
   var c0=hc(0x000000),cE=[lx+ux*D,gy,lz+uz*D];for(i=0;i<N;i++){var p0=pt(i/N*Math.PI,D),p1=pt((i+1)/N*Math.PI,D);Q(cE,p0,p1,cE,c0);}
   /* la parete di calcare: grigia e beige, con colature arancioni, sporgente in alto, con il buco dell'ingresso */
   var NT=38,NY=22,T0=19,HY=19,P=[],C=[],I=[],cc=new THREE.Color(),hole=function(tt,yy){if(yy<-.8)return false;var e=R*1.02*(1+.12*Math.sin(Math.atan2(yy/HK,tt)*3.1)),h=yy/(HK*1.0);return tt*tt+h*h<e*e&&yy<R*HK*1.02;};
@@ -8343,7 +8345,7 @@ function caveBuild(g,B,G,q,x,z,y,ox,oz,obs,r){
   obs.push([1,fx+ux*(D*.5),fz+uz*(D*.5),tx,tz,R+1,D*.55]);
   [-1,1].forEach(function(sd){obs.push([1,fx+tx*sd*(R+1+7)+ux*1.5,fz+tz*sd*(R+1+7)+uz*1.5,tx,tz,7,2.2]);});   /* la parete non si attraversa */
   /* il torrente entra nella grotta: dal punto in cui finisce, un letto d'acqua fino in fondo all'antro */
-  if(typeof WAT!=='undefined'&&WAT.ready&&typeof watM!=='undefined'){var rv=null;WAT.R.forEach(function(Rr){var n=Rr.x.length;if(n<2)return;[n-1,0].forEach(function(k){var d=Math.hypot(Rr.x[k]-fx,Rr.z[k]-fz);if(d<140&&(!rv||d<rv.d))rv={d:d,x:Rr.x[k],z:Rr.z[k],y:Rr.y[k],w:Math.max(1.6,Rr.half*2)};});});
+  if(typeof WAT!=='undefined'&&WAT.ready&&typeof watM!=='undefined'){var rv=null;WAT.R.forEach(function(Rr){var n=Rr.x.length;if(n<2)return;for(var k=0;k<n;k++){var d=Math.hypot(Rr.x[k]-fx,Rr.z[k]-fz);if(d<220&&(!rv||d<rv.d))rv={d:d,x:Rr.x[k],z:Rr.z[k],y:Rr.y[k],w:Math.max(1.6,Rr.half*2)};}});
     if(rv){var path=[[rv.x,rv.z]],mx=fx-ux*2.5,mz=fz-uz*2.5,L1=Math.hypot(mx-rv.x,mz-rv.z);if(L1>1)path.push([mx,mz]);path.push([fx+ux*(D-1),fz+uz*(D-1)]);
       var WP=[],WU=[],WI=[],vv=0,nv=0;
       for(var pi=0;pi<path.length-1;pi++){var A=path[pi],Bq=path[pi+1],Ls=Math.hypot(Bq[0]-A[0],Bq[1]-A[1])||1,m=Math.max(1,Math.ceil(Ls/2)),dx=(Bq[0]-A[0])/Ls,dz=(Bq[1]-A[1])/Ls;
@@ -9626,10 +9628,17 @@ function plCaveGeo(){
 }
 var PLROCKM=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true}),PLBLKM=new THREE.MeshBasicMaterial({vertexColors:true});
 function plCave(G0,o){var C=plCaveGeo(),p=plPos(o),g=new THREE.Group();
-  C.G.forEach(function(geo){g.add(new THREE.Mesh(geo,PLROCKM));});if(C.B)g.add(new THREE.Mesh(C.B,hwFlatM));g.add(new THREE.Mesh(C.D,PLBLKM));g.add(new THREE.Mesh(C.W,PLWM));g.add(new THREE.Mesh(C.F,PLFM));
+  C.G.forEach(function(geo){g.add(new THREE.Mesh(geo,PLROCKM));});if(C.B)g.add(new THREE.Mesh(C.B,hwFlatM));g.add(new THREE.Mesh(C.D,PLBLKM));
   var gy0=gndY(p.x,p.z)+p.dy-.1,th=Math.atan2(p.ux,p.uz),ct=Math.cos(th),st=Math.sin(th),rr=rng(4401),SG=[];
+  function lg(lx,lz){return gndY(p.x+lx*ct+lz*st,p.z-lx*st+lz*ct)-gy0;}
+  /* l'acqua e la schiuma seguono il pendio vero, appena sopra il terreno, sempre in discesa */
+  var W=C.W.clone(),WP=W.attributes.position,rowY={};
+  for(var i=0;i<WP.count;i++){var lz=WP.getZ(i),k=Math.round(lz*10);if(rowY[k]===undefined){var y0=Math.max(lg(-1.4,lz),lg(0,lz),lg(1.4,lz))+.1;if(lz>.5){var pk=Object.keys(rowY).map(Number).filter(function(q){return q<k;});var prev=pk.length?rowY[Math.max.apply(null,pk)]:null;if(prev!=null)y0=Math.min(y0,prev+.02);}rowY[k]=lz<=.3?Math.max(y0,.08):y0;}
+    WP.setY(i,Math.max(rowY[k],lg(WP.getX(i),lz)+.06));}
+  WP.needsUpdate=true;W.computeVertexNormals();g.add(new THREE.Mesh(W,PLWM));
+  var F=C.F.clone(),FP=F.attributes.position;for(i=0;i<FP.count;i++){var fz=FP.getZ(i),kk=Math.round(fz*10),ry=null;Object.keys(rowY).forEach(function(q){q=+q;if(ry===null||Math.abs(q-kk)<Math.abs(ry[0]-kk))ry=[q,rowY[q]];});FP.setY(i,(ry?ry[1]:lg(FP.getX(i),fz))+.04);}FP.needsUpdate=true;g.add(new THREE.Mesh(F,PLFM));
   /* sassi e muschio delle sponde: ognuno appoggiato al terreno vero sotto di sé */
-  C.SM.forEach(function(q){var wx=p.x+q[0]*ct+q[1]*st,wz=p.z-q[0]*st+q[1]*ct,ly=gndY(wx,wz)-gy0-q[3]*.35,wy=.08-Math.max(0,q[1])*.03;if(Math.abs(ly+q[3]*.35-wy)>.45)return;SG.push(p3Rock(F0,q[0],ly,q[1],q[2],q[3],q[4],q[5],rr));});
+  C.SM.forEach(function(q){var sx=q[2]*.8,sz=q[4]*.8,lo=Math.min(lg(q[0],q[1]),lg(q[0]-sx,q[1]),lg(q[0]+sx,q[1]),lg(q[0],q[1]-sz),lg(q[0],q[1]+sz));SG.push(p3Rock(F0,q[0],lo-q[3]*.45,q[1],q[2],q[3]*1.3,q[4],q[5],rr));});
   var sg=new THREE.Group();SG.forEach(function(geo){sg.add(new THREE.Mesh(geo,PLROCKM));});g.add(sg);
   g.position.set(p.x,gy0,p.z);g.rotation.y=th;g.userData.keep=1;g.userData.own=sg;G0.add(g);}
 /* la prima grotta: vicino all'imbocco delle Grotte di Pastena, da spostare a piacere */
