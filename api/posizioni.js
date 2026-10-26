@@ -40,13 +40,11 @@ module.exports = async (req, res) => {
   const pos = b && b.posizioni;
   if (!pos || typeof pos !== 'object') return A.json(res, 400, { error: 'nessuna modifica da pubblicare' });
   try {
-    // chi può pubblicare: gli indirizzi in EDITORI (variabile del server) o in editori.json; il primo che pubblica, se l'elenco è vuoto, diventa responsabile
-    const env = String(process.env.EDITORI || '').toLowerCase().split(/[\s,;]+/).filter(Boolean);
-    let ed = await getJson('editori.json'), list = (ed.data && ed.data.editori) || [];
-    const me = u.email.toLowerCase(), allowed = env.concat(list.map(x => String(x).toLowerCase()));
-    if (allowed.length && allowed.indexOf(me) < 0) return A.json(res, 403, { error: 'Il tuo account (' + u.email + ') non è tra i responsabili delle modifiche. Chiedi di essere aggiunto.' });
-    let first = false;
-    if (!allowed.length) { await putJson('editori.json', { editori: [me] }, ed.sha, 'Responsabile delle modifiche: ' + me); first = true; }
+    // chi può pubblicare: chi è entrato con l'account della scuola e conosce la parola segreta della modalità God
+    const crypto = require('crypto'), want = String(process.env.PUBLISH_HASH || '843c8bcf9a1ce5dd547159c829964c4f1eb463e5933d4b8e3aeb55abc692df8c');
+    const got = crypto.createHash('sha256').update('cds|' + String(b.pw || '').trim().toLowerCase()).digest('hex');
+    if (got.length !== want.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want))) return A.json(res, 403, { error: 'parola segreta mancante o sbagliata: esci dalla modalità God e rientra' });
+    const me = u.email.toLowerCase(), first = false;
     for (let tent = 0; tent < 3; tent++) {
       const sc = await getJson('schede.json'), data = sc.data || { versione: 1, schede: {} };
       data.impostazioni = data.impostazioni || {}; const P = data.impostazioni.pos = data.impostazioni.pos || {};

@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 26.10 11:48</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 26.10 11:54</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8641,8 +8641,10 @@ function godBox(){
   inp.addEventListener('keydown',function(e){e.stopPropagation();if(e.key==='Escape'||e.key==='Tab'){e.preventDefault();d.hidden=true;inp.value='';inp.blur();}});
   inp.addEventListener('keyup',function(e){e.stopPropagation();});
   $('godF').addEventListener('submit',function(e){e.preventDefault();
-    if(inp.value.trim().toLowerCase()==='gilgamesh'){d.hidden=true;inp.value='';inp.blur();godStart();}
-    else{$('godMsg').textContent='No.';inp.select();}});
+    var w=inp.value.trim().toLowerCase();   /* la parola segreta non è scritta nel codice: si confronta solo la sua impronta */
+    if(!window.crypto||!crypto.subtle){$('godMsg').textContent='Non disponibile su questo browser';return;}
+    crypto.subtle.digest('SHA-256',new TextEncoder().encode('cds|'+w)).then(function(b){var h=[].map.call(new Uint8Array(b),function(x){return('0'+x.toString(16)).slice(-2);}).join('');
+      if(h==='843c8bcf9a1ce5dd547159c829964c4f1eb463e5933d4b8e3aeb55abc692df8c'){GOD.pw=w;d.hidden=true;inp.value='';inp.blur();godStart();}else{$('godMsg').textContent='No.';inp.select();}});});
   return d;
 }
 function godStart(){
@@ -10118,9 +10120,9 @@ function pubRefresh(){try{netClear();netSync(true);}catch(e){}if(typeof plRebuil
 function pubSend(){
   if(PUB.busy||!pubCount())return;if(location.protocol==='file:'){say('La pubblicazione funziona solo dal sito, non da un file aperto sul computer','',3500);return;}
   PUB.busy=true;pubSync();say('Pubblico '+pubCount()+' modifiche…','',2500);
-  fetch('/api/posizioni',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({posizioni:ED.off})})
+  fetch('/api/posizioni',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({posizioni:ED.off,pw:GOD.pw||''})})
     .then(function(r){return r.json().catch(function(){return{error:'risposta non valida ('+r.status+')'};}).then(function(j){if(!r.ok||!j.ok)throw new Error(j.error||('errore '+r.status));return j;});})
-    .then(function(j){CDSG_IMP.pos=j.pos||CDSG_IMP.pos;SC.pois.forEach(function(p){var o=CDSG_IMP.pos[p.pk];if(o)p.pos3d=o.del?null:o;});ED.off={};edSave();pubRefresh();say('Fatto: '+j.n+' modifiche online, per tutti, fra un minuto circa'+(j.first?'. Sei registrato come responsabile delle modifiche':''),'good',5000);})
+    .then(function(j){CDSG_IMP.pos=j.pos||CDSG_IMP.pos;SC.pois.forEach(function(p){var o=CDSG_IMP.pos[p.pk];if(o)p.pos3d=o.del?null:o;});ED.off={};edSave();pubRefresh();say('Fatto: '+j.n+' modifiche online, per tutti, fra un minuto circa','good',5000);})
     .catch(function(e){say('Non riesco a pubblicare: '+(e&&e.message||e),'warn',5000);})
     .then(function(){PUB.busy=false;pubSync();});
 }
