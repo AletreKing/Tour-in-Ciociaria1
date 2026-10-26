@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 27.10 00:07</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 27.10 00:14</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -10346,12 +10346,15 @@ function colSite(){
   COLS.k=key;COLS.s={x:cx,z:cz,ux:ux,uz:uz,tx:-uz,tz:ux,gC:gC,gA:gA,fl:fl};return COLS.s;}
 function colFloor(S,s){var f=clamp((s+COLL_L)/COLL_L,0,1);return S.gA+(S.fl-S.gA)*f;}
 function colHW(s){return 4.2+3.8*clamp((s+COLL_L)/COLL_L,0,1);}
-var colNG0=netGround;
-netGround=function(x,z){var g=colNG0(x,z),S=COLS.s||(typeof SC!=='undefined'&&SC&&SC.pois?colSite():null);if(!S)return g;var dx=x-S.x,dz=z-S.z;if(Math.abs(dx)>40||Math.abs(dz)>40)return g;
+var colNG1=netGround,COLF=null;
+function colFlatInit(){var q=typeof colPoi==='function'?colPoi():null;if(!q)return null;var lo=1e9;for(var i=-8;i<=8;i++)for(var j=-8;j<=8;j++){if(i*i+j*j>64)continue;lo=Math.min(lo,colNG1(q.x+i*10,q.z+j*10));}COLF={x:q.x,z:q.z,lo:lo};return COLF;}
+function colNG0(x,z){var g=colNG1(x,z),F=COLF||(typeof SC!=='undefined'&&SC&&SC.pois?colFlatInit():null);if(!F)return g;var d=Math.hypot(x-F.x,z-F.z);if(d>120)return g;
+  var w=d<70?1:1-(d-70)/50;w=w*w*(3-2*w);var h=F.lo+(g-F.lo)*.5;return g+(h-g)*w;}   /* attorno alla grotta il pendio è scosceso la metà */
+netGround=function(x,z){var g=colNG0(x,z);if(!COLF)return g;var S=COLS.s||(typeof SC!=='undefined'&&SC&&SC.pois?colSite():null);if(!S)return g;var dx=x-S.x,dz=z-S.z;if(Math.abs(dx)>45||Math.abs(dz)>45)return g;
   var s=dx*S.ux+dz*S.uz,t=dx*S.tx+dz*S.tz;if(s<-COLL_L-6||s>5)return g;
   var hw=colHW(Math.min(0,Math.max(s,-COLL_L)))+(s>-3?2:0),fl=colFloor(S,s),e=clamp((hw+2.5-Math.abs(t))/2.5,0,1)*clamp((s+COLL_L+6)/6,0,1);e=e*e*(3-2*e);
   return Math.min(g,g+(fl-g)*e);};
-var colTF=tFine;tFine=function(tx,tz){var S=COLS.s;if(S&&Math.abs(tx*NT+NT/2-S.x)<NT/2+40&&Math.abs(tz*NT+NT/2-S.z)<NT/2+40)return true;return colTF(tx,tz);};
+var colTF=tFine;tFine=function(tx,tz){var S=COLF;if(S&&Math.abs(tx*NT+NT/2-S.x)<NT/2+120&&Math.abs(tz*NT+NT/2-S.z)<NT/2+120)return true;return colTF(tx,tz);};
 var colCB0=caveBuild;caveBuild=function(g,B,G,q,x,z,y,ox,oz,obs,r){if(/grotte di collepardo/i.test(q.n||''))return collEntry(g,B,G,q,ox,oz,obs,r);return colCB0(g,B,G,q,x,z,y,ox,oz,obs,r);};
 function collEntry(g,B,G,q,ox,oz,obs,r){
   var S=colSite();if(!S)return;var ux=S.ux,uz=S.uz,tx=S.tx,tz=S.tz,sF=-1.2;
