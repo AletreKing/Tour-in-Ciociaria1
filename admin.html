@@ -350,6 +350,7 @@ function ghPublish(){
   msg('Controllo la chiave…');
   ghApi(c,'schede.json').then(function(r){if(r.status===401||r.status===403)throw new Error('la chiave non è valida o non ha il permesso di scrivere');if(!r.ok&&r.status!==404)throw new Error('GitHub risponde '+r.status);})
   .then(function(){var p=Promise.resolve();names.forEach(function(n){p=p.then(function(){return ghSha(c,n).then(function(sha){if(sha){done++;return;}return getImg(n).then(function(b){if(!b){done++;return;}msg('Carico le foto: '+(done+1)+' di '+names.length+'…');return blob64(b).then(function(b64){return ghPut(c,n,b64,'Foto da '+who).then(function(){done++;});});});});});});return p;})
+  .then(function(){return ghApi(c,'schede.json').then(function(r){return r.ok?r.json():null;}).then(function(j){if(!j)return;try{var cur=JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,''))))),rp=(cur.impostazioni&&cur.impostazioni.pos)||{},N=S.posNew||{};Object.keys(rp).forEach(function(k){if(!N[k])S.imp.pos[k]=rp[k];});}catch(e){}});})   /* le modifiche fatte nel gioco e già pubblicate non si perdono */
   .then(function(){msg('Pubblico le schede…');return ghPut(c,'schede.json',txt64(JSON.stringify({versione:1,aggiornato:new Date().toISOString(),impostazioni:impOut(),schede:out},null,1)),'Schede aggiornate da '+who);})
   .then(function(){S.base=out;S.loc={};S.impBase={radio:S.imp.radio};S.imp=impOut();ls('imp',S.imp);saveLoc();draw();edit();msg('Fatto. Fra un paio di minuti le schede e le foto sono sul sito e nel gioco.');toast('Pubblicato sul sito');})
   .catch(function(e){msg('Non riesco a pubblicare: '+(e&&e.message||e)+'.');})
@@ -369,7 +370,7 @@ $('imp').addEventListener('change',function(){
     }):f.text();
   job.then(function(txt){
     var j=JSON.parse(txt),sc=j.schede||{},n=0,skip=0;
-    if(j.tipo==='posizioni'&&j.posizioni){var np=0;Object.keys(j.posizioni).forEach(function(k){if(!BYK[k]){if(/^(egg:|P:|B:|N:|L:|Q:|FA:|G:|T:)/.test(k)){S.imp.pos=S.imp.pos||{};S.imp.pos[k]=j.posizioni[k];ls('imp',S.imp);np++;}return;}var s=work(k);s.pos3d=j.posizioni[k];s.ts=Date.now();s.da=$('who').value.trim()||'anonimo';np++;});saveLoc();draw();edit();toast(np+' oggetti riposizionati: ora pubblica sul sito');return;}
+    if(j.tipo==='posizioni'&&j.posizioni){var np=0;Object.keys(j.posizioni).forEach(function(k){if(!BYK[k]){if(/^(egg:|P:|B:|N:|L:|Q:|FA:|G:|T:)/.test(k)){S.imp.pos=S.imp.pos||{};S.imp.pos[k]=j.posizioni[k];S.posNew=S.posNew||{};S.posNew[k]=1;ls('imp',S.imp);np++;}return;}var s=work(k);s.pos3d=j.posizioni[k];s.ts=Date.now();s.da=$('who').value.trim()||'anonimo';np++;});saveLoc();draw();edit();toast(np+' oggetti riposizionati: ora pubblica sul sito');return;}
     if(j.impostazioni){var ji=j.impostazioni;if(typeof ji.radio==='boolean')S.imp.radio=ji.radio;S.imp.pos=Object.assign(S.imp.pos||{},ji.pos||{});S.imp.manifesti=Object.assign(S.imp.manifesti||{},ji.manifesti||{});ls('imp',S.imp);impDraw();}
     Object.keys(sc).forEach(function(k){if(!BYK[k])return;var mine=cur(k);if(!mine||(sc[k].ts||0)>(mine.ts||0)){S.loc[k]=sc[k];n++;}else skip++;});
     saveLoc();draw();edit();toast(n+' schede importate'+(skip?', '+skip+' tenute perché più recenti':''));

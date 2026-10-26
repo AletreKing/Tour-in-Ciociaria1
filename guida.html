@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 25.10 23:25</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 26.10 11:48</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8585,7 +8585,7 @@ function edExport(){
   var keys=Object.keys(ED.off);if(!keys.length){say('Nessun oggetto spostato','',2200);return;}
   var j={programma:'Ciociaria da scoprire',tipo:'posizioni',data:new Date().toISOString(),posizioni:ED.off};
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(j,null,1)],{type:'application/json'}));a.download='posizioni-oggetti-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
-  say('File salvato: caricalo nell’area docenti con «Importa lavoro di un collega», poi pubblica','good',5000);
+  say('File salvato. Per renderle valide per tutti basta «Pubblica online» (in basso a destra)','good',5000);
 }
 function edTick(){
   if(!ED.on||!ED.sel){if(ED.ring)ED.ring.visible=false;return;}
@@ -10093,6 +10093,38 @@ function treKey(k,e){
 }
 function treHas(){var E=treEdits();return Object.keys(E).length>0;}
 var treTr0=trSync;trSync=function(dt){treTr0(dt);if(!TRE.applied&&TRL.ready&&SC.pois.length&&world==='net'){TRE.applied=true;if(treHas())treApply();}if(typeof GOD!=='undefined'&&GOD.on||TRE.g)treTick(dt);};
+
+/* ================= GOD: «Pubblica online» — le modifiche fatte qui diventano valide per tutti =================
+   si mandano al sito (servono l'account della scuola e il permesso di responsabile); si possono anche caricare i file salvati con S su un altro computer */
+var PUB={busy:false};
+function pubCount(){return Object.keys(ED.off).length;}
+function pubBar(){
+  var b=$('godPub');if(b){b.hidden=!(typeof GOD!=='undefined'&&GOD.on);pubSync();return;}
+  if(!(typeof GOD!=='undefined'&&GOD.on))return;
+  b=document.createElement('div');b.id='godPub';
+  b.innerHTML='<button type="button" id="pubGo">Pubblica online</button><label id="pubLoad">Carica file<input type="file" accept=".json" multiple hidden></label><span id="pubN"></span>';
+  $('game').appendChild(b);
+  var st=document.createElement('style');st.textContent='#game.god>#godPub{visibility:visible!important;display:flex!important}#game.god>#godPub[hidden]{display:none!important}#godPub{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:16px;z-index:9;display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}#godPub[hidden]{display:none}#godPub button,#godPub label{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;padding:6px 12px;font:700 13px var(--font-d);cursor:pointer}#godPub #pubGo{background:var(--amber);color:#1a1206;border-color:var(--amber)}#godPub #pubN{font:600 12px var(--font-d);opacity:.8}';
+  document.head.appendChild(st);
+  b.addEventListener('pointerdown',function(e){e.stopPropagation();});
+  $('pubGo').addEventListener('click',pubSend);
+  b.querySelector('input').addEventListener('change',function(){var F=[].slice.call(this.files);this.value='';pubLoadFiles(F);});
+  pubSync();
+}
+function pubSync(){var n=$('pubN');if(n)n.textContent=pubCount()?pubCount()+' modifiche non ancora online':'nessuna modifica in sospeso';var g=$('pubGo');if(g)g.disabled=PUB.busy||!pubCount();}
+function pubLoadFiles(F){var n=0,done=0;if(!F.length)return;
+  F.forEach(function(f){f.text().then(function(t){var j=JSON.parse(t);var P=j&&(j.posizioni||(j.impostazioni&&j.impostazioni.pos));if(P)Object.keys(P).forEach(function(k){ED.off[k]=P[k];n++;});}).catch(function(){}).then(function(){if(++done<F.length)return;edSave();pubRefresh();say(n?n+' modifiche caricate dai file: ora «Pubblica online»':'Nei file non ho trovato modifiche','good',3500);pubSync();});});}
+function pubRefresh(){try{netClear();netSync(true);}catch(e){}if(typeof plRebuild==='function')plRebuild();if(typeof treApply==='function')treApply();if(typeof pwBoardReset==='function')pwBoardReset();if(PW.sg){scene.remove(PW.sg);PW.sg=null;}if(typeof CRX!=='undefined'&&CRX.list)CRX.list.forEach(function(c){c.pos=null;});}
+function pubSend(){
+  if(PUB.busy||!pubCount())return;if(location.protocol==='file:'){say('La pubblicazione funziona solo dal sito, non da un file aperto sul computer','',3500);return;}
+  PUB.busy=true;pubSync();say('Pubblico '+pubCount()+' modifiche…','',2500);
+  fetch('/api/posizioni',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({posizioni:ED.off})})
+    .then(function(r){return r.json().catch(function(){return{error:'risposta non valida ('+r.status+')'};}).then(function(j){if(!r.ok||!j.ok)throw new Error(j.error||('errore '+r.status));return j;});})
+    .then(function(j){CDSG_IMP.pos=j.pos||CDSG_IMP.pos;SC.pois.forEach(function(p){var o=CDSG_IMP.pos[p.pk];if(o)p.pos3d=o.del?null:o;});ED.off={};edSave();pubRefresh();say('Fatto: '+j.n+' modifiche online, per tutti, fra un minuto circa'+(j.first?'. Sei registrato come responsabile delle modifiche':''),'good',5000);})
+    .catch(function(e){say('Non riesco a pubblicare: '+(e&&e.message||e),'warn',5000);})
+    .then(function(){PUB.busy=false;pubSync();});
+}
+var pubTr0=trSync;trSync=function(dt){pubTr0(dt);PUB.t=(PUB.t||0)-dt;if(PUB.t<=0){PUB.t=.5;pubBar();}};
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
