@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 18:14</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 18:28</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -10229,6 +10229,11 @@ function sinkTick(dt){
 }
 function sinkNeigh(){if(!AC||!au||!opts.snd||AC.state!=='running')return;var t=AC.currentTime+.05;for(var k=0;k<2;k++){var o=AC.createOscillator(),g=AC.createGain(),l=AC.createOscillator(),lg=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(900,t+k*1.4);o.frequency.exponentialRampToValueAtTime(420,t+k*1.4+1.1);l.frequency.value=14;lg.gain.value=60;l.connect(lg);lg.connect(o.frequency);g.gain.setValueAtTime(0,t+k*1.4);g.gain.linearRampToValueAtTime(.12,t+k*1.4+.08);g.gain.exponentialRampToValueAtTime(.001,t+k*1.4+1.2);o.connect(g);g.connect(au.master);o.start(t+k*1.4);l.start(t+k*1.4);o.stop(t+k*1.4+1.25);l.stop(t+k*1.4+1.25);}}
 var sinkTr0=trSync;trSync=function(dt){sinkTr0(dt);sinkTick(dt);};
+/* OpenStreetMap segna la voragine come roccia nuda: sulla griglia di 50 m diventa un rettangolo grigio attorno al pozzo. Fuori dalla voragine il prato prende il colore dei dintorni */
+var sinkLU0=luAt,sinkLUr=null;
+luAt=function(x,z){var c=sinkLU0(x,z);if(c!==8)return c;var S=SINK;if(Math.abs(x-S.cx)>350||Math.abs(z-S.cz)>350)return c;
+  if(sinkLUr==null&&LU.ready){var n={};for(var k=0;k<48;k++){var a=k/48*Math.PI*2;for(var r=220;r<=340;r+=40){var v=sinkLU0(S.cx+Math.cos(a)*r,S.cz+Math.sin(a)*r);if(v!==8&&v!==9)n[v]=(n[v]||0)+1;}}var best=3,bn=-1;for(var q in n)if(n[q]>bn){bn=n[q];best=+q;}sinkLUr=best;}
+  return sinkLUr==null?c:sinkLUr;};
 
 /* ================= DENTRO LA GROTTA DI COLLEPARDO (dei Bambocci, Regina Margherita) =================
    dalle descrizioni di Fabbi e Marino (ISPRA 2020) e di Ferri Ricchi: ingresso triangolare, discesa tra i massi crollati
