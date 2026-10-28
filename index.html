@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 14:23</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 18:14</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -10195,14 +10195,16 @@ function sinkBuild(){
   /* il ripiano del bordo, fino al recinto */
   var B=new GB(),rock=hc(0xa8a49a),grass=hc(0x6f7f45);
   for(i=0;i<N;i++){var a1=i/N*Math.PI*2,a2=(i+1)/N*Math.PI*2,R1=sinkR(a1),R2=sinkR(a2);
+    /* la cotica attorno al bordo segue il terreno vero fino al ciglio: copre l'avvallamento che la griglia del terreno crea scendendo nella voragine */
+    function PN(a,R,d){var x=S.cx+Math.cos(a)*(R+d),z=S.cz+Math.sin(a)*(R+d);return[x,d<=1?sinkTop(a)+.35:sinkNG0(x,z)+.08,z];}
     function P(a,R,d){return[S.cx+Math.cos(a)*(R+d),sinkTop(a)+(d>2.5?.12:.35),S.cz+Math.sin(a)*(R+d)];}
-    var am=(a1+a2)/2,gx=S.cx+Math.cos(am)*(R1+2.5),gz=S.cz+Math.sin(am)*(R1+2.5);B.quad([P(a1,R1,-4.2),P(a2,R2,-4.2),P(a2,R2,1),P(a1,R1,1)],[0,1,0],N4,sinkGC(gx,gz,sinkTop(am)).lerp(TROCK,.55));B.quad([P(a1,R1,1),P(a2,R2,1),P(a2,R2,3),P(a1,R1,3)],[0,1,0],N4,sinkGC(gx,gz,sinkTop(am)));}
+    var am=(a1+a2)/2,gx=S.cx+Math.cos(am)*(R1+2.5),gz=S.cz+Math.sin(am)*(R1+2.5);B.quad([P(a1,R1,-4.2),P(a2,R2,-4.2),P(a2,R2,1),P(a1,R1,1)],[0,1,0],N4,sinkGC(gx,gz,sinkTop(am)).lerp(TROCK,.22));var DS=[1,3,5,7,9.5];for(var di=0;di<DS.length-1;di++){var d0=DS[di],d1=DS[di+1],dm=(d0+d1)/2,cx2=S.cx+Math.cos(am)*(R1+dm),cz2=S.cz+Math.sin(am)*(R1+dm);B.quad([PN(a1,R1,d0),PN(a2,R2,d0),PN(a2,R2,d1),PN(a1,R1,d1)],[0,1,0],N4,sinkGC(cx2,cz2,sinkNG0(cx2,cz2)));}}
   /* la frangia di stalattiti sotto il bordo */
   var cream=[0xd8d2c4,0xc9c2b2,0xe6e0d2,0xb8b0a0];
   for(i=0;i<420;i++){var a=r()*Math.PI*2,R=sinkR(a)-2.5-r()*1.6,x=S.cx+Math.cos(a)*R,z=S.cz+Math.sin(a)*R,y=sinkTop(a)-S.depth*.14+(r()-.5)*2.5,len=1+r()*5,w=.12+r()*.35,cl=hc(cream[Math.floor(r()*4)]);
     for(var q=0;q<5;q++){var b0=q/5*Math.PI*2,b1=(q+1)/5*Math.PI*2,tip=[x,y-len,z];B.quad([[x+Math.cos(b1)*w,y,z+Math.sin(b1)*w],[x+Math.cos(b0)*w,y,z+Math.sin(b0)*w],tip,tip],[Math.cos(b0),0,Math.sin(b0)],N4,cl);}}
   /* il recinto: pali e due fili */
-  var pole=hc(0x8a7a5a),wire=hc(0x5a5a5a);for(i=0;i<80;i++){var a3=i/80*Math.PI*2,a4=(i+1)/80*Math.PI*2,R3=sinkR(a3)+8,R4=sinkR(a4)+8,x3=S.cx+Math.cos(a3)*R3,z3=S.cz+Math.sin(a3)*R3,x4=S.cx+Math.cos(a4)*R4,z4=S.cz+Math.sin(a4)*R4,y3=gndY(x3,z3),y4=gndY(x4,z4);
+  var pole=hc(0x8a7a5a),wire=hc(0x5a5a5a);for(i=0;i<80;i++){var a3=i/80*Math.PI*2,a4=(i+1)/80*Math.PI*2,R3=sinkR(a3)+8,R4=sinkR(a4)+8,x3=S.cx+Math.cos(a3)*R3,z3=S.cz+Math.sin(a3)*R3,x4=S.cx+Math.cos(a4)*R4,z4=S.cz+Math.sin(a4)*R4,y3=sinkNG0(x3,z3)+.08,y4=sinkNG0(x4,z4)+.08;
     cbox(B,x3,y3+.7,z3,.07,1.4,.07,pole);[.6,1.25].forEach(function(hh){B.quad([[x3,y3+hh,z3],[x4,y4+hh,z4],[x4,y4+hh+.025,z4],[x3,y3+hh+.025,z3]],[0,0,1],N4,wire);});}
   /* il bosco sul fondo: alberi alti fino a 20 metri, cespugli, e ginestre gialle aggrappate alle pareti */
   var trunk=hc(0x5a4632),leaf=[0x2f5a26,0x3c6b2c,0x4a7a32,0x355f24],G=[];
