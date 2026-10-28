@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 20:55</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 21:49</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -10712,6 +10712,90 @@ function skyTick2(dt){
 }
 var skyTr0=trSync;trSync=function(dt){skyTr0(dt);try{skyTick2(dt);}catch(e){}};
 
+/* ================= OSSERVATORIO BELLATRIX (CECCANO) E VIRTUAL TELESCOPE DI GIANLUCA MASI =================
+   Un astronomo accanto al telescopio, nella campagna di Ceccano: chiedi di guardare e si apre la diretta
+   del Virtual Telescope Project (canale YouTube ufficiale) oppure il sito virtualtelescope.eu. */
+var AST2={pos:null,g:null,man:null,o:[],chk:0,ph:0,
+  yt:'https://www.youtube.com/embed/live_stream?channel=UCbnPQoG4Oakfz7EW5D8E2ig&autoplay=1',
+  site:'https://www.virtualtelescope.eu/',live:'https://www.youtube.com/channel/UCbnPQoG4Oakfz7EW5D8E2ig/live'};
+function astFree(x,z){
+  if(!NET)return false;var pr=netProbe(x,z);if(!pr||pr.d<NET.E[pr.e].half+5||pr.d>60)return false;   /* vicino a una strada, ma non sopra */
+  var lu=LU.ready?luAt(x,z):0;if(lu===1||lu===2||lu===9||lu===10)return false;
+  if(typeof wetAt==='function'&&wetAt(x,z,4))return false;
+  var g=gndY(x,z);for(var a=0;a<6.28;a+=1.05){var q=gndY(x+Math.cos(a)*9,z+Math.sin(a)*9);if(!isFinite(q)||Math.abs(q-g)>1.6)return false;}
+  var T=netTiles[nk(Math.floor(x/NT),Math.floor(z/NT))];if(T&&T.obs)for(var k=0;k<T.obs.length;k++){var o=T.obs[k];if(Math.abs(o[1]-x)<o[5]+o[6]+10&&Math.abs(o[2]-z)<o[5]+o[6]+10)return false;}
+  return true;}
+function astSite(){   /* una collina libera fuori dall'abitato di Ceccano, sempre la stessa */
+  if(AST2.pos)return AST2.pos;if(!NET||!NET.towns||!LU.ready)return null;
+  var t=null;NET.towns.forEach(function(q){if(q.n==='Ceccano')t=q;});if(!t)return null;
+  var r=rng(10931),best=null;   /* 10931 Ceccano: l'asteroide scoperto da Masi */
+  for(var i=0;i<400&&!best;i++){var a=r()*6.283,d=(t.r||600)+150+r()*900,x=t.x+Math.cos(a)*d,z=t.z+Math.sin(a)*d;if(astFree(x,z))best={x:x,z:z,h:a+Math.PI};}
+  if(!best)best={x:t.x+(t.r||600)+200,z:t.z,h:0};AST2.pos=best;return best;}
+function astBuild(){
+  var p=astSite();if(!p)return;var G=new THREE.Group(),F=new GB(),wh=hc(0xe9e6df),gr=hc(0x5d6166),dk=hc(0x2a2d33),bl=hc(0x1d3c6e);
+  /* piazzola e casetta-osservatorio con cupola */
+  cbox(F,0,.05,0,9,.1,7,gr);
+  cbox(F,-2.4,1.3,-1.2,3.6,2.6,3.6,wh);cbox(F,-2.4,1.0,.6,.9,2,.06,dk);
+  var dome=new THREE.Mesh(new THREE.SphereGeometry(2.05,20,10,0,Math.PI*2,0,Math.PI/2),new THREE.MeshLambertMaterial({color:0xd8dade}));dome.position.set(-2.4,2.6,-1.2);G.add(dome);
+  var slit=new THREE.Mesh(new THREE.BoxGeometry(.5,1.9,1.9),new THREE.MeshLambertMaterial({color:0x15171b}));slit.position.set(-2.4,3.35,-.55);slit.rotation.x=-.6;G.add(slit);
+  /* treppiede e telescopio puntato al cielo */
+  [[0,.35],[.3,-.18],[-.3,-.18]].forEach(function(q){cbox(F,1.6+q[0]*.9,.55,1.2+q[1]*.9,.07,1.1,.07,dk);});
+  cbox(F,1.6,1.15,1.2,.22,.22,.22,dk);G.add(F.mesh(new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true})));
+  var tube=new THREE.Group(),tb=new THREE.Mesh(new THREE.CylinderGeometry(.24,.27,2.2,14),new THREE.MeshLambertMaterial({color:0xf2f2f2}));
+  var ring=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.12,14),new THREE.MeshLambertMaterial({color:0x1d3c6e}));ring.position.y=.95;tb.add(ring);
+  tube.add(tb);tube.position.set(1.6,1.55,1.2);tube.rotation.set(-.75,0,0);G.add(tube);
+  /* cartello */
+  var cv=document.createElement('canvas');cv.width=256;cv.height=96;var c=cv.getContext('2d');c.fillStyle='#14233f';c.fillRect(0,0,256,96);c.fillStyle='#fff';c.font='bold 22px system-ui,sans-serif';c.textAlign='center';
+  c.fillText('Osservatorio Bellatrix',128,38);c.font='17px system-ui,sans-serif';c.fillStyle='#ffd86b';c.fillText('Virtual Telescope · Ceccano',128,70);
+  var sg=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.82),new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv)}));sg.position.set(3.6,1.6,3.2);sg.rotation.y=.5;G.add(sg);
+  var sp=new GB();cbox(sp,3.6,.6,3.18,.08,1.2,.08,dk);G.add(sp.mesh(new THREE.MeshLambertMaterial({vertexColors:true})));
+  /* l'astronomo */
+  var M=pwPerson({skin:0xd4a27f,top:0x22324f,bot:0x2b2f36,hair:0x5a5a5a});M.g.position.set(1.0,0,1.9);M.g.rotation.y=2.4;G.add(M.g);
+  G.rotation.y=p.h;scene.add(G);AST2.g=G;AST2.man=M;AST2.tube=tube;
+  var s=Math.sin(p.h),co=Math.cos(p.h);function w(lx,lz){return[p.x+lx*co+lz*s,p.z-lx*s+lz*co];}
+  var a=w(-2.4,-1.2),b=w(1.6,1.2);
+  var o1=[1,a[0],a[1],co,-s,2.1,2.1],o2=[1,b[0],b[1],1,0,.5,.5];o1.ast=o2.ast=1;XOBS.push(o1,o2);AST2.o=[o1,o2];AST2.ask=w(1.0,3.2);}
+function astClear(){if(AST2.g){scene.remove(AST2.g);AST2.g=null;}AST2.o.forEach(function(o){var i=XOBS.indexOf(o);if(i>=0)XOBS.splice(i,1);});AST2.o=[];}
+function astNight(){try{return sunAzEl(new Date()).el<-4;}catch(e){return true;}}
+function astUI(){
+  if($('btnAst'))return;var b=document.createElement('button');b.id='btnAst';b.className='chip hud';b.type='button';b.textContent='🔭 Chiedi di guardare nel telescopio';b.hidden=true;$('game').appendChild(b);
+  b.addEventListener('pointerdown',function(e){e.stopPropagation();});b.addEventListener('click',astAsk);
+  var d=document.createElement('div');d.id='astBox';d.hidden=true;
+  d.innerHTML='<div class="astCard" role="dialog" aria-modal="true" aria-labelledby="astT"><div class="astHead"><b id="astT">Virtual Telescope · Osservatorio Bellatrix</b><button type="button" id="astX" aria-label="Chiudi">✕</button></div>'+
+    '<p id="astSay"></p><div class="astFr" id="astFr"></div>'+
+    '<p class="astLinks"><a href="'+AST2.site+'" target="_blank" rel="noopener">virtualtelescope.eu</a> · <a href="'+AST2.live+'" target="_blank" rel="noopener">Diretta su YouTube</a></p>'+
+    '<p class="astNote">Il Virtual Telescope Project è un progetto dell\'astrofisico ciociaro Gianluca Masi, nato all\'Osservatorio Bellatrix di Ceccano. Le dirette si svolgono in occasione di eventi astronomici: se ora non c\'è una diretta, sul sito trovi il calendario e le riprese passate.</p></div>';
+  $('game').appendChild(d);['pointerdown','keydown','wheel','touchstart'].forEach(function(ev){d.addEventListener(ev,function(e){e.stopPropagation();});});
+  d.querySelector('#astX').addEventListener('click',astClose);
+  var st=document.createElement('style');st.textContent='#btnAst{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:8}#btnAst[hidden]{display:none}'+
+    '#astBox{position:absolute;inset:0;z-index:40;background:rgba(5,8,16,.72);display:flex;align-items:center;justify-content:center;padding:14px}#astBox[hidden]{display:none}'+
+    '.astCard{width:min(860px,100%);max-height:100%;overflow:auto;background:#0f1726;color:#eef2f8;border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:14px 16px;font:15px/1.45 system-ui,sans-serif}'+
+    '.astHead{display:flex;justify-content:space-between;align-items:center;gap:10px}.astHead button{background:none;border:0;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px}'+
+    '#astSay{margin:8px 0 10px;font-style:italic;color:#ffd86b}.astFr{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden}.astFr iframe{position:absolute;inset:0;width:100%;height:100%;border:0}'+
+    '.astLinks{margin:10px 0 4px}.astLinks a{color:#8fc8ff;font-weight:700}.astNote{margin:0;font-size:13px;color:#aab4c4}';
+  document.head.appendChild(st);}
+function astAsk(){
+  astUI();var night=astNight();
+  $('astSay').textContent=night?'«Buonasera! Vuole dare un\'occhiata? Il cielo stasera è dalla nostra: ecco cosa sta inquadrando il Virtual Telescope.»':
+    '«Buongiorno! Di giorno qui si guarda poco, ma il Virtual Telescope trasmette in diretta le notti più interessanti: guardi pure.»';
+  var f=$('astFr');f.innerHTML='';var i=document.createElement('iframe');i.src=AST2.yt;i.title='Diretta del Virtual Telescope Project';i.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';i.allowFullscreen=true;i.referrerPolicy='strict-origin-when-cross-origin';f.appendChild(i);
+  $('astBox').hidden=false;AST2.open=true;if(AST2.man)AST2.man.g.rotation.y=2.4+.8;}
+function astClose(){var d=$('astBox');if(d)d.hidden=true;var f=$('astFr');if(f)f.innerHTML='';AST2.open=false;}
+function astTick(dt){
+  if(world!=='net'||!NET||!LU.ready){if(AST2.g)astClear();return;}
+  var px=PW&&PW.on?PW.x:car.x,pz=PW&&PW.on?PW.z:car.z;
+  AST2.chk-=dt;if(AST2.chk<=0){AST2.chk=1;var p=astSite();if(p){var d=Math.hypot(px-p.x,pz-p.z);if(d<2500&&!AST2.g)astBuild();else if(d>3000&&AST2.g)astClear();}}
+  var b=$('btnAst');
+  if(!AST2.g){if(b)b.hidden=true;return;}
+  var p=AST2.pos;AST2.g.position.set(p.x-OX,gndY(p.x,p.z),p.z-OZ);
+  AST2.ph+=dt;if(AST2.tube)AST2.tube.rotation.y=Math.sin(AST2.ph*.07)*.4;   /* il telescopio insegue lentamente il cielo */
+  if(AST2.man)pwAnim(AST2.man,AST2.ph*.6,.04);
+  if(!b){astUI();b=$('btnAst');}
+  var foot=PW.on||WALK.on,d=Math.hypot(px-AST2.ask[0],pz-AST2.ask[1]);
+  var busy=(typeof COLL!=='undefined'&&COLL.on)||(typeof CAVE!=='undefined'&&CAVE.on)||state!=='drive'||(typeof BINO!=='undefined'&&BINO.on)||(typeof GOD!=='undefined'&&GOD.on);
+  b.hidden=busy||AST2.open||!(d<(foot?14:40)&&(foot||Math.hypot(car.vx,car.vz)<3));}
+var astTr0=trSync;trSync=function(dt){astTr0(dt);try{astTick(dt);}catch(e){}};
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
@@ -10725,7 +10809,7 @@ if(hot&&hot.ready)hot.ready(start);else start((hot&&hot.data)||{});
 
 /* per le prove automatiche */
 netTerrM.polygonOffset=true;netTerrM.polygonOffsetFactor=5;netTerrM.polygonOffsetUnits=40;
-window.__au={SKY:SKY,astMoonHor:astMoonHor,BUF:BUF,embBlock:embBlock,sbrPaint:sbrPaint,sbrFlush:sbrFlush,selSurf:function(x,z){return selSurf(x,z);},netTileF:function(a,b){return netTile(a,b);},WATLo:function(n){var L=WAT.L.filter(function(l){return l.n===n;})[0];return L?{o:L.o,h:L.h,y:L.y}:null;},netHit:netHit,netCross:netCross,NETf:function(){return NET;},netRoadY:netRoadY,inp:inp,trf:function(){return NTRF;},spc:function(){return spec;},WATR:function(){return WAT.R;},lakeSD:lakeSD,wetAt:wetAt,WATL:function(){return WAT.L.map(function(L){return [L.x0,L.z0,L.x1,L.z1,L.n||L.name||''];});},SINK:SINK,COLL:COLL,netProbe:netProbe,terrH:terrH,edOff:typeof edOff==='function'?edOff:null,NETE:function(e){return NET.E[e];},dbg:function(){return [scene,camera];},colSite:function(){return colSite();},colNG0:function(x,z){return colNG0(x,z);},gndY:function(x,z){return gndY(x,z);},WHL:WHL,carG:function(){return carG;},colStart:colStart,colStop:colStop,colPoi:colPoi,TRE:TRE,treApply:treApply,treSelectAt:treSelectAt,CAVE:CAVE,caveStart:caveStart,caveStop:caveStop,caveAt:caveAt,OBACO:OBACO,MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},PL:PL,plNew:plNew,plAll:plAll,fstArea:fstArea,plZoneSet:plZoneSet,FSTU:function(){return FST;},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
+window.__au={AST2:AST2,astSite:astSite,astAsk:astAsk,SKY:SKY,astMoonHor:astMoonHor,BUF:BUF,embBlock:embBlock,sbrPaint:sbrPaint,sbrFlush:sbrFlush,selSurf:function(x,z){return selSurf(x,z);},netTileF:function(a,b){return netTile(a,b);},WATLo:function(n){var L=WAT.L.filter(function(l){return l.n===n;})[0];return L?{o:L.o,h:L.h,y:L.y}:null;},netHit:netHit,netCross:netCross,NETf:function(){return NET;},netRoadY:netRoadY,inp:inp,trf:function(){return NTRF;},spc:function(){return spec;},WATR:function(){return WAT.R;},lakeSD:lakeSD,wetAt:wetAt,WATL:function(){return WAT.L.map(function(L){return [L.x0,L.z0,L.x1,L.z1,L.n||L.name||''];});},SINK:SINK,COLL:COLL,netProbe:netProbe,terrH:terrH,edOff:typeof edOff==='function'?edOff:null,NETE:function(e){return NET.E[e];},dbg:function(){return [scene,camera];},colSite:function(){return colSite();},colNG0:function(x,z){return colNG0(x,z);},gndY:function(x,z){return gndY(x,z);},WHL:WHL,carG:function(){return carG;},colStart:colStart,colStop:colStop,colPoi:colPoi,TRE:TRE,treApply:treApply,treSelectAt:treSelectAt,CAVE:CAVE,caveStart:caveStart,caveStop:caveStop,caveAt:caveAt,OBACO:OBACO,MATS:function(){return {flat:hwFlatM,sel:selM,terr:netTerrM};},PL:PL,plNew:plNew,plAll:plAll,fstArea:fstArea,plZoneSet:plZoneSet,FSTU:function(){return FST;},bedAt:bedAt,bedTarget:bedTarget,bedCopy:bedCopy,bedPaste:bedPaste,UFO:UFO,ufoStart:ufoStart,CRX:CRX,pwGreet:pwGreet,pwCanStep:pwCanStep,pwMove:pwMove,PWBD:PWBD,pwBoardReset:pwBoardReset,pwNextFeast:pwNextFeast,edTargets:edTargets,CDSGIMP:function(){return CDSG_IMP;},setImp:function(v){CDSG_IMP=v;},PW:PW,pwStart:pwStart,pwStop:pwStop,pwSigns:pwSigns,WND:WND,PART:function(){return PART;},hornReact:function(){hornReact();},hornState:function(){return !!HORN;},FST:FST,FESTE:FESTE,fstSaint:fstSaint,fstMatch:fstMatch,STEMD:function(){return STEMD;},BATS:BATS,batStart:batStart,batPoi:batPoi,ED:ED,GOD:GOD,godStart:godStart,godStop:godStop,selSurf:function(x,z){return selSurf(x,z);},selH:function(x,z){return selH(x,z);},simAuto:function(dt){scAutoTick(dt);ntrTick(dt);},netHitPt:function(x,z,r){var y=car.y;car.y=gndY(x,z);var h=netHit(x,z,r);car.y=y;return h;},tilesNow:function(){return netTiles;},camNow:function(){return camera;},scnNow:function(){return scene;},carGNow:function(){return carG;},PROP:PROP,propOpen:propOpen,mod3Refresh:mod3Refresh,MOD3:MOD3,p3Kind:p3Kind,LMP:LMP,lmpLoad:lmpLoad,lmpNear:lmpNear,walkPush:walkPush,XOBS:XOBS,NTRF:NTRF,ntrAt:ntrAt,gndY:gndY,mobPick:mobPick,mobMesh:mobMesh,EV:EV,FT:FT,cam3:camera,scn:scene,ftStart:ftStart,evWisps:evWisps,evOrbs:evOrbs,evWoman:evWoman,evWhisper:evWhisper,evWitch:evWitch,evRustle:evRustle,evBirds:evBirds,evBall:evBall,evTent:evTent,evHare:evHare,evFox:evFox,evAlien:evAlien,bldOnTrail:bldOnTrail,MOB:MOB,FCAM:function(){return FCAM;},camsFixed:camsFixed,mobTick:mobTick,PAT:PAT,patLose:patLose,patOver:patOver,QZ:QZ,quizStart:quizStart,quizAns:quizAns,QPAT:QPAT,JOY:JOY,destAt:destAt,NCAM:NCAM,inWater:inWater,roadRescue:roadRescue,OFFR:OFFR,WREC:WREC,CFG:CFG,IP:IP,PRX:PRX,bldBase:bldBase,bldHit:bldHit,chNear:chNear,FW:FW,fwTick:fwTick,venLoad:venLoad,lmTile:lmTile,LMF:LMF,WAT:WAT,watNear:watNear,wOn:wOn,watGround:watGround,blCry:blCry,AC:function(){return AC;},chPoi:chPoi,nChurch2:nChurch2,demH:demH,MUS:MUS,bldPlace:bldPlace,bldFill:bldFill,GB:GB,rng:rng,netFree:netFree,BLDdv:function(){return BLD;},EGGS:EGGS,eggPlace:eggPlace,MF:MF,NW:NW,nwSpawnHikers:nwSpawnHikers,nwSpawnFire:nwSpawnFire,nwSpawnEyes:nwSpawnEyes,nwHowl:nwHowl,TRL:TRL,WALK:WALK,BINO:BINO,walkStart:walkStart,walkStop:walkStop,binoStart:binoStart,binoStop:binoStop,trBelView:trBelView,trTopView:trTopView,trStopOf:trStopOf,trAsk:trAsk,terrH:terrH,trOn:trOn,trG:trG,binoG:binoG,hornOn:hornOn,hornOff:hornOff,ext:function(){return ext;},sunDir:sunDir,arrGo:arrGo,cam:function(){return camera;},scG:scG,ac:function(){return AC&&AC.state;},au:function(){return !!au;},BLD:BLD,NTR:NTRF,ntrSpawn:ntrSpawn,LU:LU,luAt:luAt,scNear:scNear,aL:function(){applyLight();},WX:WX,SEAS:SEAS,LIT:LIT,litStart:litStart,spawnBirds:spawnBirds,spawnFox:spawnFox,spawnOwl:spawnOwl,wxManual:wxManual,wxAfter:wxAfter,natRebuild:natRebuild,skyEv:skyEv,FAUNA:FAUNA,scAutoSet:scAutoSet,scSkip:scSkip,tolls:function(){return TOLL;},netBR:function(){return NETBR;},netProbeY:netProbeY,venLoad:venLoad,fw:function(){return FW;},netSync:netSync,netFree:netFree,netTile:netTile,netY:netY,netGround:netGround,SC:SC,scGo:scGo,scArrive:scArrive,car:car,MP:MP,BM:BM,bmOpen:bmOpen,bmPick:bmPick,bmS:bmS,NET:function(){return NET;},nrun:nrun,netProbe:netProbe,netNext:netNext,netTiles:function(){return netTiles;},mirrorPass:mirrorPass,mirrorCam:mirrorCam,trafSpawn:trafSpawn,inp:inp,race:race,step:step,setGear:setGear,spec:function(){return spec;},hit:hit,hwAt:hwAt,hwProj:hwProj,placeHw:placeHw,HWL:function(){return HWL;},auto:auto,autoSet:autoSet,look:look,saveRun:saveRun,loadSave:loadSave,bio:function(){return bioCur;},navDraw:navDraw,navCv:navCv,traf:traf,trafTick:trafTick,skyTick:skyTick,sky:{clear:skyClear,ev:skyEv,plane:spawnPlane,star:spawnStar,ghost:spawnGhost,ufo:spawnUfo,hero:spawnHero},tick:function(dt){readInput(dt);step(dt);},sunElev:sunElev,opts:opts,applyLight:applyLight,LGT:LGT,finesTot:finesTot,world:function(){return world;}};
 })();
 </script>
 
