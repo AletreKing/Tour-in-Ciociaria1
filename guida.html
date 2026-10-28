@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 18:36</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 18:57</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -10546,6 +10546,36 @@ window.addEventListener('pointerup',function(e){if(!SBR.on||!SBR.down)return;SBR
 var sbrTr0=trSync;trSync=function(dt){sbrTr0(dt);if(!SBR.on||typeof GOD==='undefined'||!GOD.on){if(SBR.ring)SBR.ring.visible=false;if(SBR.on&&(typeof GOD==='undefined'||!GOD.on)){SBR.on=false;sbrFlush();}return;}
   if(!SBR.ring){SBR.ring=new THREE.Mesh(new THREE.RingGeometry(.92,1,40),new THREE.MeshBasicMaterial({color:0xffb020,transparent:true,opacity:.9,depthTest:false,side:THREE.DoubleSide}));SBR.ring.rotation.x=-Math.PI/2;SBR.ring.renderOrder=9;scene.add(SBR.ring);}
   var p=ED.mx!=null?edPickRay({clientX:ED.mx,clientY:ED.my}):null;SBR.ring.visible=!!p;if(p){SBR.ring.position.set(p.x-OX,p.y+.15,p.z-OZ);SBR.ring.scale.set(SBR.r,SBR.r,1);SBR.ring.material.color.setHex(SBR.down&&SBR.erase?0xff4030:0xffb020);}};
+
+/* ================= BUSSOLA E PAESE: sempre visibili (auto, a piedi, sentiero, grotta, God mode) ================= */
+var CMP={el:null,rose:null,txt:null,t:0,v:new THREE.Vector3()};
+function cmpBuild(){
+  var g=$('game');if(!g)return;var el=document.createElement('div');el.id='hudCmp';
+  el.innerHTML='<svg viewBox="-20 -20 40 40" width="34" height="34" aria-hidden="true"><circle r="18.5" fill="rgba(12,17,26,.72)" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/><g id="cmpRose"><path d="M0,-14 L4.2,0 L0,2 L-4.2,0Z" fill="#e8463a"/><path d="M0,14 L4.2,0 L0,-2 L-4.2,0Z" fill="#e9e5da"/><text x="0" y="-15.2" text-anchor="middle" font-size="7.5" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">N</text></g></svg><span id="cmpTown"></span>';
+  g.appendChild(el);
+  var st=document.createElement('style');st.textContent='#hudCmp{position:absolute;z-index:7;display:flex;align-items:center;gap:6px;pointer-events:none;left:calc(16px + env(safe-area-inset-left,0px));top:120px}#hudCmp[hidden]{display:none}#hudCmp span{font:700 13px/1 var(--font-d,system-ui);color:#fff;background:rgba(12,17,26,.72);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 10px;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis}#hudCmp span:empty{display:none}#game.god>#hudCmp{visibility:visible!important}';
+  document.head.appendChild(st);CMP.el=el;CMP.rose=el.querySelector('#cmpRose');CMP.txt=el.querySelector('#cmpTown');}
+function cmpPlace(){   /* sotto la mappina e la scheda della strada, in alto a sinistra */
+  var n=$('nav'),g=$('game');if(!n||!g)return;var R=n.getBoundingClientRect(),G=g.getBoundingClientRect();var top=(R.height>0?R.bottom:G.top+12)-G.top+8;CMP.el.style.top=Math.round(top)+'px';}
+function cmpTown(x,z){
+  if(!NET||!NET.D)return'';var best=null,bd=1e18;NET.D.forEach(function(d){var q=(d.x-x)*(d.x-x)+(d.z-z)*(d.z-z);if(q<bd){bd=q;best=d;}});if(!best)return'';
+  var dc=Math.sqrt(bd),fr='';
+  NET.towns.forEach(function(t){if(t.c<=1&&t.n!==best.n){var d=Math.hypot(t.x-x,t.z-z);if(d<t.r&&(!fr||d<fr.d))fr={n:t.n,d:d};}});
+  if(fr)return fr.n+' · '+best.n;
+  return dc>5000?'presso '+best.n:best.n;}
+function cmpTick(dt){
+  if(!CMP.el){cmpBuild();if(!CMP.el)return;}
+  var on=state==='drive'||(typeof GOD!=='undefined'&&GOD.on);CMP.el.hidden=!on||world!=='net';if(CMP.el.hidden)return;
+  camera.getWorldDirection(CMP.v);var b=Math.atan2(-CMP.v.x,CMP.v.z);   /* x verso ovest, z verso nord */
+  if(typeof CAVE!=='undefined'&&CAVE.on&&typeof CAVE.yaw==='number')b=Math.atan2(-Math.sin(CAVE.yaw),Math.cos(CAVE.yaw));
+  CMP.rose.setAttribute('transform','rotate('+(-b*180/Math.PI).toFixed(1)+')');
+  CMP.t-=dt;if(CMP.t>0)return;CMP.t=.5;cmpPlace();
+  var inCave=(typeof CAVE!=='undefined'&&CAVE.on)||(typeof COLL!=='undefined'&&COLL.on),px,pz;
+  if(typeof GOD!=='undefined'&&GOD.on){px=camera.position.x+OX;pz=camera.position.z+OZ;}
+  else if(inCave||(typeof PW!=='undefined'&&PW.on)){px=(typeof PW!=='undefined'&&PW.on&&!inCave)?PW.x:car.x;pz=(typeof PW!=='undefined'&&PW.on&&!inCave)?PW.z:car.z;}
+  else{px=car.x;pz=car.z;}
+  var s=cmpTown(px,pz);if(s!==CMP.last){CMP.last=s;CMP.txt.textContent=s;}}
+var cmpTr0=trSync;trSync=function(dt){cmpTr0(dt);try{cmpTick(dt);}catch(e){}};
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
