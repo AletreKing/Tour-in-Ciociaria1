@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 28.10 23:15</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 29.10 14:41</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -1377,6 +1377,7 @@ function netLoad(){
   demLoad();
   var NY=new Float32Array(nn),Y0=new Float32Array(PE.length),Y1=new Float32Array(PE.length);
   for(k=0;k<nn;k++)NY[k]=demH(nx[k],nz[k]);
+  for(var itN=0;itN<12;itN++){var chN=0;E.forEach(function(e){if(e.a===e.b||e.br||e.tu)return;var L=e.len||1;if(L>80)return;var dy=NY[e.b]-NY[e.a],mx=.15*L;if(Math.abs(dy)<=mx)return;var f=(Math.abs(dy)-mx)/2*(dy>0?1:-1);NY[e.a]+=f;NY[e.b]-=f;chN++;});if(!chN)break;}
   E.forEach(function(e){
     var a=e.p0,n=e.p1-a;if(n<=0)return;
     var hs=new Float32Array(n+1),ss=new Float32Array(n+1),sm=new Float32Array(n+1),q,r,W=e.cls<=1?280:e.link?110:e.cls>=4?35:e.cls>=3?80:150,L=e.len||1;
@@ -1425,7 +1426,7 @@ function netLoad(){
         var ctl=[[0,0]];list.forEach(function(v){var last=ctl[ctl.length-1];if(ctl.length>1&&v[0]-last[0]<12){if(Math.abs(v[1])>Math.abs(last[1]))last[1]=v[1];}else ctl.push([v[0],v[1]]);});
         ctl.push([L,0]);
         /* rampa dolce: la correzione si spegne in non meno di 60 m */
-        function at(sv){var best=0;for(var m=1;m<ctl.length-1;m++){var d=Math.abs(sv-ctl[m][0]),w=Math.max(0,1-d/Math.max(60,Math.abs(ctl[m][1])*25));var v=ctl[m][1]*w;var ed=Math.min(sv,L-sv),ce=Math.min(ctl[m][0],L-ctl[m][0]);if(ce>1)v*=Math.min(1,ed/ce);if(Math.abs(v)>Math.abs(best))best=v;}return best;}
+        function at(sv){var best=0;for(var m=1;m<ctl.length-1;m++){var d=Math.abs(sv-ctl[m][0]),w=Math.max(0,1-d/Math.max(60,Math.abs(ctl[m][1])*25));var v=ctl[m][1]*w;var ed=Math.min(sv,L-sv),ce=Math.min(ctl[m][0],L-ctl[m][0]);if(ce>1)v*=Math.min(1,ed/ce);v=Math.max(-ed*.1,Math.min(ed*.1,v));if(Math.abs(v)>Math.abs(best))best=v;}return best;}
         for(var pp=e.p0;pp<e.p1;pp++){Y0[pp]+=at(S0[pp]);Y1[pp]+=at(S1[pp]);}
       });
     }
