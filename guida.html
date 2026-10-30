@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 30.10 16:27</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 30.10 19:42</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8271,13 +8271,13 @@ function p3Kind(q){
   if(/grott|cuccetto|valle dell.inferno/i.test(n))return 'cave';
   if(/belvedere|bel vedere|panoram|^vista|balcone/i.test(n))return 'view';
   if(/^croce/i.test(n))return 'cross';
-  if(/madonn/i.test(n)&&!/^(chiesa|santuario|cappella|basilica|collegiata)/i.test(n))return 'statue';
+  if(/madonn/i.test(n)&&!/^(chiesa|santuario|cappella|basilica|collegiata|area)/i.test(n)&&q.c!=='fede'&&q.c!=='arch')return 'statue';
   if(/ponte/i.test(n))return 'bridge';
   if(/sorgent|pozzo|fonte/i.test(n))return 'spring';
   if(/^aia/i.test(n))return 'aia';
   if(/trono|peschio|rocca altiera|^rava/i.test(n))return 'rock';
   if(/testamento|fasti|bocca del lupo/i.test(n))return 'stele';
-  if(/^(monte|colle|pizzo|serra|monna|montecassino)/i.test(n))return 'peak';
+  if(/^(monte|colle|pizzo|serra|monna)\b|^montecassino/i.test(n))return 'peak';
   if(q.c==='muse'||q.c==='cast'||q.c==='alt')return 'museum';
   if(q.c==='fede')return 'chapel';
   if(q.c==='nat')return 'board';
@@ -9683,9 +9683,10 @@ function crxTick(dt){
   var d=LGT.dark||0,on=clamp((d-.3)/.3,0,1);CRX.on=on;CRXM.opacity=on;CRXH.opacity=on*.85;CRX.g.visible=on>0;if(!on)return;
   var cp=camera.position,far=camera.far*.9;
   CRX.list.forEach(function(c){
-    if(!c.pos){var p=c.k==='peak'?p3Peak(c.q):p3Place(c.q);c.pos={x:p.x,z:p.z,y:gndY(p.x,p.z)};}
+    if(!c.pos){var p=c.k==='peak'?p3Peak(c.q):p3Place(c.q);c.pos={x:p.x,z:p.z,y:Math.max(demH(p.x,p.z),gndY(p.x,p.z)),t:0};}
+    if(c.pos.t<=0){var cdd=Math.hypot(c.pos.x-OX-cp.x,c.pos.z-OZ-cp.z);if(cdd<2500){var gy=gndY(c.pos.x,c.pos.z);if(isFinite(gy))c.pos.y=gy;c.pos.t=3;}else c.pos.t=5;}else c.pos.t-=dt;
     var O=typeof edOff==='function'?edOff(c.q):null,x=c.pos.x+(O?+O.dx||0:0),z=c.pos.z+(O?+O.dz||0:0),y=c.pos.y+(O?+O.dy||0:0)+.8;
-    var rx=x-OX-cp.x,ry=y-cp.y,rz=z-OZ-cp.z,D=Math.sqrt(rx*rx+ry*ry+rz*rz);if(D>22000){c.g.visible=false;return;}
+    var rx=x-OX-cp.x,ry=y-cp.y,rz=z-OZ-cp.z,D=Math.sqrt(rx*rx+ry*ry+rz*rz);if(D>16500){c.g.visible=false;return;}
     var boost=clamp(D/350,1,14),k=D>far?far/D:1;   /* lontano: più grande, perché resti una croce di luce sul profilo del monte */
     c.g.visible=true;c.g.position.set(cp.x+rx*k,cp.y+ry*k,cp.z+rz*k);c.g.scale.setScalar(boost*k);c.g.rotation.y=Math.atan2(rx,rz);
   });
