@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 02.11 13:05</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 02.11 17:40</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -2133,7 +2133,7 @@ function netTile(tx,tz){
           if(netUnder(ex+ox,ez+oz,cy2,P.e[p],2.5))overRoad=true;
           if(drop>.5){need=true;w=twWall?1.3:Math.min(drop*.9+1,16);
             for(var it=1;it<=6;it++){var dd=w*it/6;if(netOnOther(ex+vx*sk*dd+ox,ez+vz*sk*dd+oz,P.e[p],.8)||netUnder(ex+vx*sk*dd+ox,ez+vz*sk*dd+oz,cy2,P.e[p],.6)){w=Math.max(0,dd-w/6-.6);break;}}
-            if(w<1.2){w=0;need=false;}else if(twWall)w=.15;}
+            if(w<1.2){w=0;need=false;}else w=.15;}
           var fx=ex+vx*sk*w,fz=ez+vz*sk*w,fy=w?Math.min(netGround(fx+ox,fz+oz),terrH(fx+ox,fz+oz),cy2)-1:cy2;
           A.push([ex,cy2,ez],[fx,fy,fz]);
         }
@@ -2141,7 +2141,7 @@ function netTile(tx,tz){
           F.quad([A[0],A[2],[A[2][0],A[2][1]-1.5,A[2][2]],[A[0][0],A[0][1]-1.5,A[0][2]]],[ax*sk,0,az*sk],N4,HN.deck);
           if(sk>0)F.quad([[x0+ax*(h+1.8),py0-1.55,z0+az*(h+1.8)],[x1+bx*(h+1.8),py1-1.55,z1+bz*(h+1.8)],[x1-bx*(h+1.8),py1-1.55,z1-bz*(h+1.8)],[x0-ax*(h+1.8),py0-1.55,z0-az*(h+1.8)]],[0,-1,0],N4,HN.deckU);
         }
-        else if(need)F.quad([A[0],A[2],A[3],A[1]],twWall?[ax*sk,0,az*sk]:[ax*sk*.35,.94,az*sk*.35],N4,twWall?HN.stoneWall:HN.bank);
+        else if(need)F.quad([A[0],A[2],A[3],A[1]],[ax*sk,0,az*sk],N4,twWall?HN.stoneWall:HN.bank);
       }
       if(e.br){var pmx=(x0+x1)/2+ox,pmz=(z0+z1)/2+oz,pmy=(py0+py1)/2,gyb=Math.min(netGround(pmx,pmz),terrH(pmx,pmz));
         if(pmy-gyb>2.5&&!netOnOther(pmx,pmz,P.e[p],1.5)){var pw=Math.min(h*1.4,6);cbox(F,pmx-ox,(gyb-1+pmy-1.5)/2,pmz-oz,1.3,pmy-1.5-gyb+1,1.3,HN.deck);if(h>3.5){cbox(F,pmx-ox+az*pw*.5,(gyb-1+pmy-1.5)/2,pmz-oz-ax*pw*.5,1.1,pmy-1.5-gyb+1,1.1,HN.deck);}}}
@@ -6670,10 +6670,10 @@ function selCell(B,ox,oz,x0,z0,S,up,N0,c0){
 }
 /* altezza del selciato: sul terreno; vicino a una strada scende appena sotto il suo manto e ne segue la pendenza; niente sopra ponti, gallerie, scarpate */
 function selH(x,z){
-  var kt=townK(x,z);if(kt>.99){var pr0=netProbe(x,z);if(pr0){var e0=NET.E[pr0.e];if(e0.br||e0.tu){if(pr0.d-e0.half<4.5)return NaN;}else if(pr0.d-e0.half<=1.8)return netRoadY(pr0)-.12;}var ts0=townSurf(x,z);if(isFinite(ts0))return Math.min(ts0-.12,terrH(x,z)+.2);}
+  var kt=townK(x,z);if(kt>.99){var pr0=netProbe(x,z);if(pr0){var e0=NET.E[pr0.e];if(e0.br||e0.tu){if(pr0.d-e0.half<4.5)return NaN;}else if(pr0.d-e0.half<=1.8){var ry0=netRoadY(pr0)-.12;return Math.abs(ry0-terrH(x,z))>.6?NaN:ry0;}}var ts0=townSurf(x,z);if(isFinite(ts0))return Math.min(ts0-.12,terrH(x,z)+.2);}
   var t=terrH(x,z),pr=netProbe(x,z);if(!pr)return t;var e=NET.E[pr.e],d=pr.d-e.half;if(d>9)return t;
   if(e.br||e.tu)return NaN;var ry=netRoadY(pr)-.12,dh=Math.abs(ry-t),W=Math.max(2.7,dh*1.2);if(d>1.8+W)return t;
-  if(dh>6)return NaN;if(d<=1.8)return ry;
+  if(dh>.6)return NaN;if(d<=1.8)return ry;
   var f=(d-1.8)/W;f=f*f*(3-2*f);return ry+(t-ry)*f;
 }
 /* per ogni tassello: il suolo dei centri storici diventa selciato, seguendo esattamente il terreno */
