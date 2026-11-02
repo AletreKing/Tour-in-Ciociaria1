@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 02.11 19:39</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 02.11 19:47</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -10886,7 +10886,19 @@ function netTunFix(){
     cov.sort(function(a,b){return a-b;});var med=cov.length?cov[Math.floor(cov.length/2)]:0;
     if(e.len<200&&med<3){e.tu=false;e.wasTu=true;n++;}});
   NET.tunFixed=n;}
-var watNL0=netLoad;netLoad=function(){var r=watNL0.apply(this,arguments);try{netTunFix();if(WAT.ready&&!WAT.rf&&watRoadFix()&&world==='net'&&Object.keys(netTiles).length){netClear();netSync(true);}}catch(e){}return r;};
+/* pendenze impossibili lungo una strada (rampe del 40-50% create dagli aggiustamenti tra vie vicine): si spianano tenendo fermi gli incroci */
+function netGradeFix(){
+  if(!NET||NET.gradeFix)return;NET.gradeFix=1;var P=NET.P,nfix=0;
+  NET.E.forEach(function(e){if(e.br||e.tu)return;var a=e.p0,n=e.p1-a;if(n<2)return;
+    var g=e.cls<=1?.1:e.cls<=3?.2:.36,y=[],s=[];for(var q=0;q<n;q++){y.push(P.y0[a+q]);s.push(P.s0[a+q]);}y.push(P.y1[a+n-1]);s.push(P.s1[a+n-1]);
+    var bad=false;for(q=1;q<=n;q++)if(Math.abs(y[q]-y[q-1])>g*(s[q]-s[q-1])+.05){bad=true;break;}if(!bad)return;
+    var y0=y[0],yn=y[n],L=s[n]-s[0]||1;
+    if(Math.abs(yn-y0)>g*L){for(q=1;q<n;q++)y[q]=y0+(yn-y0)*(s[q]-s[0])/L;}   /* incroci troppo diversi: rampa uniforme */
+    else for(var it=0;it<4;it++){for(q=1;q<n;q++){var d=g*(s[q]-s[q-1]);y[q]=Math.max(y[q-1]-d,Math.min(y[q-1]+d,y[q]));}
+      for(q=n-1;q>=1;q--){var d2=g*(s[q+1]-s[q]);y[q]=Math.max(y[q+1]-d2,Math.min(y[q+1]+d2,y[q]));}}
+    for(q=0;q<n;q++){P.y0[a+q]=y[q];P.y1[a+q]=y[q+1];}nfix++;});
+  NET.gradeFixed=nfix;}
+var watNL0=netLoad;netLoad=function(){var r=watNL0.apply(this,arguments);try{netTunFix();netGradeFix();if(WAT.ready&&!WAT.rf&&watRoadFix()&&world==='net'&&Object.keys(netTiles).length){netClear();netSync(true);}}catch(e){}return r;};
 /* audio: un valore non numerico (rarissimo, da distanze nulle) non deve mai bloccare un suono */
 (function(){try{var d=Object.getOwnPropertyDescriptor(AudioParam.prototype,'value');if(d&&d.set)Object.defineProperty(AudioParam.prototype,'value',{get:d.get,set:function(v){if(isFinite(v))d.set.call(this,v);},configurable:true});}catch(e){}})();
 /* a piedi non si passa sotto una strada che sta più in alto (i muri di sostegno dei paesi in collina non si attraversano) */
