@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 02.11 19:47</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 03.11 01:14</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -1399,7 +1399,7 @@ function netLoad(){
       if(Math.abs(den)>1e-9){var t=((cx-ax)*(dz-cz)-(cz-az)*(dx-cx))/den,u=((cx-ax)*(bz-az)-(cz-az)*(bx-ax))/den;if(t>=0&&t<=1&&u>=0&&u<=1)return[0,t,u];}
       var c=[],r;r=cl(ax,az,cx,cz,dx,dz);c.push([r[0],0,r[1]]);r=cl(bx,bz,cx,cz,dx,dz);c.push([r[0],1,r[1]]);r=cl(cx,cz,ax,az,bx,bz);c.push([r[0],r[1],0]);r=cl(dx,dz,ax,az,bx,bz);c.push([r[0],r[1],1]);
       c.sort(function(a,b){return a[0]-b[0];});return c[0];}
-    var pairs=[],q,o;
+    var pairs=[],q,o,TWL=raw.towns.filter(function(t){return t[1]>=1;});function TWN(x,z){for(var ti=0;ti<TWL.length;ti++){var t=TWL[ti];if(Math.hypot(x-t[2],z-t[3])<NTR[t[1]])return true;}return false;}
     for(q=0;q<PE.length;q++){var ei=PE[q],e=E[ei];if(e.tu)continue;
       var gx=Math.floor((X0[q]+X1[q])/2/NG),gz=Math.floor((Z0[q]+Z1[q])/2/NG);
       for(var i2=-1;i2<=1;i2++)for(var j2=-1;j2<=1;j2++){var ga=grid.get(nk(gx+i2,gz+j2));if(!ga)continue;
@@ -1407,7 +1407,7 @@ function netLoad(){
           var r=segd(X0[q],Z0[q],X1[q],Z1[q],X0[o],Z0[o],X1[o],Z1[o]),gap=r[0]-(e.half+f.half);if(gap>5)continue;if((e.br||f.br)&&r[0]===0)continue;   /* il ponte che scavalca: ci pensa il passo dopo */
           var sh=-1;[e.a,e.b].forEach(function(nd){if(nd===f.a||nd===f.b)sh=nd;});
           if(sh>=0){var px=X0[q]+(X1[q]-X0[q])*r[1],pz=Z0[q]+(Z1[q]-Z0[q])*r[1];if(Math.hypot(nx[sh]-px,nz[sh]-pz)<(e.half+f.half)*1.6+10)continue;}
-          pairs.push([q,o,r[1],r[2],Math.max(0,gap)]);}}}
+          if(e.cls>=3&&f.cls>=3&&!e.link&&!f.link&&TWN((X0[q]+X1[q])/2,(Z0[q]+Z1[q])/2))continue;pairs.push([q,o,r[1],r[2],Math.max(0,gap)]);}}}
     if(!pairs.length)return;
     function yA(pp,t){return Y0[pp]+(Y1[pp]-Y0[pp])*t;}
     var fixed=0;
