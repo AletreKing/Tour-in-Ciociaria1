@@ -421,7 +421,7 @@ body.radioOk #btnRadio{display:inline-flex!important}
       </fieldset>
       <fieldset class="cars" id="modes"></fieldset>
       <fieldset class="cars" id="cars"><legend>Scegli l'auto</legend></fieldset>
-      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 04.11 00:47</span></div>
+      <div class="startrow"><button class="go" id="btnGo" type="button">Accendi il motore</button><button class="chip" id="btnCont" type="button" hidden></button><button class="chip" id="btnPass" type="button">Il mio passaporto</button><a class="chip" href="mappa.html">← Mappa dei luoghi</a><span id="verTag" style="align-self:center;font-size:11px;opacity:.55">versione 04.11 01:24</span></div>
       <fieldset id="mpBox"><legend>Gara a due in rete</legend>
         <div class="mprow" id="mpIdle">
           <button class="chip" id="btnMpHost" type="button">Crea una gara</button><span class="or">oppure</span>
@@ -8363,12 +8363,15 @@ function caveBuild(g,B,G,q,x,z,y,ox,oz,obs,r){
   obs.push([1,fx+ux*(D*.5),fz+uz*(D*.5),tx,tz,R+1,D*.55]);
   [-1,1].forEach(function(sd){obs.push([1,fx+tx*sd*(R+1+7)+ux*1.5,fz+tz*sd*(R+1+7)+uz*1.5,tx,tz,7,2.2]);});   /* la parete non si attraversa */
   /* il torrente entra nella grotta: dal punto in cui finisce, un letto d'acqua fino in fondo all'antro */
-  if(typeof WAT!=='undefined'&&WAT.ready&&typeof watM!=='undefined'){var rv=null;WAT.R.forEach(function(Rr){var n=Rr.x.length;if(n<2)return;for(var k=0;k<n;k++){var d=Math.hypot(Rr.x[k]-fx,Rr.z[k]-fz);if(d<220&&(!rv||d<rv.d))rv={d:d,x:Rr.x[k],z:Rr.z[k],y:Rr.y[k],w:Math.max(1.6,Rr.half*2)};}});
-    if(rv){var path=[[rv.x,rv.z]],mx=fx-ux*2.5,mz=fz-uz*2.5,L1=Math.hypot(mx-rv.x,mz-rv.z);if(L1>1)path.push([mx,mz]);path.push([fx+ux*(D-1),fz+uz*(D-1)]);
+  if(typeof WAT!=='undefined'&&WAT.ready&&typeof watM!=='undefined'){var rv=null;WAT.R.forEach(function(Rr){var n=Rr.x.length;if(n<2)return;for(var k=0;k<n;k++){var d=Math.hypot(Rr.x[k]-fx,Rr.z[k]-fz);if(d<220&&(!rv||d<rv.d))rv={d:d,x:Rr.x[k],z:Rr.z[k],y:Rr.y[k],w:Math.max(1.6,Rr.half*2),R:Rr,k:k};}});
+    if(rv){var mx=fx-ux*2.5,mz=fz-uz*2.5,path=[[fx+ux*(D-1),fz+uz*(D-1)]],L1=Math.hypot(mx-rv.x,mz-rv.z);if(L1>1)path.push([mx,mz]);path.push([rv.x,rv.z]);
+      /* l'acqua esce dalla grotta (il verso del disegno è quello della corrente) e accompagna il fiume per i primi metri, a filo del terreno: nessun buco */
+      var Rr=rv.R,dir=(rv.k<Rr.x.length-1&&Math.hypot(Rr.x[rv.k+1]-fx,Rr.z[rv.k+1]-fz)>rv.d)?1:-1;
+      for(var kk=rv.k+dir;kk>=0&&kk<Rr.x.length;kk+=dir){path.push([Rr.x[kk],Rr.z[kk]]);if(Math.hypot(Rr.x[kk]-fx,Rr.z[kk]-fz)>70)break;}
       var WP=[],WU=[],WI=[],vv=0,nv=0;
       for(var pi=0;pi<path.length-1;pi++){var A=path[pi],Bq=path[pi+1],Ls=Math.hypot(Bq[0]-A[0],Bq[1]-A[1])||1,m=Math.max(1,Math.ceil(Ls/2)),dx=(Bq[0]-A[0])/Ls,dz=(Bq[1]-A[1])/Ls;
         for(var k=(pi?1:0);k<=m;k++){var f=k/m,x=A[0]+(Bq[0]-A[0])*f,z=A[1]+(Bq[1]-A[1])*f,inside=((x-fx)*ux+(z-fz)*uz)>-.5,hw2=Math.min(rv.w,R*1.4)/2,
-            yw=inside?gy+.08:Math.max(gndY(x,z),Math.min(rv.y,gndY(x,z)+1))+.08;
+            yw=inside?gy+.08:gndY(x,z)+.1;
           if(nv)vv+=2;var nx2=-dz,nz2=dx;WP.push(x-nx2*hw2-ox,yw,z-nz2*hw2-oz,x+nx2*hw2-ox,yw,z+nz2*hw2-oz);WU.push(0,(pi*1000+k*2)/3,hw2/1.5,(pi*1000+k*2)/3);
           if(nv)WI.push(nv-2,nv,nv-1,nv-1,nv,nv+1);nv+=2;}}
       var wg2=new THREE.BufferGeometry();wg2.setAttribute('position',new THREE.Float32BufferAttribute(WP,3));wg2.setAttribute('uv',new THREE.Float32BufferAttribute(WU,2));wg2.setIndex(WI);wg2.computeVertexNormals();
