@@ -107,8 +107,8 @@
     ]
    },
    "Grotte di Collepardo|Collepardo": {
-    "dx": -35.36,
-    "dz": 6.7,
+    "dx": -35.54,
+    "dz": 6.61,
     "dy": 3,
     "rot": -360
    },
@@ -171,5 +171,5 @@
   }
  },
  "schede": {},
- "aggiornato": "2026-11-03T23:22:27.590Z"
+ "aggiornato": "2026-11-03T23:23:03.936Z"
 }
