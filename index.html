@@ -2458,7 +2458,7 @@ function netRace(){
   if(v>race.vmax)race.vmax=v;
   for(k=0;k<NET.D.length;k++){var d=NET.D[k];if(!nrun.seen[k]&&Math.abs(d.x-car.x)<700&&Math.abs(d.z-car.z)<700&&Math.hypot(d.x-car.x,d.z-car.z)<600){nrun.seen[k]=1;sayTown({n:d.n,t:NTXT[d.n]||''});}}
   var R=nrun.route,tp=nrun.dst&&nrun.dst.poi;
-  if((R&&R.len-nrun.done<30&&nrun.off<40)||(tp&&Math.hypot(tp.x-car.x,tp.z-car.z)<150)){scArrive();return;}
+  if((R&&R.len-nrun.done<30&&nrun.off<40)||(tp&&Math.hypot(poiW(tp)[0]-car.x,poiW(tp)[1]-car.z)<150)){scArrive();return;}
   if(false){
     var D=NET.D,key='net_'+D[nrun.from].n+'_'+nrun.dst.n+'_'+spec.id,rec=nrun.to>=0&&(race.best==null||race.time<race.best);
     if(rec){race.best=race.time;store.set(key,race.time);}
@@ -2667,9 +2667,13 @@ function scLoad(){
   SC.perc=raw.percorsi.map(function(pc){return{id:pc.id,titolo:pc.titolo,tema:pc.tema,intro:pc.intro,tappe:pc.tappe.map(function(k){return SC.byKey[k];}).filter(Boolean),quiz:pc.quiz||[]};});
   try{SC.passport=store.get('passport',{})||{};}catch(e){SC.passport={};}
 }
+function poiW(p){
+  if(p.mxFix&&p.mx!=null)return[p.mx,p.mz];
+  if(p.x==null||p.id<0)return[p.x,p.z];var o=typeof edOff==='function'?edOff(p):null;if(!o||!(+o.dx||+o.dz))return[p.x,p.z];
+  var k=(p.p3||(typeof p3Kind==='function'?p3Kind(p):''))==='cave'?2:1;return[p.x+k*(+o.dx||0),p.z+k*(+o.dz||0)];}   /* la grotta applica lo spostamento due volte: si segue quello che si vede */
 function scNode(p){
   if(p.node>=0)return p.node;
-  var b=-1,bd=1e18;for(var i=0;i<NET.nx.length;i++){if(!NET.main[i])continue;var d=(NET.nx[i]-p.x)*(NET.nx[i]-p.x)+(NET.nz[i]-p.z)*(NET.nz[i]-p.z);if(d<bd){bd=d;b=i;}}
+  var b=-1,bd=1e18;for(var i=0;i<NET.nx.length;i++){if(!NET.main[i])continue;var W=poiW(p),d=(NET.nx[i]-W[0])*(NET.nx[i]-W[0])+(NET.nz[i]-W[1])*(NET.nz[i]-W[1]);if(d<bd){bd=d;b=i;}}
   p.node=b;return b;
 }
 /* arrivo dalla mappa: #vai-N (verso un luogo) o #perc-ID (un percorso) */
@@ -2708,7 +2712,7 @@ function scSync(){
     if(SC.markers[p.id]){if(p.gy==null){scOff(p);p.gy=gndY(p.mx,p.mz);}SC.markers[p.id].position.set(p.mx-OX,p.gy,p.mz-OZ);}
   }
   var tp=nrun.dst&&nrun.dst.poi;scBeam.visible=!!tp&&world==='net';
-  if(tp){if(tp.gy==null)tp.gy=gndY(tp.x,tp.z);scBeam.position.set(tp.x-OX,tp.gy+120,tp.z-OZ);}
+  if(tp){var TW=poiW(tp),bk=TW[0]+','+TW[1];if(tp.bk!==bk){tp.bk=bk;tp.bgy=gndY(TW[0],TW[1]);}scBeam.position.set(TW[0]-OX,tp.bgy+120,TW[1]-OZ);}
 }
 function scClear(){for(var id in SC.markers)scDrop(id);}
 /* limiti di velocità: autostrada 130, superstrada 110, strade extraurbane 90, rampe 60, nei centri abitati 50 */
@@ -2726,7 +2730,7 @@ function scTick(dt){
   if(v>SC.limit+10&&!auto.on){SC.overT+=dt;if(SC.overT>2.5&&SC.overCd<=0){SC.overT=0;SC.overCd=10;say('Limite '+SC.limit+' km/h: rallenta','warn',3200);}}else SC.overT=0;
   /* scoperta di un luogo passandoci vicino (non appena si parte: bisogna guidare un po') */
   for(var k=0;car.odo>60&&k<SC.pois.length;k++){
-    var p=SC.pois[k];if(SC.found[p.id])continue;var dx=p.x-car.x,dz=p.z-car.z;
+    var p=SC.pois[k];if(SC.found[p.id])continue;var PW2=poiW(p),dx=PW2[0]-car.x,dz=PW2[1]-car.z;
     if(Math.abs(dx)<240&&Math.abs(dz)<240&&Math.hypot(dx,dz)<230){
       var tp=nrun.dst&&nrun.dst.poi;if(tp&&tp.id===p.id)continue;   /* la tappa del percorso si scopre all'arrivo */
       scFound(p,false);
@@ -5917,7 +5921,7 @@ netPath=function(src,dst,sx,sz){
 var trScArrive0=scArrive;
 scArrive=function(){
   var p=nrun.dst&&nrun.dst.poi,st=p&&trStopOf(p);
-  if(!st||nrun.dst.stopDone||Math.hypot(p.x-car.x,p.z-car.z)<150){trScArrive0();return;}
+  if(!st||nrun.dst.stopDone||Math.hypot(poiW(p)[0]-car.x,poiW(p)[1]-car.z)<150){trScArrive0();return;}
   nrun.route=null;nrun.dst.stopDone=true;if(SC.auto)scAutoSet(0);car.vx=car.vz=0;car.thr=0;
   if(st.kind==='tr'){trAsk(st.h,true);}
   else binoStart(trBelView(st.b,p));
@@ -6477,11 +6481,23 @@ var eggBuild={manfredi:eggKnight,cicerone:eggCicero,belacqua:eggBelacqua};
     p:{n:'Lo speleologo stordito',com:'Pastena',w:'it:Grotte di Pastena',
       t:"Una stalattite caduta dal soffitto e un casco volato via: a questo speleologo girano ancora le stelline sopra la testa.\nUna curiosità: nel film «Fantozzi va in pensione» (1988, regia di Neri Parenti, con Paolo Villaggio) il ragioniere più sfortunato d'Italia va in gita alle grotte di Postumia. In realtà la scena fu girata qui, dentro le Grotte di Pastena.",
       video:[{url:'https://youtu.be/9F9D8JELGeM',titolo:'La scena del film girata nelle Grotte di Pastena'}]}};
-  var q=eggXZ(E.ll[0],E.ll[1]);E.x=q[0];E.z=q[1];var p=E.p;p.id=-10-EGGS.length;p.key=p.n;p.pk='egg:'+E.k;p.c='lett';p.x=E.x;p.z=E.z;p.wd='';p.foto=[];p.foto0=[];p.bozza=true;p.node=-1;p.extra=[];p.link=[];
+  var q=eggXZ(E.ll[0],E.ll[1]);E.x=q[0];E.z=q[1];var p=E.p;p.id=-10-EGGS.length;p.key=p.n;p.pk='egg:'+E.k+'2';p.c='lett';p.x=E.x;p.z=E.z;p.wd='';p.foto=[];p.foto0=[];p.bozza=true;p.node=-1;p.extra=[];p.link=[];
   EGGS.push(E);
 })();
 /* posto: davanti all'imbocco della grotta, un po' di lato */
+var eggPlaceSp=null;
 var eggPlace0=eggPlace;eggPlace=function(E){
+  if(E.k==='speleo'){var c=typeof batPoi==='function'?batPoi():null,m=c&&c.mouth;if(!m)return null;
+    /* chi arriva cammina verso la grotta: direzione d (dall'esterno all'imbocco); a destra = (-dz, dx) con x verso ovest */
+    var dx=-m.hx,dz=-m.hz,best=null;
+    if(typeof TRL!=='undefined'&&TRL.ready)TRL.tr.forEach(function(t){var n=t.x.length;if(n<3)return;[[n-1,n-4],[0,3]].forEach(function(e){var a=e[0],b=Math.max(0,Math.min(n-1,e[1])),d=Math.hypot(t.x[a]-m.x,t.z[a]-m.z);if(d<35&&(!best||d<best.d)){var ux=t.x[a]-t.x[b],uz=t.z[a]-t.z[b],L=Math.hypot(ux,uz)||1;best={d:d,x:t.x[a],z:t.z[a],ux:ux/L,uz:uz/L};}});});
+    if(best){dx=best.ux;dz=best.uz;}
+    var rx=-dz,rz=dx,bx=m.x-dx*7,bz=m.z-dz*7;   /* qualche passo prima dell'imbocco */
+    if(best){bx=best.x-dx*4;bz=best.z-dz*4;}
+    /* a destra del sentiero, sull'asciutto: oltre il torrente se il torrente corre lì accanto */
+    function wetD(x,z){var md=1e9;if(typeof WAT!=='undefined'&&WAT.ready)WAT.R.forEach(function(R){if(R.k==='t')return;for(var i=0;i+1<R.x.length;i++){var x0=R.x[i],z0=R.z[i];if(Math.abs(x0-x)>60||Math.abs(z0-z)>60)continue;var ddx=R.x[i+1]-x0,ddz=R.z[i+1]-z0,L2=ddx*ddx+ddz*ddz||1,t=Math.max(0,Math.min(1,((x-x0)*ddx+(z-z0)*ddz)/L2)),d=Math.hypot(x0+ddx*t-x,z0+ddz*t-z)-R.half;if(d<md)md=d;}});return md;}
+    var off=3.2,x=bx+rx*off,z=bz+rz*off;for(off=3.2;off<=14;off+=.5){x=bx+rx*off;z=bz+rz*off;if(wetD(x,z)>1.2)break;}
+    return{x:x,z:z,y:gndY(x,z),r:Math.atan2(-rx,-rz)};}   /* guarda verso il sentiero */
   if(E.at!=='cave')return eggPlace0(E);
   var c=typeof batPoi==='function'?batPoi():null,m=c&&c.mouth;if(!m)return null;
   var sx=-m.hz,sz=m.hx,x=m.x+m.hx*5.5+sx*2.6,z=m.z+m.hz*5.5+sz*2.6;
