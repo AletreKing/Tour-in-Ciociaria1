@@ -6729,6 +6729,54 @@ function drnCam(){
 function drnBtnTick(dt){DRN.bt=(DRN.bt||0)-dt;if(DRN.bt>0)return;DRN.bt=.3;if(!drnHas()){if(DRN.btn)DRN.btn.hidden=true;return;}if(!DRN.btn){if(world!=='net'||!NET)return;drnUI();}DRN.btn.hidden=DRN.on||!drnCan();}
 var colaNat0=natTick;natTick=function(dt){colaNat0(dt);try{colaTick(dt);drnBtnTick(dt);}catch(e){}};
 
+/* ================= IL DOLMEN DI MONTE PECCIA: un grande lastrone di calcare poggiato su pietre ritte, nel bosco vicino a Fosso Colaceco ================= */
+var DOLM={g:null,pos:null,t:0,p:{n:'Dolmen di Monte Peccia',com:'Alatri',c:'arch',
+  t:"Nel bosco sopra Fosso Colaceco, un grande lastrone di calcare coperto di muschio sta appoggiato su alcune pietre ritte, e sotto si apre un piccolo vano. Per questa forma la gente del posto lo chiama «dolmen di Monte Peccia», come le tombe di pietra della preistoria.\nSe sia davvero opera dell'uomo o un capriccio della natura non è accertato: guardalo bene da vicino e prova a dire che cosa ne pensi.",
+  foto:[{src:'foto/dolmen-monte-peccia.jpg',autore:'Ciociaria da scoprire',licenza:'',fonte:''}]}};
+(function(){var p=DOLM.p;p.id=-90;p.key=p.n;p.pk='dolmen:peccia';p.wd='';p.foto0=[];p.bozza=false;p.node=-1;p.extra=[];p.link=[];})();
+function dolmRock(w,h,d,col,seed){
+  var g=new THREE.DodecahedronGeometry(1,1),a=g.attributes.position,s=seed;function rn(){s=(s*9301+49297)%233280;return s/233280;}
+  var mp={};for(var i=0;i<a.count;i++){var x=a.getX(i),y=a.getY(i),z=a.getZ(i),k=x.toFixed(3)+','+y.toFixed(3)+','+z.toFixed(3);if(!mp[k])mp[k]=.82+rn()*.3;var f=mp[k];a.setXYZ(i,x*f*w/2,y*f*h/2,z*f*d/2);}
+  g.computeVertexNormals();return new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:col,flatShading:true}));}
+function dolmBuild(){
+  var g=new THREE.Group(),grey=0xa49e90,grey2=0x948f83,moss=0x5f7f2c;
+  /* le pietre ritte: due grandi ai lati, una più bassa dentro */
+  var a=dolmRock(1.1,1.5,1.3,grey2,11);a.position.set(-1.25,.6,.1);g.add(a);
+  var b=dolmRock(1.2,1.6,1.1,grey,23);b.position.set(1.3,.65,-.1);g.add(b);
+  var c=dolmRock(.7,.8,.6,grey2,37);c.position.set(.1,.3,-.45);g.add(c);
+  /* il lastrone sopra, sporgente sul davanti e un po' inclinato */
+  var t=dolmRock(4.2,1.05,3.0,grey,53);t.position.set(0,1.75,.05);t.rotation.z=-.06;t.rotation.x=.04;g.add(t);
+  /* il buio del vano sotto il lastrone */
+  var v=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.0,.8),new THREE.MeshLambertMaterial({color:0x221d17}));v.position.set(0,.55,-.55);g.add(v);
+  /* muschio sopra e sul fianco */
+  var m1=dolmRock(3.6,.28,2.4,moss,71);m1.position.set(.1,2.25,-.1);g.add(m1);
+  var m2=dolmRock(1.0,.5,.9,moss,83);m2.position.set(1.8,1.6,-.3);g.add(m2);
+  [[-1.9,.15,1.4],[1.6,.12,1.6],[-.5,.1,1.9]].forEach(function(q,i){var r=dolmRock(.9,.35,.8,i?moss:grey2,91+i*7);r.position.set(q[0],q[1],q[2]);g.add(r);});
+  g.traverse(function(o){o.userData.dolm=1;});return g;}
+function dolmPlace(){
+  var T=TRL.tr.filter(colaIs)[0];if(!T)return null;var n=T.x.length,ex=T.x[n-1],ez=T.z[n-1],ux=ex-T.x[Math.max(0,n-6)],uz=ez-T.z[Math.max(0,n-6)],L=Math.hypot(ux,uz)||1;ux/=L;uz/=L;var nx=-uz,nz=ux;
+  var C=COLA.pos||{x:1e9,z:1e9};
+  function ok(x,z){if(typeof wetAt==='function'&&wetAt(x,z,2.5))return false;var pr=netProbe(x,z);if(pr&&pr.d<NET.E[pr.e].half+4)return false;if(Math.hypot(x-C.x,z-C.z)<9)return false;
+    var h0=terrH(x,z),mx=0;[[2,0],[-2,0],[0,2],[0,-2]].forEach(function(o){mx=Math.max(mx,Math.abs(terrH(x+o[0],z+o[1])-h0));});return mx<1.6;}
+  var S=[[-14,-8],[-14,8],[-20,-6],[-20,6],[8,-12],[8,12],[-26,0],[14,-10],[14,10],[-10,-14],[-10,14]];
+  for(var i=0;i<S.length;i++){var x=ex+ux*S[i][0]+nx*S[i][1],z=ez+uz*S[i][0]+nz*S[i][1];if(ok(x,z))return{x:x,z:z,r:Math.atan2(ex-x,ez-z)};}
+  return{x:ex+ux*-14+nx*-8,z:ez+uz*-14+nz*-8,r:0};}
+function dolmTick(dt){
+  if(world!=='net'||!NET||typeof TRL==='undefined'||!TRL.ready){if(DOLM.g){scene.remove(DOLM.g);DOLM.g=null;}return;}
+  if(!DOLM.pos){if(!COLA.pos)COLA.pos=colaPlace();DOLM.pos=dolmPlace();if(!DOLM.pos)return;DOLM.p.x=DOLM.pos.x;DOLM.p.z=DOLM.pos.z;}
+  var P=DOLM.pos,O=typeof edOff==='function'?edOff(DOLM.p):null,x=P.x+(O?+O.dx||0:0),z=P.z+(O?+O.dz||0:0),
+    px=(PW&&PW.on)?PW.x:car.x,pz=(PW&&PW.on)?PW.z:car.z,d=Math.hypot(x-px,z-pz);
+  if(d<1000&&!DOLM.g){DOLM.g=dolmBuild();scene.add(DOLM.g);}else if(d>1200&&DOLM.g){scene.remove(DOLM.g);DOLM.g=null;}
+  if(DOLM.g){DOLM.g.position.set(x-OX,gndY(x,z)-.15+(O?+O.dy||0:0),z-OZ);DOLM.g.rotation.y=P.r+(O?(+O.rot||0)*Math.PI/180:0);}
+  if(d<30&&!DOLM.said&&state==='drive'){DOLM.said=true;say('Tra gli alberi c’è il dolmen di Monte Peccia: toccalo per la scheda','good',3800);}}
+var dolmNat0=natTick;natTick=function(dt){dolmNat0(dt);try{dolmTick(dt);}catch(e){}};
+(function(){var dn=null,rc=new THREE.Raycaster(),v2=new THREE.Vector2();
+  window.addEventListener('pointerdown',function(e){dn={x:e.clientX,y:e.clientY,t:performance.now()};},true);
+  window.addEventListener('pointerup',function(e){if(!dn||!DOLM.g||state!=='drive'||paused||(typeof DRN!=='undefined'&&DRN.on))return;var m=Math.hypot(e.clientX-dn.x,e.clientY-dn.y),t=performance.now()-dn.t;dn=null;if(m>8||t>500)return;
+    var R=renderer.domElement.getBoundingClientRect();if(e.clientX<R.left||e.clientX>R.right||e.clientY<R.top||e.clientY>R.bottom)return;
+    v2.set((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1);rc.setFromCamera(v2,camera);var h=rc.intersectObject(DOLM.g,true);
+    if(h.length&&h[0].distance<120){e.stopImmediatePropagation();var p=DOLM.p,pts=SC.found[p.id]?0:scFound(p,true);look.yaw=look.pitch=0;scCard(p,{pts:pts});}},true);})();
+
 /* il pianto di Belacqua: singhiozzi spezzati, poi un lamento che scende, stonato e con l'eco */
 function blCry(E,d){
   if(!AC||!opts.snd||AC.state!=='running'||!au)return;
