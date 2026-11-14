@@ -4248,7 +4248,7 @@ function cameraTick(dt){
   }
   if(shake>0){shake-=dt;camera.position.x+=(Math.random()-.5)*shake*.5;camera.position.y+=(Math.random()-.5)*shake*.4;}
   camera.near=state==='menu'?.3:(camMode===1||WALK.on||BINO.on)?.1:.9;camera.updateProjectionMatrix();
-  if(SKYV.on)skyvCam();else if(GOD.on)godCam();else if(COLL.on)colCam();else if(CAVE.on)caveCam();else if(PW.on&&!BINO.on)pwCam();
+  if(DRN.on)drnCam();else if(SKYV.on)skyvCam();else if(GOD.on)godCam();else if(COLL.on)colCam();else if(CAVE.on)caveCam();else if(PW.on&&!BINO.on)pwCam();
   skyMesh.position.copy(camera.position);if(sunSpr.visible){var SD2=sunDir();sunSpr.position.set(camera.position.x+SD2.x*1000,camera.position.y+Math.max(SD2.y,-.03)*1000,camera.position.z+SD2.z*1000);}
   if(world!=='city')hwBack.position.set(camera.position.x,world==='net'?car.y:0,camera.position.z);
   skyG.position.y=world==='net'?car.y:0;
@@ -4799,6 +4799,7 @@ function frame(now){
   if(state==='drive'&&!paused&&MP.phase==='count'){hudTick();mapTick(dt);}   /* conto alla rovescia: auto ferme, strumenti vivi */
   else if(state==='drive'&&!paused&&COLL.on)colFrame(dt);
   else if(state==='drive'&&!paused&&CAVE.on)caveFrame(dt);
+  else if(state==='drive'&&!paused&&DRN.on){drnTick(dt);if(DRN.on){OX=car.x;OZ=car.z;skyTick(dt);natTick(dt);ntrTick(dt);hudTick();mapTick(dt);}}
   else if(state==='drive'&&!paused&&PW.on&&!BINO.on)pwFrame(dt);
   else if(state==='drive'&&!paused&&(WALK.on||BINO.on))walkFrame(dt);
   else if(state==='drive'&&!paused&&GOD.on){godTick(dt);OX=car.x;OZ=car.z;skyTick(dt);natTick(dt);ntrTick(dt);hudTick();mapTick(dt);}
@@ -6570,6 +6571,163 @@ function eggTick(dt){
   },true);
 })();
 var eggTr0=trSync;trSync=function(dt){eggTr0(dt);eggTick(dt);};
+
+/* ================= FOSSO COLACECO: il sentiero più lungo si fa tutto a piedi (niente ×2…×5, niente «Salta»);
+   chi arriva in fondo trova uno scrigno e dentro un drone, con cui poi può volare ed esplorare dall'alto ================= */
+var COLA={key:'au_colaceco',flag:'au_scrigno',minLen:5000,g:null,lid:null,pos:null,t:0,open:false,btn:null};
+function colaIs(t){var p=t&&typeof trPoi==='function'?trPoi(t):null;return !!(p&&/colaceco/i.test(p.n||'')&&t.len>COLA.minLen);}
+function colaGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function colaSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}}
+/* la camminata: si riprende da dove si era arrivati, la velocità resta quella di un passo vero */
+var colaWS0=walkStart;walkStart=function(t){
+  colaWS0(t);if(!WALK.on||WALK.t!==t)return;
+  var on=colaIs(t);$('walkBar').classList.toggle('slow',on);WALK.cola=on;
+  if(!on)return;
+  var sv=null;try{sv=JSON.parse(colaGet(COLA.key)||'null');}catch(e){}
+  if(sv&&sv.s>60&&sv.s<t.len-20){WALK.s=sv.s;walkPlace(0,true);netSync(true);walkDraw();
+    say('Riprendi il cammino da dove ti eri fermato: '+km(sv.s)+' di '+km(t.len),'good',4200);}
+  else say('Il sentiero più lungo della provincia: si fa tutto a piedi, senza scorciatoie. In fondo c’è una sorpresa','good',5200);
+  COLA.saveT=0;};
+var colaWT0=walkTick;walkTick=function(dt){
+  if(WALK.cola&&WALK.auto>1){WALK.auto=1;walkDraw();}
+  colaWT0(dt);
+  if(!WALK.on||!WALK.cola)return;
+  COLA.saveT-=dt;if(COLA.saveT<=0){COLA.saveT=4;if(!WALK.arr)colaSet(COLA.key,JSON.stringify({s:Math.round(WALK.s)}));}};
+var colaWA0=walkArrive;walkArrive=function(){
+  if(WALK.cola){colaSet(COLA.key,null);if(colaGet(COLA.flag)!=='aperto')colaSet(COLA.flag,'arrivato');COLA.pos=null;
+    setTimeout(function(){say('Lì accanto c’è uno scrigno: avvicinati e toccalo','good',5200);},5200);}
+  colaWA0();};
+/* niente ×2…×5 né «Salta» su questo sentiero */
+$('walkBar').addEventListener('click',function(e){var b=e.target.closest('button');if(!b||!WALK.on||!WALK.cola)return;
+  if(b.id==='wbSkip'||(b.dataset.wa!=null&&+b.dataset.wa>1)){e.stopImmediatePropagation();e.preventDefault();say('Su questo sentiero si cammina al passo','',2200);}},true);
+(function(){var st=document.createElement('style');st.textContent='#walkBar.slow [data-wa="2"],#walkBar.slow [data-wa="3"],#walkBar.slow [data-wa="4"],#walkBar.slow #wbSkip{display:none!important}'+
+  '#colaBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(250px + env(safe-area-inset-bottom,0px));z-index:8}#colaBtn[hidden]{display:none}'+
+  '#colaBox{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(5,9,16,.55)}#colaBox[hidden]{display:none}'+
+  '#colaBox .box{max-width:min(440px,calc(100% - 32px));background:#141c28;color:#e8eef6;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:20px 20px 16px;font:15px/1.45 system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.5)}'+
+  '#colaBox h2{margin:0 0 8px;font-size:20px;color:#ffd86b}#colaBox p{margin:0 0 14px}#colaBox .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}'+
+  '#colaBox button{font:700 14px system-ui,sans-serif;border-radius:999px;padding:9px 16px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;cursor:pointer}#colaBox button.go{background:#2f6fd6;border-color:#2f6fd6}';
+  document.head.appendChild(st);})();
+/* lo scrigno: legno scuro, bande e serratura dorate; il coperchio si apre */
+function colaChest(){
+  var g=new THREE.Group(),wd=new THREE.MeshLambertMaterial({color:0x6b3f1d,flatShading:true}),wd2=new THREE.MeshLambertMaterial({color:0x553016,flatShading:true}),
+    gold=new THREE.MeshLambertMaterial({color:0xe0b03a,emissive:0x5a3c00,flatShading:true});
+  function bx(p,w,h,d,m,x,y,z){var o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);p.add(o);return o;}
+  bx(g,1.1,.62,.72,wd,0,.31,0);bx(g,1.14,.08,.76,wd2,0,.04,0);
+  [-.4,.4].forEach(function(x){bx(g,.08,.64,.76,gold,x,.32,0);});
+  var lid=new THREE.Group();lid.position.set(0,.62,-.36);g.add(lid);
+  bx(lid,1.1,.22,.72,wd,0,.11,.36);bx(lid,.9,.1,.6,wd2,0,.26,.36);[-.4,.4].forEach(function(x){bx(lid,.08,.26,.76,gold,x,.13,.36);});
+  bx(g,.18,.22,.06,gold,0,.5,.38);
+  /* una luce dorata che esce dallo scrigno: si vede da lontano */
+  var sp=new THREE.Mesh(new THREE.OctahedronGeometry(.16),new THREE.MeshBasicMaterial({color:0xffe27a}));sp.position.set(0,1.5,0);g.add(sp);g.userData.sp=sp;
+  g.userData.lid=lid;return g;}
+function colaPlace(){
+  var T=TRL.tr.filter(colaIs)[0];if(!T)return null;var n=T.x.length,ex=T.x[n-1],ez=T.z[n-1],ux=ex-T.x[Math.max(0,n-4)],uz=ez-T.z[Math.max(0,n-4)],L=Math.hypot(ux,uz)||1;ux/=L;uz/=L;var nx=-uz,nz=ux;
+  function ok(x,z){if(typeof wetAt==='function'&&wetAt(x,z,.8))return false;var pr=netProbe(x,z);if(pr&&pr.d<NET.E[pr.e].half+1.5)return false;return true;}
+  var C=[[3,3.5],[3,-3.5],[0,4],[0,-4],[5,0],[2,6],[2,-6],[6,3],[6,-3]];
+  for(var i=0;i<C.length;i++){var x=ex+ux*C[i][0]+nx*C[i][1],z=ez+uz*C[i][0]+nz*C[i][1];if(ok(x,z))return{x:x,z:z,r:Math.atan2(ex-x,ez-z)};}
+  return{x:ex+nx*3,z:ez+nz*3,r:0};}
+function colaTick(dt){
+  var st=colaGet(COLA.flag);
+  if(!st||world!=='net'||!NET||typeof TRL==='undefined'||!TRL.ready){if(COLA.g){scene.remove(COLA.g);COLA.g=null;}if(COLA.btn)COLA.btn.hidden=true;return;}
+  if(!COLA.pos){COLA.pos=colaPlace();if(!COLA.pos)return;}
+  var P=COLA.pos,px=(PW&&PW.on)?PW.x:car.x,pz=(PW&&PW.on)?PW.z:car.z,d=Math.hypot(P.x-px,P.z-pz);
+  if(d<900&&!COLA.g){COLA.g=colaChest();COLA.g.userData.cola=1;COLA.g.traverse(function(o){o.userData.cola=1;});scene.add(COLA.g);COLA.open=st==='aperto';}
+  else if(d>1100&&COLA.g){scene.remove(COLA.g);COLA.g=null;}
+  if(COLA.g){COLA.t+=dt;COLA.g.position.set(P.x-OX,gndY(P.x,P.z),P.z-OZ);COLA.g.rotation.y=P.r;
+    var lid=COLA.g.userData.lid,want=COLA.open?-1.9:0;lid.rotation.x+=(want-lid.rotation.x)*Math.min(1,dt*3);
+    var sp=COLA.g.userData.sp;sp.rotation.y+=dt*2.2;sp.position.y=1.5+Math.sin(COLA.t*2)*.15;sp.visible=!COLA.open;}
+  if(!COLA.btn){var b=document.createElement('button');b.id='colaBtn';b.className='chip hud';b.type='button';b.hidden=true;$('game').appendChild(b);COLA.btn=b;
+    b.addEventListener('pointerdown',function(e){e.stopPropagation();});b.addEventListener('click',colaOpen);}
+  COLA.btn.textContent=COLA.open?'🎁 Lo scrigno':'🎁 Apri lo scrigno';COLA.btn.hidden=!(d<14&&state==='drive'&&!paused&&!DRN.on);}
+function colaOpen(){
+  var first=colaGet(COLA.flag)!=='aperto';COLA.open=true;colaSet(COLA.flag,'aperto');colaSet('au_drone','1');
+  var box=$('colaBox');if(!box){box=document.createElement('div');box.id='colaBox';box.hidden=true;
+    box.innerHTML='<div class="box"><h2>Lo scrigno di Fosso Colaceco</h2><p id="colaTxt"></p><div class="row"><button type="button" id="colaNo">Più tardi</button><button type="button" class="go" id="colaGo">Fai volare il drone</button></div></div>';
+    $('game').appendChild(box);box.addEventListener('pointerdown',function(e){e.stopPropagation();});
+    box.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;box.hidden=true;paused=false;if(b.id==='colaGo')drnStart();});}
+  $('colaTxt').textContent=(first?'Sette chilometri a piedi, fino in fondo: complimenti! ':'')+'Dentro lo scrigno c’è un drone. Da ora è tuo: quando sei fermo (in auto o a piedi) trovi il pulsante «🚁 Drone» e puoi volare sopra la Ciociaria e guardarla dall’alto. Batteria: 10 minuti a volo.';
+  box.hidden=false;paused=true;
+  if(first&&typeof fanfare==='function')try{fanfare();}catch(e){}}
+/* tocco sullo scrigno: prima di tutti gli altri gestori */
+(function(){var dn=null,rc=new THREE.Raycaster(),v2=new THREE.Vector2();
+  window.addEventListener('pointerdown',function(e){dn={x:e.clientX,y:e.clientY,t:performance.now()};},true);
+  window.addEventListener('pointerup',function(e){if(!dn||!COLA.g||state!=='drive'||paused||DRN.on)return;var m=Math.hypot(e.clientX-dn.x,e.clientY-dn.y),t=performance.now()-dn.t;dn=null;if(m>8||t>500)return;
+    var R=renderer.domElement.getBoundingClientRect();if(e.clientX<R.left||e.clientX>R.right||e.clientY<R.top||e.clientY>R.bottom)return;
+    v2.set((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1);rc.setFromCamera(v2,camera);var h=rc.intersectObject(COLA.g,true);
+    if(h.length&&h[0].distance<80){e.stopImmediatePropagation();colaOpen();}},true);})();
+
+/* ================= IL DRONE: si vola sopra la mappa, si guarda in ogni direzione, 10 minuti di batteria, fino a 3 km dal decollo ================= */
+var DRN={on:false,x:0,z:0,y:0,agl:30,yaw:0,pitch:-.35,bat:600,keys:{},home:null,save:null,drag:null,btn:null,R:3000};
+function drnHas(){return colaGet('au_drone')==='1';}
+function drnCan(){return drnHas()&&state==='drive'&&world==='net'&&NET&&!paused&&!WALK.on&&!BINO.on&&!(typeof GOD!=='undefined'&&GOD.on)&&!(typeof SKYV!=='undefined'&&SKYV.on)&&
+  !(typeof CAVE!=='undefined'&&CAVE.on)&&!(typeof COLL!=='undefined'&&COLL.on)&&!(SC&&SC.auto)&&((PW&&PW.on)||Math.hypot(car.vx,car.vz)<.5);}
+function drnUI(){
+  if($('drnBar'))return;var g=$('game');
+  var b=document.createElement('button');b.id='btnDrone';b.className='chip hud';b.type='button';b.textContent='🚁 Drone';b.hidden=true;g.appendChild(b);
+  b.addEventListener('pointerdown',function(e){e.stopPropagation();});b.addEventListener('click',drnStart);DRN.btn=b;
+  var bar=document.createElement('div');bar.id='drnBar';
+  bar.innerHTML='<div id="drnInfo"></div><div id="drnPad">'+
+    '<div class="col"><button data-k="up" aria-label="Sali">▲</button><button data-k="dn" aria-label="Scendi">▼</button></div>'+
+    '<div class="cross"><button data-k="fw" class="c1" aria-label="Avanti">⬆</button><button data-k="lt" class="c2" aria-label="Gira a sinistra">⟲</button><button data-k="rt" class="c3" aria-label="Gira a destra">⟳</button><button data-k="bk" class="c4" aria-label="Indietro">⬇</button></div>'+
+    '<button id="drnX">Atterra</button></div>';
+  g.appendChild(bar);
+  bar.addEventListener('pointerdown',function(e){e.stopPropagation();var t=e.target.closest('[data-k]');if(t){DRN.keys['p'+t.dataset.k]=1;t.setPointerCapture&&t.setPointerCapture(e.pointerId);}});
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){bar.addEventListener(ev,function(e){var t=e.target.closest('[data-k]');if(t)DRN.keys['p'+t.dataset.k]=0;});});
+  bar.addEventListener('click',function(e){if(e.target.id==='drnX')drnStop();});
+  var st=document.createElement('style');st.textContent='#btnDrone{position:absolute;left:calc(50% + 120px);transform:translateX(-50%);bottom:calc(205px + env(safe-area-inset-bottom,0px));z-index:8}#btnDrone[hidden]{display:none}'+
+    '#drnBar{display:none;position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9;pointer-events:none;flex-direction:column;align-items:center;gap:8px}#game.drone #drnBar{display:flex}'+
+    '#drnInfo{pointer-events:none;padding:6px 12px;border-radius:12px;background:rgba(11,17,27,.78);color:#dfe6ef;font:600 13px/1.3 system-ui,sans-serif;text-align:center;max-width:calc(100% - 32px)}'+
+    '#drnPad{pointer-events:auto;display:flex;align-items:center;gap:18px;padding:8px 12px;border-radius:16px;background:rgba(11,17,27,.55)}'+
+    '#drnPad button{font:700 18px system-ui,sans-serif;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:12px;width:52px;height:46px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}'+
+    '#drnPad .col{display:flex;flex-direction:column;gap:6px}#drnPad .cross{display:grid;grid-template-columns:52px 52px 52px;grid-template-rows:46px 46px;gap:6px}#drnPad .c1{grid-column:2;grid-row:1}#drnPad .c2{grid-column:1;grid-row:2}#drnPad .c3{grid-column:3;grid-row:2}#drnPad .c4{grid-column:2;grid-row:2}'+
+    '#drnPad #drnX{width:auto;padding:0 16px;background:#2f6fd6;border-color:#2f6fd6;font-size:15px}'+
+    '#game.drone .hud:not(#drnBar),#game.drone #cluster,#game.drone #shifter,#game.drone #steerStrip,#game.drone #pedals,#game.drone #arrow,#game.drone #roadName,#game.drone #hint,#game.drone #walkBar,#game.drone #pwBar{display:none!important}#game.drone #view{cursor:grab}';
+  document.head.appendChild(st);
+  window.addEventListener('keydown',function(e){if(!DRN.on)return;var k=e.key.toLowerCase();
+    if(k==='escape'){e.preventDefault();e.stopImmediatePropagation();drnStop();return;}
+    if(/^(arrow(up|down|left|right)|w|a|s|d|q|e|pageup|pagedown|shift)$/.test(k)){DRN.keys[k]=1;e.preventDefault();e.stopImmediatePropagation();}},true);
+  window.addEventListener('keyup',function(e){if(!DRN.on)return;DRN.keys[e.key.toLowerCase()]=0;if(e.key==='Shift')DRN.keys.shift=0;e.stopImmediatePropagation();},true);
+  window.addEventListener('blur',function(){DRN.keys={};});
+  /* trascinare sullo schermo: ci si guarda intorno; la rotella: quota */
+  window.addEventListener('pointerdown',function(e){if(!DRN.on||e.target.closest('#drnBar'))return;if(e.target!==renderer.domElement&&!e.target.closest('#view'))return;DRN.drag={x:e.clientX,y:e.clientY};e.stopImmediatePropagation();},true);
+  window.addEventListener('pointermove',function(e){if(!DRN.on||!DRN.drag)return;DRN.yaw+=(e.clientX-DRN.drag.x)*.005;DRN.pitch=clamp(DRN.pitch-(e.clientY-DRN.drag.y)*.005,-1.45,.6);DRN.drag.x=e.clientX;DRN.drag.y=e.clientY;e.stopImmediatePropagation();},true);
+  window.addEventListener('pointerup',function(e){if(!DRN.on)return;if(DRN.drag){DRN.drag=null;e.stopImmediatePropagation();}},true);
+  window.addEventListener('wheel',function(e){if(!DRN.on)return;e.preventDefault();e.stopImmediatePropagation();DRN.agl=clamp(DRN.agl*Math.exp(clamp(e.deltaY,-200,200)*.002),4,400);},{passive:false,capture:true});}
+function drnStart(){
+  drnUI();if(!drnCan())return;
+  DRN.on=true;DRN.keys={};DRN.bat=600;DRN.save={x:car.x,z:car.z,y:car.y,th:car.th,carVis:carG.visible};
+  var px=(PW&&PW.on)?PW.x:car.x,pz=(PW&&PW.on)?PW.z:car.z,th=(PW&&PW.on)?PW.yaw:car.th;
+  DRN.home={x:px,z:pz};DRN.x=px;DRN.z=pz;DRN.yaw=th;DRN.pitch=-.35;DRN.agl=3;DRN.climb=26;
+  car.vx=car.vz=0;car.thr=car.brk=0;inp.kbGas=inp.kbBrake=inp.kbL=inp.kbR=false;
+  if(!(PW&&PW.on)){DRN.pg=carG.clone();scene.add(DRN.pg);DRN.pg.position.copy(carG.position);}carG.visible=false;
+  DRN.r0=[NETR,NETDROP,camera.far];NETR=Math.max(NETR,2400);NETDROP=Math.max(NETDROP,3000);camera.far=Math.max(camera.far,30000);camera.updateProjectionMatrix();
+  $('game').classList.add('drone');say('Il drone decolla: ⬆⬇ avanti e indietro, ⟲⟳ per girare, ▲▼ per salire e scendere, trascina per guardare','good',5200);}
+function drnStop(){
+  if(!DRN.on)return;DRN.on=false;DRN.keys={};DRN.drag=null;var s=DRN.save;
+  car.x=s.x;car.z=s.z;car.th=s.th;car.vx=car.vz=0;OX=car.x;OZ=car.z;ridgeX=1e9;netSync(true);car.gy=car.y=(PW&&PW.on)?s.y:netY(car.x,car.z);
+  if(DRN.pg){scene.remove(DRN.pg);DRN.pg=null;}carG.visible=(PW&&PW.on)?false:true;
+  if(DRN.r0){NETR=DRN.r0[0];NETDROP=DRN.r0[1];camera.far=DRN.r0[2];camera.updateProjectionMatrix();}applyLight();
+  $('game').classList.remove('drone');say('Il drone è atterrato','',2200);}
+function drnTick(dt){
+  gameT+=dt;var K=DRN.keys,f=(K.arrowup||K.w||K.pfw?1:0)-(K.arrowdown||K.s||K.pbk?1:0),tr=(K.arrowright||K.d||K.prt?1:0)-(K.arrowleft||K.a||K.plt?1:0),up=(K.pageup||K.e||K.pup?1:0)-(K.pagedown||K.q||K.pdn?1:0);
+  if(DRN.climb>0){var c=Math.min(DRN.climb,dt*8);DRN.agl+=c;DRN.climb-=c;}
+  DRN.yaw+=tr*dt*1.2;var sp=Math.min(45,(8+DRN.agl*.35)*(K.shift?2:1)),sy=Math.sin(DRN.yaw),cy=Math.cos(DRN.yaw);
+  var nx=DRN.x+sy*f*sp*dt,nz=DRN.z+cy*f*sp*dt,dh=Math.hypot(nx-DRN.home.x,nz-DRN.home.z);
+  if(dh>DRN.R){var k=DRN.R/dh;nx=DRN.home.x+(nx-DRN.home.x)*k;nz=DRN.home.z+(nz-DRN.home.z)*k;if(!DRN.warn){DRN.warn=1;say('Segnale al limite: il drone non si allontana più di 3 km','warn',2600);}}else DRN.warn=0;
+  DRN.x=nx;DRN.z=nz;if(up)DRN.agl=clamp(DRN.agl*(1+up*dt*.9)+up*dt*4,4,400);
+  var gy=godGround(DRN.x,DRN.z);DRN.y=gy+DRN.agl;
+  car.x=DRN.x;car.z=DRN.z;car.y=car.gy=gy;car.vx=car.vz=0;car.off=false;
+  DRN.bat-=dt;if(DRN.bat<=60&&!DRN.low){DRN.low=1;say('Batteria quasi scarica: un minuto e il drone torna a terra','warn',3200);}
+  if(DRN.bat<=0){DRN.low=0;drnStop();return;}
+  if(DRN.bat>60)DRN.low=0;
+  DRN.it=(DRN.it||0)-dt;if(DRN.it<=0){DRN.it=.25;var el=$('drnInfo');if(el)el.textContent='🔋 '+Math.ceil(DRN.bat/6)+'% · quota '+Math.round(DRN.agl)+' m · '+km(Math.hypot(DRN.x-DRN.home.x,DRN.z-DRN.home.z))+' dal decollo';}}
+function drnCam(){
+  camera.position.set(DRN.x-OX,DRN.y,DRN.z-OZ);var cp=Math.cos(DRN.pitch);
+  camera.lookAt(DRN.x-OX+Math.sin(DRN.yaw)*cp*10,DRN.y+Math.sin(DRN.pitch)*10,DRN.z-OZ+Math.cos(DRN.yaw)*cp*10);
+  camera.fov=(camera.aspect||1)<1?78:62;camera.near=.5;camera.updateProjectionMatrix();
+  if(scene.fog){scene.fog.near=Math.max(scene.fog.near,900+DRN.agl*4);scene.fog.far=Math.max(scene.fog.far,5000+DRN.agl*20);}}
+function drnBtnTick(dt){DRN.bt=(DRN.bt||0)-dt;if(DRN.bt>0)return;DRN.bt=.3;if(!drnHas()){if(DRN.btn)DRN.btn.hidden=true;return;}if(!DRN.btn){if(world!=='net'||!NET)return;drnUI();}DRN.btn.hidden=DRN.on||!drnCan();}
+var colaNat0=natTick;natTick=function(dt){colaNat0(dt);try{colaTick(dt);drnBtnTick(dt);}catch(e){}};
 
 /* il pianto di Belacqua: singhiozzi spezzati, poi un lamento che scende, stonato e con l'eco */
 function blCry(E,d){
