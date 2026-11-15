@@ -1,6 +1,6 @@
 // Verifica il gettone di Google e apre la sessione solo per gli account del dominio della scuola (e per gli ospiti elencati in _ospiti.js)
 const A = require('./_auth');
-const OSPITI = require('./_ospiti').map(e => String(e).toLowerCase().trim());
+const OSPITI = require('./_ospiti').map(e => String((e && e.email) || e).toLowerCase().trim());
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return A.json(res, 405, { error: 'metodo non ammesso' });
   if (!A.enabled()) return A.json(res, 503, { error: 'accesso non configurato' });
