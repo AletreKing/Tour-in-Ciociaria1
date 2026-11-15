@@ -1,5 +1,6 @@
-// Verifica il gettone di Google e apre la sessione solo per gli account del dominio della scuola
+// Verifica il gettone di Google e apre la sessione solo per gli account del dominio della scuola (e per gli ospiti elencati in _ospiti.js)
 const A = require('./_auth');
+const OSPITI = require('./_ospiti').map(e => String(e).toLowerCase().trim());
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return A.json(res, 405, { error: 'metodo non ammesso' });
   if (!A.enabled()) return A.json(res, 503, { error: 'accesso non configurato' });
@@ -17,7 +18,8 @@ module.exports = async (req, res) => {
   const email = String(info.email || '').toLowerCase();
   const okAud = info.aud === process.env.GOOGLE_CLIENT_ID;
   const okIss = info.iss === 'accounts.google.com' || info.iss === 'https://accounts.google.com';
-  const okMail = (info.email_verified === true || info.email_verified === 'true') && (String(info.hd || '').toLowerCase() === dom || email.endsWith('@' + dom));
+  const verified = info.email_verified === true || info.email_verified === 'true';
+  const okMail = verified && (String(info.hd || '').toLowerCase() === dom || email.endsWith('@' + dom) || OSPITI.includes(email));
   const okExp = Number(info.exp || 0) > Date.now() / 1000;
   if (!okAud || !okIss || !okExp) return A.json(res, 401, { error: 'gettone non valido' });
   if (!okMail) return A.json(res, 403, { error: "Serve l'account della scuola (@" + dom + ')' });

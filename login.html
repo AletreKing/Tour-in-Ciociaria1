@@ -32,13 +32,14 @@ a{color:var(--amber)}
     window.__dom=c.domain;
     var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;
     s.onload=function(){
-      google.accounts.id.initialize({client_id:c.clientId,hd:c.domain,ux_mode:'popup',callback:function(resp){
+      var osp=new URLSearchParams(location.search).has('ospite'),io={client_id:c.clientId,ux_mode:'popup'};if(!osp)io.hd=c.domain;
+      google.accounts.id.initialize(Object.assign(io,{callback:function(resp){
         msg.textContent='Controllo l’account…';
         fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})})
           .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
           .then(function(x){if(x.ok)location.replace(next());else msg.textContent=x.j.error||'Accesso non riuscito';})
           .catch(function(){msg.textContent='Rete non raggiungibile, riprova.';});
-      }});
+      }}));
       google.accounts.id.renderButton(document.getElementById('gbtn'),{theme:'filled_black',size:'large',text:'signin_with',shape:'pill',locale:'it'});
     };
     s.onerror=function(){msg.textContent='Non riesco a caricare l’accesso di Google.';};

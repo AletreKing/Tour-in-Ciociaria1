@@ -4229,7 +4229,7 @@ function cameraTick(dt){
   }else if(WALK.on||BINO.on){walkCam(dt);
   }else if(camMode===1){
     var dx=spec.W*.19,lx=dx*c,lz=-dx*s;  /* sinistra dell'auto = +x locale */
-    camera.position.set(X+lx+s*spec.cam.z,cy+spec.cam.y,Z+lz+c*spec.cam.z);
+    camera.position.set(X+lx+s*spec.cam.z,cy+spec.cam.y+.1,Z+lz+c*spec.cam.z);
     var la=car.th-car.steer*.1+look.yaw,ls=Math.sin(la),lc=Math.cos(la);
     camera.lookAt(camera.position.x+ls*10,camera.position.y-.2+Math.tan(look.pitch)*10,camera.position.z+lc*10);
     camera.fov=aspect<1?86:70;
