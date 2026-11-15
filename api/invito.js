@@ -5,7 +5,7 @@ const OSPITI = require('./_ospiti');
 module.exports = (req, res) => {
   if (req.method !== 'GET') return A.json(res, 405, { error: 'metodo non ammesso' });
   if (!A.enabled()) { res.statusCode = 302; res.setHeader('Location', '/guida.html'); return res.end(); }
-  const u = new URL(req.url, 'http://x'), t = String(u.searchParams.get('t') || '');
+  const u = new URL(req.url, 'http://x'), t = String(u.searchParams.get('t') || '').trim().replace(/[^0-9a-zA-Z_-]/g, '');
   const h = t.length >= 16 && t.length <= 200 ? crypto.createHash('sha256').update(t).digest('hex') : '';
   const o = h && OSPITI.find(x => x && x.invito && x.invito.length === h.length && crypto.timingSafeEqual(Buffer.from(x.invito), Buffer.from(h)));
   res.setHeader('Cache-Control', 'no-store');
