@@ -1603,13 +1603,13 @@ function netProbeY(x,z,y){
     for(k=0;k<a.length;k++){
       p=a[k];var x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;
       t=t<0?0:t>1?1:t;var ex=x0+dx*t-x,ez=z0+dz*t-z,d=ex*ex+ez*ez;if(d<best){best=d;bp=p;bt=t;}
-      var hw=NET.E[P.e[p]].half+1.5;if(d<hw*hw){var dy=Math.abs(P.y0[p]+(P.y1[p]-P.y0[p])*t-y),sc=Math.sqrt(d)+(dy>3.5?60+dy:dy*.3);if(sc<oy){oy=sc;on=p;ot=t;od=d;}}
+      var hw=NET.E[P.e[p]].half+1.5;if(d<hw*hw&&P.y0[p]+(P.y1[p]-P.y0[p])*t-y<3.2){var dy=Math.abs(P.y0[p]+(P.y1[p]-P.y0[p])*t-y),sc=Math.sqrt(d)+(dy>3.5?60:dy*.3);if(sc<oy){oy=sc;on=p;ot=t;od=d;}}
     }
   }
   if(on>=0)return{p:on,t:ot,d:Math.sqrt(od),e:P.e[on]};
   return bp<0?null:{p:bp,t:bt,d:Math.sqrt(best),e:P.e[bp]};
 }
-function netY(x,z){var pr=netProbeY(x,z,car.gy!=null&&isFinite(car.gy)?car.gy:null);if(pr&&pr.d<NET.E[pr.e].half+1.5)return netRoadY(pr);return gndY(x,z);}
+function netY(x,z){var gy=car.gy!=null&&isFinite(car.gy)?car.gy:null,pr=netProbeY(x,z,gy);if(pr&&pr.d<NET.E[pr.e].half+1.5){var ry=netRoadY(pr);if(gy==null||ry-gy<3.2)return ry;}return gndY(x,z);}
 function netIdx(name){for(var k=0;k<NET.D.length;k++)if(NET.D[k].n===name)return k;return 0;}
 /* strada più vicina a un punto (entro un centinaio di metri) */
 function netProbe(x,z){
@@ -11131,6 +11131,18 @@ function watRoadFix(){
   WAT.F.forEach(function(f){var best=null,bd=40;WAT.R.forEach(function(R){for(var i=0;i<R.x.length;i++){var d=Math.hypot(R.x[i]-f.x,R.z[i]-f.z);if(d<bd){bd=d;best=[R,i];}}});
     if(!best)return;var R=best[0],i0=Math.max(0,best[1]-1),yt=R.y[i0];if(yt<f.top-.3&&yt>f.bot+1.5){f.top=yt;f.H=f.top-f.bot;f.big=f.H>5;}});
   WAT.rfn=n;return n;}
+/* il pelo dell'acqua non sta mai sospeso sopra il terreno: dove il rilievo (che sotto i ponti misura l'impalcato) alzava il fiume,
+   l'acqua scende col terreno; così niente gradini di metri a valle di un ponte, che di profilo sembravano un foglio */
+var watRF0=watRoadFix;watRoadFix=function(){var n=watRF0.apply(this,arguments);
+  if(WAT.rf&&!WAT.tf&&WAT.R.length){WAT.tf=1;var m2=0;
+    var FF=WAT.F||[];function nearF(x,z){for(var q=0;q<FF.length;q++)if(Math.abs(FF[q].x-x)<220&&Math.abs(FF[q].z-z)<220)return true;return false;}   /* vicino alle cascate vere non si tocca niente */
+    WAT.R.forEach(function(R){if(R.k==='t')return;var ch=false,cap=R.half>3?.35:.25,NF=R.x.map(function(x,i){return nearF(x,R.z[i]);});
+      for(var i=0;i<R.x.length;i++){if(NF[i])continue;var t=terrH(R.x[i],R.z[i]);if(!isFinite(t))continue;if(R.y[i]>t+cap&&R.y[i]-t<12){R.y[i]=t+cap;ch=true;m2++;}}
+      if(ch){var m=1e9;for(var j=0;j<R.y.length;j++){if(NF[j]){m=R.y[j];continue;}m=Math.min(m,R.y[j]);R.y[j]=m;}}
+      /* niente gradini: il dislivello si distribuisce a monte con una pendenza dolce (i fiumi larghi al 5%, i fossi al 12%; le cascate vere restano) */
+      var g=R.half>3?.05:.12;for(var k=R.y.length-2;k>=0;k--){var ds=Math.max(1,R.s[k+1]-R.s[k]),dy=R.y[k]-R.y[k+1];if(NF[k]||(dy/ds>.35&&dy>3))continue;var lim=R.y[k+1]+g*ds;if(R.y[k]>lim){R.y[k]=lim;m2++;}}});
+    WAT.tfn=m2;}
+  return n;};
 /* sottopassi brevi segnati come "galleria" (in OSM anche i passaggi sotto la ferrovia o sotto un'altra strada):
    senza terreno sopra davvero, l'auto finiva sotto il prato. Restano gallerie solo quelle vere: lunghe o con roccia sopra, e le grandi strade */
 function netTunFix(){
