@@ -4192,7 +4192,7 @@ function audioTick(){
 /* ================= CAMERA ================= */
 /* Specchietti: un fotogramma sì e uno no la scena viene ridisegnata vista da dietro, senza la nostra auto */
 function mirrorPass(){
-  if(camMode!==1||state==='menu')return;
+  if(camMode!==1||state==='menu'||!carG.visible)return;   /* a piedi, col drone o in modalità God l'auto non c'è: niente specchietti (e non va rimessa in scena) */
   var on=!!opts.mir,mm=cabin.mirM;
   if(mm&&mm.map!==(on?mirrorTex:null)){mm.map=on?mirrorTex:null;mm.color.setHex(on?0xc6d0da:0x1a2029);mm.needsUpdate=true;}   /* spenti: vetro scuro */
   if(!on)return;
@@ -5952,7 +5952,7 @@ function walkStart(t){
   try{WALK.tp=localStorage.getItem('au_walktp')==='1';}catch(e){}setTimeout(function(){$('btnCam').textContent=WALK.tp?'3ª persona':'1ª persona';},0);
   WALK.on=true;WALK.t=t;WALK.s=0;WALK.auto=0;WALK.arr=false;WALK.ph=0;WALK.h=null;WALK.v=0;WALK.drawT=0;WALK.step=0;
   WALK.park={x:car.x,z:car.z,th:car.th,y:car.y};car.vx=car.vz=0;car.thr=car.brk=0;car.hb=true;drawHb();
-  WALK.cam=camMode;if(camMode===1)toggleCam();
+  WALK.cam=camMode;if(camMode===1){WALK.on=false;toggleCam();WALK.on=true;}   /* prima si esce dall'abitacolo, poi si scende: altrimenti il tasto cambiava solo la vista a piedi e l'auto restava attorno al giocatore */
   if(WALK.pg){scene.remove(WALK.pg);}WALK.pg=carG.clone();scene.add(WALK.pg);carG.visible=false;
   look.yaw=look.pitch=0;game.classList.add('walk');$('hint').hidden=true;$('gas').firstChild.textContent='AVANTI';$('brake').firstChild.textContent='INDIETRO';
   var p=trPoi(t);$('wbName').textContent='A piedi verso '+p.n;$('wbPano').hidden=true;
@@ -8923,7 +8923,7 @@ function godStart(){
 function godStop(){
   if(!GOD.on)return;GOD.on=false;GOD.keys={};GOD.drag=false;if(typeof ED!=='undefined'){ED.on=false;ED.sel=null;}
   var s=GOD.save;if(s){car.x=s.x;car.z=s.z;car.th=s.th;car.vx=car.vz=0;netSync(true);car.gy=car.y=netY(car.x,car.z);}
-  carG.visible=true;$('game').classList.remove('god');if(GOD.r0){NETR=GOD.r0[0];NETDROP=GOD.r0[1];camera.far=GOD.r0[2];camera.updateProjectionMatrix();}if(hwMtn)hwMtn.visible=true;applyLight();netSync(true);var b=$('godBadge');if(b)b.remove();
+  carG.visible=!((typeof PW!=='undefined'&&PW.on)||(typeof WALK!=='undefined'&&WALK.on));$('game').classList.remove('god');if(GOD.r0){NETR=GOD.r0[0];NETDROP=GOD.r0[1];camera.far=GOD.r0[2];camera.updateProjectionMatrix();}if(hwMtn)hwMtn.visible=true;applyLight();netSync(true);var b=$('godBadge');if(b)b.remove();
 }
 function godGround(x,z){var g=gndY(x,z),t=terrH(x,z);return Math.max(g,t);}
 function godTick(dt){
