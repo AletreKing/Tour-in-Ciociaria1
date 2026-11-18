@@ -11286,6 +11286,21 @@ var ripiPlRebuild0=plRebuild;plRebuild=function(){ripiPlRebuild0();if(!NET)retur
 var ripiPlKey0=plKey;plKey=function(){return ripiPlKey0()+'|'+plAll('C').concat(plAll('K')).map(function(e){return e.pk+JSON.stringify(e.o);}).join('|')+(NET?1:0);};
 var ripiEdT0=edTargets;edTargets=function(){var L=ripiEdT0();plAll('C').concat(plAll('K')).forEach(function(e){L.push({pk:e.pk,n:(RIPI.dim[e.pk]||{}).n||'Edificio',x:e.o.x,z:e.o.z,kind:e.pk.charAt(0),o0:e.o});});return L;};
 
+/* ================= PROVA DELLO SCRIGNO (solo in modalità God): porta l'auto accanto allo scrigno di Fosso Colaceco senza fare tutto il sentiero ================= */
+var godScS0=godStart;godStart=function(){godScS0();if(!GOD.on)return;
+  var b=document.createElement('button');b.id='godScr';b.type='button';b.className='chip hud';b.textContent='🎁 Prova lo scrigno';
+  b.style.cssText='position:absolute;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:12;visibility:visible';
+  b.addEventListener('pointerdown',function(e){e.stopPropagation();});
+  b.addEventListener('click',function(e){e.stopPropagation();
+    if(typeof TRL==='undefined'||!TRL.ready){say('Sentieri non ancora caricati: riprova tra poco','',2200);return;}
+    COLA.pos=null;var P=colaPlace();if(!P){say('Sentiero di Fosso Colaceco non trovato','',2400);return;}COLA.pos=P;
+    if(colaGet(COLA.flag)!=='aperto')colaSet(COLA.flag,'arrivato');
+    var ux=Math.sin(P.r),uz=Math.cos(P.r),x=P.x-ux*7,z=P.z-uz*7;   /* l'auto a 7 m, rivolta verso lo scrigno */
+    GOD.save={x:x,z:z,y:gndY(x,z),th:Math.atan2(P.x-x,P.z-z)};
+    godStop();say('Prova: lo scrigno è davanti a te (per un alunno compare solo a fine sentiero)','good',4200);});
+  $('game').appendChild(b);};
+var godScE0=godStop;godStop=function(){godScE0();var b=$('godScr');if(b)b.remove();};
+
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
   if(saved&&['city','hw','fi','cio'].indexOf(saved.track)>=0)opts.track=saved.track;
