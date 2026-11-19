@@ -11538,6 +11538,10 @@ function ferITE(F,p,G){var o=ferKit(F,p),Q=ferGround(p,7,12,7.5),g0=Q.g0,y0=Q.y0
   o.blocks(o.face(0,A+1.3,0,.02),n,-12,door-1.5,y0,gf+.2,.42,.9,FC.lime,r);o.blocks(o.face(0,A+1.3,0,.02),n,door+1.5,12,y0,gf+.2,.42,.9,FC.lime,r);
   o.box(A,A+1.3,-12,door-1.5,y0,gf+.2,FC.lime[1]);o.box(A,A+1.3,door+1.5,12,y0,gf+.2,FC.lime[1]);
   for(var i=0;i<3;i++)o.box(A,A+.45*(i+1)+.4,door-1.5,door+1.5,y0,gf-.3*i,FC.trav);
+  /* due striscioni tra le finestre del secondo piano */
+  [[4,ferBanITE()],[-4,ferBanOD()]].forEach(function(q){var b=q[0],m=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.82),new THREE.MeshLambertMaterial({map:q[1],side:THREE.DoubleSide}));
+    m.position.set(p.x+p.ux*(A+.12)-p.uz*b,gf+9.98,p.z+p.uz*(A+.12)+p.ux*b);m.rotation.y=Math.atan2(p.ux,p.uz);m.userData.ferW=1;G.push(m);
+    o.box(A,A+.16,b-1.2,b+1.2,gf+10.9,gf+10.97,FC.dark);});
   return[[0,0,7.2,12.1]];}
 
 /* ---------- San Francesco: facciata romanica in conci dorati, rosone, portale ad arco; campanile a destra con bifore ---------- */
@@ -11592,7 +11596,27 @@ function ferFiletico(F,p,G){var o=ferKit(F,p),Q=ferGround(p,7,13,7.5),g0=Q.g0,y0
   o.arch(o.face(0,A,0,.06),n,door,3.0,gf,4.0,hc(0xcdbf9e));o.arch(o.face(0,A,0,.09),n,door,2.2,gf,3.5,FC.wood);o.rect(o.face(0,A,0,.11),n,door-.03,door+.03,gf,gf+2.5,FC.dark);
   var fp=function(b,t,c){o.Q([o.P(A+.3,b,t),o.P(A+.3,b+.5,t),o.P(A+.9,b+.5,t-1.1),o.P(A+.9,b,t-1.1)],n,c);};
   o.box(A,A+1.1,door-.04,door+.04,gf+5.7,gf+5.78,FC.dark);fp(door-.45,gf+5.7,FC.flagG);fp(door+.05,gf+5.7,FC.flagB);
+  /* gli altri tre lati: stesse fasce marcapiano e finestre su tre piani */
+  o.box(-A-.12,-A,-13,13,gf+4.2,gf+4.45,FC.beigeL);o.box(-A-.08,-A,-13,13,gf+8.5,gf+8.68,FC.beigeL);
+  [13,-13.12].forEach(function(b){o.box(-A,A,b,b+.12,gf+4.2,gf+4.45,FC.beigeL);o.box(-A,A,b,b+.12,gf+8.5,gf+8.68,FC.beigeL);});
+  var fb=o.face(1,A,0,.04);[-10.6,-6.4,-2.7,2.7,6.4,10.6].forEach(function(b){[1.2,5.3,9.6].forEach(function(t){o.win(fb,o.MU,b,gf+t,1.1,1.75,.17,FC.beigeL,'glass');});});
+  [2,3].forEach(function(sd){var fs=o.face(sd,0,13,.04),ns=o.fn(sd);[-4.2,0,4.2].forEach(function(b){[1.2,5.3,9.6].forEach(function(t){o.win(fs,ns,b,gf+t,1.1,1.75,.17,FC.beigeL,'glass');});});});
+  ferPave(p,G,7.05,20.5,-13.4,13.4);
   return[[0,0,7.1,13.1]];}
+/* selciato: cubetti di pietra sul terreno della piazza (non sulla strada) */
+var FERPV=null;
+function ferPaveTex(){if(FERPV)return FERPV;var c=document.createElement('canvas');c.width=c.height=256;var x=c.getContext('2d'),r=ferRnd(4242);
+  x.fillStyle='#4a4741';x.fillRect(0,0,256,256);
+  for(var row=0;row<8;row++){var y=row*32,off=row%2?16:0;for(var k=-1;k<9;k++){var x0=k*32+off+(r()-.5)*3,w=29+(r()-.5)*3,h=29+(r()-.5)*3,g=118+(r()*44|0),t=(r()*10|0)-5;
+    x.fillStyle='rgb('+(g+t)+','+(g+t-4)+','+(g-10)+')';x.beginPath();if(x.roundRect)x.roundRect(x0+1.5,y+1.5,w-1.5,h-1.5,6);else x.rect(x0+1.5,y+1.5,w-1.5,h-1.5);x.fill();
+    x.fillStyle='rgba(255,255,255,.07)';x.fillRect(x0+5,y+5,w-12,5);}}
+  FERPV=new THREE.CanvasTexture(c);FERPV.wrapS=FERPV.wrapT=THREE.RepeatWrapping;FERPV.anisotropy=4;return FERPV;}
+function ferPave(p,G,a0,a1,b0,b1){var S=.5,P=[],U=[],I=[],n=0,vx=-p.uz,vz=p.ux;
+  function pt(a,b){var x=p.x+p.ux*a+vx*b,z=p.z+p.uz*a+vz*b,t=terrH(x,z),g=gndY(x,z);return{x:x,z:z,y:Math.max(t,isFinite(g)&&g-t<.06?g:t)+.05,road:isFinite(g)&&g-t>.06};}
+  for(var a=a0;a<a1-.01;a+=S)for(var b=b0;b<b1-.01;b+=S){var q=[pt(a,b),pt(a+S,b),pt(a+S,b+S),pt(a,b+S)];if(q[0].road&&q[1].road&&q[2].road&&q[3].road)continue;if(pt(a+S/2,b+S/2).road)continue;
+    q.forEach(function(v,i){P.push(v.x,v.y,v.z);U.push((b+(i===2||i===3?S:0))/2.2,(a+(i===1||i===2?S:0))/2.2);});I.push(n,n+2,n+1,n,n+3,n+2);n+=4;}
+  if(!n)return;var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));geo.setIndex(I);geo.computeVertexNormals();
+  var m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:ferPaveTex(),polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4,side:THREE.DoubleSide}));m.userData.ferW=1;G.push(m);}
 
 /* ---------- il Testamento di Aulo Quintilio Prisco: edicola scolpita nella roccia, su una base lunga 6,80 m e alta 1,20 m ---------- */
 var FERTX=null;
@@ -11642,7 +11666,51 @@ function ferLights(G0,pk,p){var f=FERL[pk];if(!f)return;ferLightMats();var L=f(p
   var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));geo.setIndex(I);
   var m=new THREE.Mesh(geo,FERLM);m.renderOrder=4;m.userData.ferW=1;m.raycast=function(){};G0.add(m);}
 function ferNightTick(){if(!FERLM)return;var d=typeof nwDark==='function'?nwDark():0,o=d>.3?Math.min(1,(d-.3)*2.2):0;FERLM.opacity=o*.85;FERLGM.opacity=o;FERLM.visible=FERLGM.visible=o>0;}
-var ferNT0=trSync;trSync=function(dt){ferNT0(dt);ferNightTick();};
+/* ---------- striscioni dell'ITE ---------- */
+var FERBN={};
+function ferBanCv(){var c=document.createElement('canvas');c.width=512;c.height=424;return c;}
+function ferBanITE(){if(FERBN.ite)return FERBN.ite;var c=ferBanCv(),x=c.getContext('2d');x.fillStyle='#f6f3ea';x.fillRect(0,0,512,424);
+  x.fillStyle='#1f3f99';x.fillRect(14,14,484,396);x.fillStyle='#f6f3ea';x.fillRect(26,26,460,372);x.fillStyle='#1f3f99';x.fillRect(34,34,444,356);
+  x.fillStyle='#ffffff';x.textAlign='center';x.textBaseline='middle';x.font='bold 170px Arial,Helvetica,sans-serif';x.fillText('ITE',256,160);
+  x.font='bold 74px Arial,Helvetica,sans-serif';x.fillText('FERENTINO',256,300);x.fillStyle='#c8312f';x.fillRect(120,244,272,8);
+  FERBN.ite=new THREE.CanvasTexture(c);FERBN.ite.anisotropy=4;return FERBN.ite;}
+function ferBanOD(){if(FERBN.od)return FERBN.od;var c=ferBanCv(),x=c.getContext('2d');x.fillStyle='#ffffff';x.fillRect(0,0,512,424);
+  x.fillStyle='#9e0000';x.beginPath();x.moveTo(0,0);x.lineTo(490,0);x.lineTo(0,205);x.closePath();x.fill();
+  x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
+  [['Open day',84,62],['19 dicembre 2026',150,62],['16 gennaio 2027',238,62],['dalle ore 10.00',326,62]].forEach(function(l){x.font='bold '+l[2]+'px Georgia,"Times New Roman",serif';
+    x.lineWidth=9;x.strokeStyle='#5a2a10';x.strokeText(l[0],256,l[1]+20);x.fillStyle='#fdc708';x.fillText(l[0],256,l[1]+20);});
+  FERBN.od=new THREE.CanvasTexture(c);FERBN.od.anisotropy=4;return FERBN.od;}
+/* ---------- fuochi d'artificio sopra l'ITE quando ci si passa vicino ---------- */
+var FK={N:2400,pts:null,P:null,C:null,V:null,L:null,L0:null,K:null,R:null,on:0,armed:true,next:0,head:0,rk:[]};
+function fkTex(){var c=document.createElement('canvas');c.width=c.height=64;var x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.3,'rgba(255,255,255,.6)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);}
+function fkInit(){if(FK.pts)return;var N=FK.N;FK.P=new Float32Array(N*3);FK.C=new Float32Array(N*3);FK.V=new Float32Array(N*3);FK.L=new Float32Array(N);FK.L0=new Float32Array(N);FK.K=new Float32Array(N*3);
+  for(var i=0;i<N;i++)FK.P[i*3+1]=-1e4;
+  var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(FK.P,3));g.setAttribute('color',new THREE.BufferAttribute(FK.C,3));
+  FK.pts=new THREE.Points(g,new THREE.PointsMaterial({size:1.5,map:fkTex(),vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+  FK.pts.frustumCulled=false;FK.pts.renderOrder=6;FK.pts.raycast=function(){};scene.add(FK.pts);}
+function fkAdd(x,y,z,vx,vy,vz,life,r,g,b){var i=FK.head;FK.head=(FK.head+1)%FK.N;FK.P[i*3]=x;FK.P[i*3+1]=y;FK.P[i*3+2]=z;FK.V[i*3]=vx;FK.V[i*3+1]=vy;FK.V[i*3+2]=vz;FK.L[i]=FK.L0[i]=life;FK.K[i*3]=r;FK.K[i*3+1]=g;FK.K[i*3+2]=b;}
+var FKCOL=[[1,.25,.2],[1,.85,.25],[.3,.7,1],[.4,1,.45],[1,.4,.9],[1,1,1],[1,.6,.15]];
+function fkBoom(x,y,z){var c=FKCOL[Math.random()*FKCOL.length|0],c2=Math.random()<.35?FKCOL[Math.random()*FKCOL.length|0]:c,n=160+(Math.random()*80|0),sp=13+Math.random()*7;
+  for(var k=0;k<n;k++){var u=Math.random()*2-1,a=Math.random()*Math.PI*2,s=Math.sqrt(1-u*u),v=sp*(.85+Math.random()*.25),cc=k%2?c:c2;fkAdd(x,y,z,s*Math.cos(a)*v,u*v,s*Math.sin(a)*v,1.5+Math.random()*.9,cc[0],cc[1],cc[2]);}
+  try{if(AC&&opts.snd){var d=Math.hypot(x-(camera.position.x+OX),z-(camera.position.z+OZ)),t=AC.currentTime+d/340,n2=AC.sampleRate*1.2|0,buf=AC.createBuffer(1,n2,AC.sampleRate),ch=buf.getChannelData(0),w=0;
+    for(var j=0;j<n2;j++){w=w*.93+(Math.random()*2-1)*.3;ch[j]=w*Math.pow(1-j/n2,3);}var s2=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s2.buffer=buf;f.type='lowpass';f.frequency.value=420;g.gain.value=Math.min(1.6,60/(d+20));
+    s2.connect(f);f.connect(g);g.connect(au&&au.master?au.master:AC.destination);s2.start(t);}}catch(e){}}
+function fkSite(){var e=plAll('F').filter(function(e){return e.pk==='F:ite';})[0];return e?plPos(e.o):null;}
+function fkTick(dt){if(typeof camera==='undefined'||!NET)return;var p=fkSite();if(!p)return;
+  var cx=camera.position.x+OX,cz=camera.position.z+OZ,d=Math.hypot(cx-p.x,cz-p.z);
+  if(state!=='menu'&&FK.armed&&d<65){FK.armed=false;FK.on=15;FK.next=.2;fkInit();}
+  if(!FK.armed&&d>110&&FK.on<=0)FK.armed=true;
+  if(!FK.pts)return;dt=Math.min(dt,.05);
+  if(FK.on>0){FK.on-=dt;FK.next-=dt;if(FK.next<=0){FK.next=.35+Math.random()*.6;var b=(Math.random()*2-1)*10,a=18+Math.random()*8,x=p.x+p.ux*a-p.uz*b,z=p.z+p.uz*a+p.ux*b,y=gndY(x,z);
+    FK.rk.push({x:x,y:y,z:z,vx:(Math.random()-.5)*3,vy:30+Math.random()*7,vz:(Math.random()-.5)*3,t:1.15+Math.random()*.45});}}
+  for(var r=FK.rk.length-1;r>=0;r--){var q=FK.rk[r];q.x+=q.vx*dt;q.y+=q.vy*dt;q.z+=q.vz*dt;q.vy-=9*dt;q.t-=dt;if(Math.random()<.5)fkAdd(q.x,q.y,q.z,(Math.random()-.5)*.8,-1,(Math.random()-.5)*.8,.3,.5,.36,.18);if(q.t<=0){fkBoom(q.x,q.y,q.z);FK.rk.splice(r,1);}}
+  var P=FK.P,V=FK.V,L=FK.L,C=FK.C,K=FK.K,any=FK.rk.length>0,dr=Math.pow(.35,dt);
+  for(var i=0;i<FK.N;i++){if(L[i]<=0)continue;any=true;L[i]-=dt;var j=i*3;if(L[i]<=0){P[j+1]=-1e4;C[j]=C[j+1]=C[j+2]=0;continue;}
+    V[j]*=dr;V[j+1]=V[j+1]*dr-4.5*dt;V[j+2]*=dr;P[j]+=V[j]*dt;P[j+1]+=V[j+1]*dt;P[j+2]+=V[j+2]*dt;var f=L[i]/FK.L0[i],fl=f>.25||Math.random()<.6?1:.2,k=Math.min(1,f*1.6)*fl;C[j]=K[j]*k;C[j+1]=K[j+1]*k;C[j+2]=K[j+2]*k;}
+  FK.pts.visible=any;if(!any)return;FK.pts.position.set(-OX,0,-OZ);FK.pts.geometry.attributes.position.needsUpdate=true;FK.pts.geometry.attributes.color.needsUpdate=true;
+  FK.pts.material.size=2.3+(typeof nwDark==='function'?(1-nwDark())*1.6:0);}
+var ferNT0=trSync;trSync=function(dt){ferNT0(dt);ferNightTick();try{fkTick(dt);}catch(e){}};
 /* ---------- porte ---------- */
 /* muro di porta ad arco: spessore a0..a1, da bL a bR, apertura larga w con l'imposta a quota tS; anelli di conci [r0,r1,N,colori,chiave] */
 function ferArchWall(o,a0,a1,bL,bR,y0,top,w,tS,rings,face,soff){var R=w/2,P=o.P;
