@@ -2227,7 +2227,7 @@ function netTile(tx,tz){
     /* locali: edificio con lampadine lungo la gronda e gli spigoli, insegna luminosa senza scritte */
     var VPL=[],BL=[new GB(),new GB(),new GB()],SGB=new GB(),vl=venLoad().t.get(nk(tx,tz))||[];
     if(typeof SC!=='undefined'&&SC.pois)SC.pois.forEach(function(q){
-      if(q.c!=='fede'||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT||townAt(q.x,q.z)[0]<=0)return;
+      if(ferIs(q)||q.c!=='fede'||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT||townAt(q.x,q.z)[0]<=0)return;
       if(/museo|convento|monastero|certosa|abbazia|eremo|santuario|badia|collegio/i.test(q.n))return;   /* solo chiese di paese */
       if(chNear(q.x,q.z,40))return;   /* c'è l'edificio vero: diventa chiesa lì */
       var pr=netProbe(q.x,q.z);if(!pr||pr.d>80)return;var e=NET.E[pr.e],pp=pr.p,L=Math.hypot(P.x1[pp]-P.x0[pp],P.z1[pp]-P.z0[pp])||1,rdx=(P.x1[pp]-P.x0[pp])/L,rdz=(P.z1[pp]-P.z0[pp])/L;
@@ -2706,22 +2706,29 @@ function scLabel(p){
   x.fillStyle=CATH[p.c];x.fillRect(256-w/2+8,22,8,52);
   x.fillStyle='#eef2f6';x.textAlign='center';x.textBaseline='middle';x.fillText(p.n,256+(got?-14:6),50,w-60);
   if(got){x.fillStyle='#ffa02e';x.font='700 40px '+F;x.fillText('✓',256+w/2-30,50);}
-  var t=new THREE.CanvasTexture(c),s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false}));s.scale.set(28,5.25,1);s.position.y=12.5;return s;
+  var t=new THREE.CanvasTexture(c),s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false}));s.scale.set(28,5.25,1);s.position.y=p.ly||12.5;return s;
 }
 function scMarker(p){
   var g=new THREE.Group();g.add(scLabel(p));g.userData.p=p;return g;
 }
 function scDrop(id){var g=SC.markers[id];if(!g)return;scG.remove(g);g.children.forEach(function(n){if(n.isSprite){n.material.map.dispose();n.material.dispose();}});delete SC.markers[id];}
 function scRefresh(p){if(SC.markers[p.id]){scDrop(p.id);}}
+/* il nome del luogo sta due metri sopra la cosa più alta lì attorno (chiese, porte, rocce): prima a 12,5 m fissi poteva coprirla */
+var scLyBudget=0,scLyRC=new THREE.Raycaster(),scLyV=new THREE.Vector3(),scLyD=new THREE.Vector3(0,-1,0);
+function scLyFit(p){var top=-1e9,R=[[0,0]];for(var k=0;k<8;k++){var a=k/8*Math.PI*2;R.push([Math.cos(a)*6,Math.sin(a)*6],[Math.cos(a)*12,Math.sin(a)*12]);}
+  var T=[netG];if(typeof PLG!=='undefined')T.push(PLG);if(typeof PLG!=='undefined')PLG.position.set(-OX,0,-OZ);T.forEach(function(g){g.updateMatrixWorld(true);});
+  R.forEach(function(q){scLyV.set(p.mx+q[0]-OX,p.gy+150,p.mz+q[1]-OZ);scLyRC.set(scLyV,scLyD);scLyRC.far=300;var h=scLyRC.intersectObjects(T,true);for(var i=0;i<h.length;i++){var ob=h[i].object,vis=true;for(var o2=ob;o2;o2=o2.parent)if(!o2.visible){vis=false;break;}if(!vis||ob.isSprite||ob.isPoints||ob.isLine||(ob.material&&ob.material.transparent&&!ob.material.depthWrite))continue;top=Math.max(top,h[i].point.y);break;}});
+  p.ly=Math.min(70,Math.max(12.5,top-p.gy+2+2.7));p.lyOk=1;}
 function scSync(){
-  if(!SC.pois.length)return;
+  if(!SC.pois.length)return;scLyBudget=2;
   for(var k=0;k<SC.pois.length;k++){
     var p=SC.pois[k],dx=p.x-car.x,dz=p.z-car.z;if(p.hid)continue;
     if(Math.abs(dx)>1700||Math.abs(dz)>1700){if(SC.markers[p.id])scDrop(p.id);continue;}
     var d=Math.hypot(dx,dz);
     if(d<1300&&!SC.markers[p.id]){SC.markers[p.id]=scMarker(p);scG.add(SC.markers[p.id]);}
     else if(d>1650&&SC.markers[p.id])scDrop(p.id);
-    if(SC.markers[p.id]){if(p.gy==null){scOff(p);p.gy=gndY(p.mx,p.mz);}SC.markers[p.id].position.set(p.mx-OX,p.gy,p.mz-OZ);}
+    if(SC.markers[p.id]){if(p.gy==null){scOff(p);p.gy=gndY(p.mx,p.mz);p.lyOk=0;}SC.markers[p.id].position.set(p.mx-OX,p.gy,p.mz-OZ);
+      if(!p.lyOk&&d<450&&scLyBudget>0&&netTiles[nk(Math.floor(p.mx/NT),Math.floor(p.mz/NT))]){scLyBudget--;scLyFit(p);var sp=SC.markers[p.id].children[0];if(sp)sp.position.y=p.ly;}}
   }
   var tp=nrun.dst&&nrun.dst.poi;scBeam.visible=!!tp&&world==='net';
   if(tp){var TW=poiW(tp),bk=TW[0]+','+TW[1];if(tp.bk!==bk){tp.bk=bk;tp.bgy=gndY(TW[0],TW[1]);}scBeam.position.set(TW[0]-OX,tp.bgy+120,TW[1]-OZ);}
@@ -7117,14 +7124,14 @@ function chPlace(F,cx,cz,ux,uz,hw,hd,gb,gt,ox,oz,obs,r){
   var O=nChurch2(F,cx-ox,cz-oz,ux,uz,hw,hd,gb-.8,g0,r,small,fros);
   if(fros){var ta=-hw+4,tb=hd+4.3,tx2=cx+ux*ta-uz*tb,tz2=cz+uz*ta+ux*tb,TB=bldBase(tx2,tz2,ux,uz,3.8,3.8);   /* il campanile romanico di Frosinone */
     lmTower(F,tx2-ox,tz2-oz,ux,uz,3.8,46,TB[1]-1,Math.max(TB[0],TB[2]-3),'fros');O.push([ta,tb,3.8,3.8]);}
-  if(typeof SC!=='undefined'&&SC.pois)SC.pois.forEach(function(q){if(q.c==='fede'&&!q.church&&Math.hypot(q.x-cx,q.z-cz)<40){q.mx=cx+ux*(hw+3.5);q.mz=cz+uz*(hw+3.5);q.gy=null;q.church=1;}});   /* la colonna del luogo davanti alla facciata */
+  if(typeof SC!=='undefined'&&SC.pois)SC.pois.forEach(function(q){if(q.c==='fede'&&!q.church&&!ferIs(q)&&Math.hypot(q.x-cx,q.z-cz)<40){q.mx=cx+ux*(hw+3.5);q.mz=cz+uz*(hw+3.5);q.gy=null;q.church=1;}});   /* la colonna del luogo davanti alla facciata */
   O.forEach(function(o,i){obs.push([1,cx+ux*o[0]-uz*o[1],cz+uz*o[0]+ux*o[1],ux,uz,o[2],o[3],gb-.8,g0+5,i===0?1:0]);});
 }
 /* luoghi di fede senza un edificio in mappa (cappelle di montagna, chiesette di campagna): una cappella vera */
 function chPoi(F,tx,tz,ox,oz,obs,r){
   if(typeof SC==='undefined'||!SC.pois)return;
   SC.pois.forEach(function(q){
-    if(q.modello||q.ferM||lmpNear(q.x,q.z))return;if(q.c!=='fede'||q.church||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
+    if(q.modello||ferIs(q)||lmpNear(q.x,q.z))return;if(q.c!=='fede'||q.church||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
     if(/museo/i.test(q.n))return;
     for(var i=0;i<obs.length;i++){var o=obs[i];if(o[0]!==1)continue;var d=Math.hypot(o[1]-q.x,o[2]-q.z);if((o[9]===1&&d<45)||d<Math.max(o[5],o[6])+6)return;}
     if(chNear(q.x,q.z,45))return;
@@ -7529,7 +7536,7 @@ function lmKind(q){
 function lmTile(F,tx,tz,ox,oz,obs,VPL,r){
   if(typeof SC==='undefined'||!SC.pois)return;
   SC.pois.forEach(function(q){
-    if(q.ferM||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;if(q.modello){q.lm='mod';return;}var k=lmKind(q);if(!k)return;if(k!=='gate'&&(lmpNear(q.x,q.z)||lmpNear(q.x+20,q.z)||lmpNear(q.x-20,q.z)||lmpNear(q.x,q.z+20)||lmpNear(q.x,q.z-20))){q.lm=k;return;}
+    if(ferIs(q)||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;if(q.modello){q.lm='mod';return;}var k=lmKind(q);if(!k)return;if(k!=='gate'&&(lmpNear(q.x,q.z)||lmpNear(q.x+20,q.z)||lmpNear(q.x-20,q.z)||lmpNear(q.x,q.z+20)||lmpNear(q.x,q.z-20))){q.lm=k;return;}
     var fp=lmFoot(q.x,q.z,k==='gate'?6:25),x=q.x,z=q.z,ux=1,uz=0,hw=8,hd=6;
     if(fp&&k!=='gate'){x=fp.x;z=fp.z;ux=fp.ux;uz=fp.uz;hw=Math.max(fp.hw,3);hd=Math.max(fp.hd,3);}
     var pr=netProbe(x,z);
@@ -8727,7 +8734,7 @@ var F0=new GB();
 function p3Tile(g,tx,tz,ox,oz,obs){
   if(typeof SC==='undefined'||!SC.pois)return;
   SC.pois.forEach(function(q){
-    if(q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
+    if(ferIs(q)||q.hid||q.x<ox||q.x>=ox+NT||q.z<oz||q.z>=oz+NT)return;
     if(q.modello||q.lm||q.church||(typeof lmpNear==='function'&&lmpNear(q.x,q.z)))return;
     /* c'è già un edificio vero sul posto (museo in un palazzo, chiesa, casa natale…): basta quello */
     var k=p3Kind(q);if(k!=='peak'&&k!=='view'&&k!=='cross'&&k!=='board'&&k!=='fall'&&k!=='cave'&&k!=='spring'&&bldHit(obs,q.x,q.z,1,0,12,12))return;
@@ -11583,7 +11590,6 @@ function ferPSanguinaria(F,p,G){var o=ferKit(F,p),Q=ferGround(p,1.5,9,0),g0=Q.g0
 /* Porta Sant'Agata (del Borgo): rifatta in età barocca, arco a bugnato con chiave, cornice e in alto due epigrafi */
 function ferPSAgata(F,p,G){var o=ferKit(F,p),g0=gndY(p.x,p.z)+p.dy,Q=ferGround(p,1.3,6.5,0),y0=Math.min(Q.y0,g0-1.5),w=4.8,R=w/2,tS=g0+3.5,top=g0+9.0,r=ferRnd(303),Ro=R+.75;
   ferArchWall(o,-1.3,1.3,-6.5,6.5,y0,top,w,tS,[[R,Ro,11,[FC.trv[2],FC.trv[0]],1]],{c:FC.plas,pat:function(ff,nn){
-    o.rect(ff,nn,-6.5,6.5,y0,top,FC.plas);
     for(var t=y0,i=0;t<tS+.1;t+=.55,i++){var e=i%2?.5:0;o.rect(o.face(0,1.3,0,.06),nn,-R-1.05-e,-R,t+.04,t+.51,FC.trv[i%2]);o.rect(o.face(0,1.3,0,.06),nn,R,R+1.05+e,t+.04,t+.51,FC.trv[i%2]);
       o.rect(o.face(1,1.3,0,.06),o.MU,-R-1.05-e,-R,t+.04,t+.51,FC.trv[i%2]);o.rect(o.face(1,1.3,0,.06),o.MU,R,R+1.05+e,t+.04,t+.51,FC.trv[i%2]);}}},FC.trv[3]);
   o.box(-1.45,1.45,-6.7,6.7,g0+6.6,g0+7.0,FC.travL);o.box(-1.55,1.55,-6.8,6.8,g0+8.8,g0+9.2,FC.travL);
@@ -11611,6 +11617,7 @@ var ferEdT0=edTargets;edTargets=function(){var L=ferEdT0();plAll('F').forEach(fu
 /* la scheda di ogni monumento: niente modello generico al suo posto, colonna di luce davanti all'ingresso */
 function ferPoi(pk,p){var d=FER.dim[pk];if(!d||!d.poi||typeof SC==='undefined'||!SC.pois)return;var q=SC.pois.filter(function(q){return q.key===d.poi&&q.com==='Ferentino';})[0];if(!q)return;
   q.ferM=1;var k=d.gate?0:d.D/2+4;q.mx=p.x+p.ux*k;q.mz=p.z+p.uz*k;q.mxFix=1;q.gy=null;}
+var FERN=null;function ferIs(q){if(q.ferM!=null)return q.ferM;if(!FERN){FERN={};Object.keys(FER.dim).forEach(function(k){FERN[FER.dim[k].poi]=1;});}q.ferM=(q.com==='Ferentino'&&FERN[q.key])?1:0;return q.ferM;}
 function ferMarkAll(){if(typeof SC==='undefined'||!SC.pois)return;var D=FER.dim;Object.keys(D).forEach(function(k){SC.pois.forEach(function(q){if(q.key===D[k].poi&&q.com==='Ferentino')q.ferM=1;});});}
 /* gli edifici della carta e quelli inventati non si costruiscono dove stanno i monumenti */
 var ferLmTile0=lmTile;lmTile=function(F,tx,tz,ox,oz,obs,VPL,r){ferMarkAll();ferLmTile0.apply(this,arguments);if(!VPL)return;
