@@ -11363,6 +11363,61 @@ var scPendNat0=natTick;natTick=function(dt){scPendNat0(dt);try{var p=SC.pend;if(
   if(SC.pendDst&&!(nrun.dst&&nrun.dst.poi===p)){SC.pend=null;return;}   /* nuova destinazione scelta: si lascia perdere */
   if(state==='drive'&&!paused&&$('card').hidden&&scPendD(p)<=SC_OPEN_D)scPendOpen();}catch(e){}};
 
+/* ================= SORPRESA A FERENTINO: davanti alla cattedrale il papa e l'imperatore discutono della crociata (1223) ================= */
+(function(){
+  var E={k:'papare',at:'duomo',ll:[41.6931,13.2561],say:'Davanti alla cattedrale un papa e un imperatore discutono animatamente… toccali',
+    p:{n:'Ferentino, 1223: il papa e l’imperatore',com:'Ferentino',w:'it:Federico II di Svevia',
+      t:"Nel marzo del 1223, a Ferentino, papa Onorio III e l'imperatore Federico II di Svevia si incontrarono per preparare una nuova crociata in Terra Santa. Con loro c'erano Giovanni di Brienne, re di Gerusalemme, il patriarca latino di Gerusalemme e i maestri degli ordini militari.\nSecondo la tradizione l'incontro si tenne nella cattedrale: accanto al portale della sagrestia si vedono due piccole teste scolpite che rappresenterebbero Federico II e Giovanni di Brienne.\nFederico rinnovò il voto di partire, ma rinviò ancora la partenza e nel 1227 il nuovo papa, Gregorio IX, lo scomunicò. Partì l'anno dopo e nel 1229, con il trattato di Giaffa, ottenne Gerusalemme senza combattere, trattando con il sultano al-Kamil. È la crociata che di solito si chiama sesta."}};
+  var q=eggXZ(E.ll[0],E.ll[1]);E.x=q[0];E.z=q[1];var p=E.p;p.id=-10-EGGS.length;p.key=p.n;p.pk='egg:'+E.k;p.c='lett';p.x=E.x;p.z=E.z;p.wd='';p.foto=[];p.foto0=[];p.bozza=true;p.node=-1;p.extra=[];p.link=[];
+  EGGS.push(E);
+})();
+/* posto: sul sagrato, di lato rispetto alla colonna di luce della cattedrale; segue la cattedrale se viene spostata */
+var eggPlacePR0=eggPlace;eggPlace=function(E){
+  if(E.at!=='duomo')return eggPlacePR0(E);
+  var D=null;try{plAll('F').forEach(function(e){if(e.pk==='F:duomo')D=plPos(e.o);});}catch(er){}
+  if(!D)return{x:E.x,z:E.z,y:gndY(E.x,E.z),r:0};
+  var a=22.5,b=-6.5,x=D.x+D.ux*a-D.uz*b,z=D.z+D.uz*a+D.ux*b;
+  return{x:x,z:z,y:gndY(x,z),r:Math.atan2(D.ux,D.uz)};
+};
+function eggPapaRe(){
+  var g=new THREE.Group(),U=g.userData;
+  var white=eggM(0xf3f0e8,0x1c1b18),red=eggM(0xa8202a,0x160404),gold=eggM(0xd6a62c,0x3a2800),skin=eggM(0xe0b392,0x1a110b),grey=eggM(0xb9b4ad),
+      purple=eggM(0x5a2a6e,0x0c0410),blue=eggM(0x2d4f8c,0x060a14),hair=eggM(0xb8743a),boot=eggM(0x4a2e1e),ermine=eggM(0xf4f2ec,0x202020),dk=eggM(0x1a1a1a);
+  function arm(par,x,y,cl,hand){var a=new THREE.Group();a.position.set(x,y,0);par.add(a);eggBox(a,.13,.52,.14,cl,0,-.24,0);eggBox(a,.11,.11,.12,hand,0,-.53,0);return a;}
+  /* il papa (a sinistra): veste bianca lunga, piviale rosso bordato d'oro, camauro bianco a cono con il cerchio d'oro */
+  var P=new THREE.Group();P.position.set(-.75,0,0);P.rotation.y=Math.PI/2;g.add(P);
+  var sk=new THREE.Mesh(new THREE.CylinderGeometry(.24,.34,1.15,10),white);sk.position.y=.58;P.add(sk);
+  eggBox(P,.5,.62,.32,white,0,1.35,0);
+  eggBox(P,.6,1.25,.05,red,0,1.05,-.19);eggBox(P,.08,1.0,.34,red,.29,1.2,0);eggBox(P,.08,1.0,.34,red,-.29,1.2,0);   /* piviale */
+  eggBox(P,.04,1.0,.02,gold,.2,1.2,.17);eggBox(P,.04,1.0,.02,gold,-.2,1.2,.17);eggBox(P,.5,.1,.36,gold,0,1.62,0);
+  eggBox(P,.2,.24,.21,skin,0,1.8,0);eggBox(P,.22,.06,.03,grey,0,1.71,.1);
+  var ti=new THREE.Mesh(new THREE.ConeGeometry(.15,.42,10),white);ti.position.y=2.1;P.add(ti);var tb=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.06,10),gold);tb.position.y=1.93;P.add(tb);
+  eggBox(P,.06,.06,.06,gold,0,2.33,0);
+  U.pA=arm(P,.31,1.6,white,skin);U.pB=arm(P,-.31,1.6,white,skin);
+  var cr=new THREE.Group();cr.position.set(-.32,0,.14);P.add(cr);eggBox(cr,.04,1.9,.04,gold,0,.95,0);eggBox(cr,.26,.04,.04,gold,0,1.75,0);eggBox(cr,.04,.24,.04,gold,0,1.83,0);   /* ferula */
+  U.pH=P;
+  /* l'imperatore (a destra): tunica azzurra, manto viola foderato d'ermellino, corona, capelli rossicci */
+  var R=new THREE.Group();R.position.set(.75,0,0);R.rotation.y=-Math.PI/2;g.add(R);
+  [.1,-.1].forEach(function(x){eggBox(R,.15,.62,.17,purple,x,.32,0);eggBox(R,.17,.1,.26,boot,x,.05,.04);});
+  eggBox(R,.5,.6,.32,blue,0,.9,0);eggBox(R,.5,.62,.3,blue,0,1.35,0);eggBox(R,.52,.07,.33,gold,0,1.05,0);
+  eggBox(R,.66,1.35,.05,purple,0,1.0,-.19);eggBox(R,.62,.14,.36,ermine,0,1.62,0);
+  for(var k=0;k<5;k++)eggBox(R,.025,.04,.01,dk,-.24+k*.12,1.62,.19);
+  eggBox(R,.2,.24,.21,skin,0,1.8,0);eggBox(R,.23,.08,.23,hair,0,1.93,-.01);eggBox(R,.23,.2,.05,hair,0,1.8,-.11);
+  var co=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,.08,10,1,true),gold);co.position.y=1.99;R.add(co);
+  for(var k=0;k<4;k++){var a=k/4*Math.PI*2;eggBox(R,.05,.1,.03,gold,Math.cos(a)*.13,2.06,Math.sin(a)*.13,0,-a);}
+  U.rA=arm(R,.31,1.6,blue,skin);U.rB=arm(R,-.31,1.6,blue,skin);
+  var gl=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),gold);gl.position.set(0,-.62,.02);U.rB.add(gl);   /* globo */
+  U.rH=R;return g;
+}
+eggBuild.papare=eggPapaRe;
+/* a turno: uno parla gesticolando, l'altro ascolta; ogni tanto si voltano verso chi arriva */
+var eggTickPR0=eggTick;eggTick=function(dt){eggTickPR0(dt);
+  EGGS.forEach(function(E){if(E.k!=='papare'||!E.g)return;var U=E.g.userData,t=E.t,turn=Math.floor(t/3.2)%2,f=Math.min(1,(t%3.2)/.4);
+    var sp=turn?[U.rA,U.rB]:[U.pA,U.pB],ls=turn?[U.pA,U.pB]:[U.rA,U.rB];
+    sp[0].rotation.x=-(1.0+Math.sin(t*4.2)*.45)*f;sp[0].rotation.z=.15;sp[1].rotation.x=-(.5+Math.sin(t*3.1+1)*.35)*f;
+    ls[0].rotation.x*=.9;ls[1].rotation.x*=.9;ls[0].rotation.z*=.9;
+    U.pH.rotation.z=turn?0:Math.sin(t*4.2)*.04;U.rH.rotation.z=turn?Math.sin(t*4.2)*.04:0;
+    U.pH.position.y=turn?0:Math.abs(Math.sin(t*2.1))*.02;U.rH.position.y=turn?Math.abs(Math.sin(t*2.1))*.02:0;});};
 /* ================= FERENTINO: Sant'Agata con l'ITE, San Francesco con il «Martino Filetico», il Testamento di Aulo Quintilio Prisco, le porte della città =================
    Modelli fatti su misura dalle foto. Ognuno si sposta e si ruota in modalità God (Q/E) come le altre costruzioni. */
 var FER={def:{
