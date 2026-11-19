@@ -4269,10 +4269,11 @@ function cameraTick(dt){
     if(aspect<1.2)camera.setViewOffset(vw,vh,0,vh*.24,vw,vh);else camera.setViewOffset(vw,vh,-vw*.27,0,vw,vh);
   }else if(WALK.on||BINO.on){walkCam(dt);
   }else if(camMode===1){
-    var dx=spec.W*.19,lx=dx*c,lz=-dx*s;  /* sinistra dell'auto = +x locale */
-    camera.position.set(X+lx+s*spec.cam.z,cy+spec.cam.y+.1,Z+lz+c*spec.cam.z);
-    var la=car.th-car.steer*.1+look.yaw,ls=Math.sin(la),lc=Math.cos(la);
-    camera.lookAt(camera.position.x+ls*10,camera.position.y-.2+Math.tan(look.pitch)*10,camera.position.z+lc*10);
+    var dx=spec.W*.19;  /* sinistra dell'auto = +x locale */
+    /* l'occhio del guidatore segue l'auto anche quando sale sul cordolo o è inclinata in salita/discesa: prima restava all'altezza della strada e finiva sotto il cruscotto */
+    carG.updateMatrixWorld(true);var ev=new THREE.Vector3(dx,spec.cam.y+.1,spec.cam.z).applyMatrix4(carG.matrixWorld);camera.position.copy(ev);
+    var la=-car.steer*.1+look.yaw,ld=new THREE.Vector3(Math.sin(la)*10,-.2+Math.tan(look.pitch)*10,Math.cos(la)*10).transformDirection(carG.matrixWorld).multiplyScalar(10);
+    camera.lookAt(ev.x+ld.x,ev.y+ld.y,ev.z+ld.z);
     camera.fov=aspect<1?86:70;
   }else{
     var d=car.th-camTh;d=Math.atan2(Math.sin(d),Math.cos(d));camTh+=d*Math.min(1,dt*5.5);
