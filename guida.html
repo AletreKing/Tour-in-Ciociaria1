@@ -11619,6 +11619,29 @@ function ferTestamento(F,p,G){var o=ferKit(F,p),g0=gndY(p.x+p.ux*1.6,p.z+p.uz*1.
   var pl=new THREE.Mesh(new THREE.PlaneGeometry(2.55,2.35),new THREE.MeshLambertMaterial({map:ferInscr()}));pl.position.set(p.x+p.ux*(A+.03),b0+ph/2+.02,p.z+p.uz*(A+.03));pl.rotation.y=Math.atan2(p.ux,p.uz);pl.userData.ferW=1;G.push(pl);
   return[[-.5,0,1.3,3.5]];}
 
+/* ---------- illuminazione notturna dei monumenti: fari a terra e fasci di luce calda sulle facciate ---------- */
+var FERLM=null,FERLGM=null;
+function ferBeamTex(){var W=64,H=128,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d'),im=x.createImageData(W,H);
+  for(var j=0;j<H;j++){var v=1-j/(H-1),I=Math.pow(1-v,1.15)*(v<.04?v/.04:1)*.95+.05*(1-v);
+    for(var i=0;i<W;i++){var u=(i+.5)/W-.5,s=.2+.25*v,w=Math.exp(-(u*u)/(s*s)),a=I*w,k=(j*W+i)*4;im.data[k]=255;im.data[k+1]=222;im.data[k+2]=170;im.data[k+3]=Math.round(255*Math.min(1,a));}}
+  x.putImageData(im,0,0);var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;return t;}
+function ferLightMats(){if(FERLM)return;FERLM=new THREE.MeshBasicMaterial({map:ferBeamTex(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4,fog:true});
+  FERLGM=new THREE.SpriteMaterial({map:lampGlowTex(),color:0xffe2b0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0});}
+/* per ogni monumento: piano dei fasci (distanza a dalla linea centrale), quota di partenza, fasci [b, larghezza, altezza] */
+var FERL={
+  'F:ite':function(p){var g=ferGround(p,7,12,7.5).g0+.9-.4;return{a:7.22,y:g,B:[[-9,7,13.6],[-3.2,6.5,13.6],[3.2,6.5,13.6],[9,7,13.6]],fa:8.4};},
+  'F:filetico':function(p){var g=ferGround(p,7,13,7.5).g0+.25-.3;return{a:7.28,y:g,B:[[-10,7,13.4],[-3.5,6.5,13.4],[3.5,6.5,13.4],[10,7,13.4]],fa:8.6};},
+  'F:testamento':function(p){var g=gndY(p.x+p.ux*1.6,p.z+p.uz*1.6)+p.dy;return{a:.66,y:g+.3,B:[[-1.1,2.8,5.6],[1.1,2.8,5.6]],fa:.95,fy:g+1.2};}};
+function ferLights(G0,pk,p){var f=FERL[pk];if(!f)return;ferLightMats();var L=f(p),P=[],U=[],I=[],n=0,vx=-p.uz,vz=p.ux;
+  L.B.forEach(function(b,i){var x0=p.x+p.ux*L.a+vx*(b[0]-b[1]/2),z0=p.z+p.uz*L.a+vz*(b[0]-b[1]/2),x1=p.x+p.ux*L.a+vx*(b[0]+b[1]/2),z1=p.z+p.uz*L.a+vz*(b[0]+b[1]/2);
+    P.push(x0,L.y,z0,x1,L.y,z1,x1,L.y+b[2],z1,x0,L.y+b[2],z0);U.push(0,0,1,0,1,1,0,1);I.push(n,n+1,n+2,n,n+2,n+3);n+=4;
+    var fx=p.x+p.ux*L.fa+vx*b[0],fz=p.z+p.uz*L.fa+vz*b[0],fy=L.fy!=null?L.fy:gndY(fx,fz);
+    var box=new THREE.Mesh(new THREE.BoxGeometry(.42,.3,.32),PLMpole);box.position.set(fx,fy+.15,fz);box.rotation.y=Math.atan2(p.ux,p.uz);box.rotation.x=0;G0.add(box);
+    var sp=new THREE.Sprite(FERLGM);sp.position.set(fx-p.ux*.2,fy+.36,fz-p.uz*.2);sp.scale.set(1.3,1.3,1);sp.raycast=function(){};G0.add(sp);});
+  var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));geo.setIndex(I);
+  var m=new THREE.Mesh(geo,FERLM);m.renderOrder=4;m.userData.ferW=1;m.raycast=function(){};G0.add(m);}
+function ferNightTick(){if(!FERLM)return;var d=typeof nwDark==='function'?nwDark():0,o=d>.3?Math.min(1,(d-.3)*2.2):0;FERLM.opacity=o*.85;FERLGM.opacity=o;FERLM.visible=FERLGM.visible=o>0;}
+var ferNT0=trSync;trSync=function(dt){ferNT0(dt);ferNightTick();};
 /* ---------- porte ---------- */
 /* muro di porta ad arco: spessore a0..a1, da bL a bR, apertura larga w con l'imposta a quota tS; anelli di conci [r0,r1,N,colori,chiave] */
 function ferArchWall(o,a0,a1,bL,bR,y0,top,w,tS,rings,face,soff){var R=w/2,P=o.P;
@@ -11789,7 +11812,7 @@ var FERB={'F:pstupa':ferPStupa,'F:pscroce':ferPSCroce,'F:duomo':ferDuomo,'F:saga
 /* ---------- aggancio al sistema delle costruzioni spostabili (kind 'F') ---------- */
 var ferPlAll0=plAll;plAll=function(kind){var L=ferPlAll0(kind);if(kind==='F')Object.keys(FER.def).forEach(function(k){var P=CDSG_IMP.pos||{};if(ED.off[k]||P[k])return;L.push({pk:k,o:FER.def[k]});});return L;};
 function ferBuild(G0,e){var fn=FERB[e.pk];if(!fn)return;var p=plPos(e.o),F=new GB(),extra=[];var O=fn(F,p,extra)||[];
-  var m=F.mesh(hwFlatM);G0.add(m);extra.forEach(function(x){G0.add(x);});
+  var m=F.mesh(hwFlatM);G0.add(m);extra.forEach(function(x){G0.add(x);});try{ferLights(G0,e.pk,p);}catch(er){}
   O.forEach(function(q){var b=[1,p.x+p.ux*q[0]-p.uz*q[1],p.z+p.uz*q[0]+p.ux*q[1],p.ux,p.uz,q[2],q[3]];b.pl=1;XOBS.push(b);});
   ferPoi(e.pk,p);}
 var ferPlRebuild0=plRebuild;plRebuild=function(){ferPlRebuild0();if(!NET)return;plAll('F').forEach(function(e){try{ferBuild(PLG,e);}catch(er){if(window.console)console.warn('fer',e.pk,er);}});};
