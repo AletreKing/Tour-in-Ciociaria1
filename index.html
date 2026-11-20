@@ -4620,7 +4620,7 @@ var MP_NONET='Non riesco a raggiungere il servizio di collegamento. Nell’antep
 function mpMsg(t){$('mpMsg').textContent=t;}
 function mpNewCode(){var a=new Uint32Array(6),c='',k;try{crypto.getRandomValues(a);}catch(e){for(k=0;k<6;k++)a[k]=Math.floor(Math.random()*4294967296);}for(k=0;k<6;k++)c+=MP_ABC[a[k]%32];return c;}
 function mpCarOk(k){k=Math.floor(+k);return k>=0&&k<CARS.length?k:0;}
-function mpTrackName(){return opts.track==='city'?'Città':opts.track==='cio'?'Ciociaria, da '+opts.nfrom+' '+aN(opts.nto):'A1 fino a '+RT.end+', '+Math.round(HWL/1000)+' km';}
+function mpTrackName(){return opts.track==='city'?'Città':opts.track==='cio'?'Ciociaria, da '+(opts.nfrom==='@ITE'?'ITE Ferentino':opts.nfrom)+' '+aN(opts.nto):'A1 fino a '+RT.end+', '+Math.round(HWL/1000)+' km';}
 function mpDraw(){
   var on=MP.on,ready=!!(MP.conn&&MP.conn.open),g=$('btnGo');
   $('mpIdle').hidden=on;$('mpLive').hidden=!on;
@@ -11773,6 +11773,36 @@ var clsGM0=goMenu;goMenu=function(){var was=state==='drive'&&CLS.play,ses=CLS.se
   if(was){CLS.play=false;CLS.sum=ses;clsFlush();setTimeout(clsSummary,350);setTimeout(clsFetch,2500);}CLS.ses={};};
 var clsSS0=scStart;scStart=function(){CLS.ses={};CLS.play=false;clsSS0.apply(this,arguments);};
 /* ================= fine PUNTI ================= */
+/* ================= SCHERMATA INIZIALE DAVANTI ALL'ITE: nel menu l'auto è sempre davanti alla scuola; la partenza resta a scelta (la prima voce è l'ITE) ================= */
+var ITEM={id:'@ITE',lab:'I.T.E. Ferentino (la nostra scuola)',town:'Ferentino',start:null};
+function iteSpot(){
+  if(!NET)return null;var p=null;try{p=typeof fkSite==='function'?fkSite():null;}catch(e){}
+  if(!p)p={x:20806.2,z:7946.0};
+  var pr=netProbe(p.x,p.z);if(!pr)return null;var P=NET.P,q=pr.p,e=NET.E[pr.e],x=P.x0[q]+(P.x1[q]-P.x0[q])*pr.t,z=P.z0[q]+(P.z1[q]-P.z0[q])*pr.t,th=Math.atan2(P.x1[q]-P.x0[q],P.z1[q]-P.z0[q]);
+  /* la scuola sulla destra, l'auto nella corsia di destra */
+  if((p.x-x)*(-Math.cos(th))+(p.z-z)*Math.sin(th)<0)th+=Math.PI;
+  var o=e&&e.ow?0:Math.min(1.8,(e?e.half:3)*.5);return{x:x-Math.cos(th)*o,z:z+Math.sin(th)*o,th:th};}
+function itePlace(S){placeCar(S.x,S.z,S.th);car.vx=car.vz=0;car.off=false;car.gy=car.y=netY(car.x,car.z);car.grade=0;ridgeX=1e9;OX=car.x;OZ=car.z;netTrack(true);netSync(true);}
+function iteTown(){var n=ITEM.town;return netIdx(n)>=0&&NET.D[netIdx(n)].n===n?n:NET.D[0].n;}
+/* partenza dall'ITE: si usa Ferentino per i conti del percorso, poi l'auto va davanti alla scuola */
+var iteNS0=netStart;netStart=function(){
+  var ite=opts.nfrom===ITEM.id;if(ite){netLoad();opts.nfrom=iteTown();}
+  try{iteNS0();}finally{if(ite)opts.nfrom=ITEM.id;}
+  ITEM.start=null;
+  if(ite){var S=iteSpot();if(S){itePlace(S);nrun.start={x:car.x,z:car.z,th:car.th};var d=nrun.dst;if(d&&d.poi&&typeof scGo==='function')scGo(d.poi,d.n);}}
+  if(state==='menu'){   /* nel menu: davanti all'ITE, ricordando dove si parte davvero */
+    ITEM.start={x:car.x,z:car.z,th:car.th,ite:ite};
+    if(!ite){var S2=iteSpot();if(S2)itePlace(S2);}}};
+var iteSD0=startDrive;startDrive=function(){
+  if(world==='net'&&NET&&ITEM.start&&!ITEM.start.ite){var s=ITEM.start;itePlace(s);var d=nrun.dst;if(d&&d.poi&&typeof scGo==='function')scGo(d.poi,d.n);}
+  ITEM.start=null;iteSD0.apply(this,arguments);};
+var iteMR0=menuRelocate;menuRelocate=function(){if(ITEM.start)return;iteMR0();};
+var iteCI0=cioInit;cioInit=function(){
+  var was=cioDone,want=opts.nfrom;iteCI0();if(was)return;
+  var sel=$('selFrom'),o=document.createElement('option');o.value=ITEM.id;o.textContent=ITEM.lab;sel.insertBefore(o,sel.firstChild);
+  if(want===ITEM.id||!store.get('iteDef',false)){opts.nfrom=ITEM.id;store.set('iteDef',true);store.set('nfrom',ITEM.id);}
+  sel.value=opts.nfrom;};
+/* ================= fine ITE ================= */
 /* controllo continuo (anche a piedi): a 3 metri dal luogo in attesa si apre la scheda */
 var scPendNat0=natTick;natTick=function(dt){scPendNat0(dt);try{var p=SC.pend;if(!p)return;
   if(SC.pendDst&&!(nrun.dst&&nrun.dst.poi===p)){SC.pend=null;return;}   /* nuova destinazione scelta: si lascia perdere */
