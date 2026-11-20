@@ -24,7 +24,8 @@
  ],
  "git": {
   "deploymentEnabled": {
-   "proposte": false
+   "proposte": false,
+   "punteggi": false
   }
  }
 }

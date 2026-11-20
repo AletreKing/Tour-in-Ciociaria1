@@ -2653,7 +2653,7 @@ var CDSG=(function(){
     if(s.t){poi.t=s.t;poi.bozza=!!s.bozza;}
     if(s.w)poi.w=s.w;
     if(s.foto&&s.foto.length)poi.foto=s.foto.concat(poi.foto0||[]);
-    poi.video=s.video||[];poi.extra=s.extra||[];poi.link=s.link||[];
+    poi.video=s.video||[];poi.extra=s.extra||[];poi.link=s.link||[];poi.domande=(s.domande||[]).filter(function(q){return q&&typeof q.d==='string'&&q.d.trim()&&Array.isArray(q.r)&&q.r.filter(function(x){return String(x||'').trim();}).length>1&&q.r[+q.ok];}).map(function(q){var r=q.r.map(function(x){return String(x||'');}),ok=+q.ok,rr=[],k2=-1;r.forEach(function(x,i){if(x.trim()){if(i===ok)k2=rr.length;rr.push(x);}});return{d:q.d,r:rr,ok:k2};});
   }
   function vEmbed(u){
     var m=/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{6,})/.exec(u);if(m)return'https://www.youtube-nocookie.com/embed/'+m[1];
@@ -2809,7 +2809,7 @@ function scCard(p,opt){
 $('cQuiz').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b||!SC.card||SC.card.answered)return;var q=SC.card.opt.q,ri=+b.dataset.r;SC.card.answered=true;SC.quizN++;
   this.querySelectorAll('button').forEach(function(x){x.disabled=true;if(+x.dataset.r===q.ok)x.classList.add('ok');else if(x===b)x.classList.add('no');});
-  if(ri===q.ok){SC.quizOk++;SC.score+=5;$('cPts').textContent=($('cPts').textContent?$('cPts').textContent+' · ':'')+'risposta giusta, +5';}
+  var qn=clsQuiz(q,ri===q.ok);if(ri===q.ok){SC.quizOk++;SC.score+=qn;$('cPts').textContent=($('cPts').textContent?$('cPts').textContent+' · ':'')+(qn?'risposta giusta, +1':'risposta giusta (ci avevi già risposto: niente punti)');}
   else $('cPts').textContent=($('cPts').textContent?$('cPts').textContent+' · ':'')+'la risposta giusta è evidenziata';
 });
 $('cProp').addEventListener('click',function(){if(SC.card)propOpen(SC.card.p);});
@@ -11593,6 +11593,186 @@ function xmChimes(){var out=xmOut();if(!out)return;var t0=AC.currentTime+.3;out.
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.4,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+1.6);o.connect(g);g.connect(out);o.start(t);o.stop(t+1.7);}}
 var xmTr0=trSync;trSync=function(dt){xmTr0(dt);try{xmSkyTick(dt);}catch(e){}};
 /* ================= fine NATALE ================= */
+/* ================= PUNTI E CLASSIFICA: nome casuale, punti che restano da una partita all'altra, classifica da sala giochi,
+   computo a fine partita; in modalità gara niente velocizzazioni e regole sulla schermata iniziale ================= */
+var CLS={on:false,io:null,stagione:0,gara:false,q:[],busy:false,ses:{},play:false,top:null,pos:0,tot:0,t:0};
+var CLSV={sc:'Scoperte',bi:'Scoperte col binocolo',se:'Sentieri a piedi',qz:'Domande',pa:'Punti patente persi',es:'Esami per la patente',te:'Testi approvati',im:'Immagini approvate'};
+function clsH(s){var h=5381;s=String(s);for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return(h>>>0).toString(36);}
+function clsLS(k,v){try{if(v===undefined){var x=localStorage.getItem('cls_'+k);return x==null?null:JSON.parse(x);}if(v===null)localStorage.removeItem('cls_'+k);else localStorage.setItem('cls_'+k,JSON.stringify(v));}catch(e){return null;}}
+function clsBlank(){return{n:'',p:0,v:{},d:{},q:{},t:{}};}
+/* le stesse regole del server: così il punteggio sullo schermo è quello che andrà in classifica */
+function clsApply(io,e){
+  var add=function(k,n){if(!n)return 0;io.v[k]=(io.v[k]||0)+n;io.p=(io.p||0)+n;return n;};
+  if(e.k==='sc'||e.k==='bi'){var had=+io.d[e.id]||0;if(e.v<=had)return 0;io.d[e.id]=e.v;return add(e.k,e.v-had);}
+  if(e.k==='se'){if(io.t[e.id])return 0;io.t[e.id]=1;return add('se',Math.floor(Math.min(600,e.m)/5));}
+  if(e.k==='qz'){if(io.q[e.id]!=null)return 0;io.q[e.id]=e.ok?1:0;return add('qz',e.ok?1:0);}
+  if(e.k==='pa')return add('pa',-Math.min(10,e.v));
+  if(e.k==='es')return add('es',-5);
+  return 0;}
+function clsEv(e){
+  if(!CLS.io)CLS.io=clsBlank();
+  var n=clsApply(CLS.io,e);
+  if(n||e.k==='qz'||e.k==='se'){CLS.q.push(e);clsLS('q',{s:CLS.stagione,q:CLS.q});clsLS('io',{s:CLS.stagione,io:CLS.io});}
+  if(n){var vk=e.k;CLS.ses[vk]=(CLS.ses[vk]||0)+n;CLS.play=true;}
+  clsMeDraw();return n;}
+/* server */
+function clsGot(j){
+  if(!j||!j.on)return;CLS.on=true;
+  if(j.stagione!==CLS.stagione){if(CLS.stagione&&j.stagione>CLS.stagione){CLS.q=[];clsLS('q',null);if(j.gara)setTimeout(function(){say('È iniziata la gara: punteggi azzerati, niente velocizzazioni. Le regole sono nella schermata iniziale','good',3500);},800);}CLS.stagione=j.stagione;}
+  CLS.gara=!!j.gara;clsLS('gara',CLS.gara);clsGara();
+  CLS.top=j.top||[];CLS.pos=j.pos||0;CLS.tot=j.tot||0;
+  if(j.io){var io=j.io;io.v=io.v||{};io.d=io.d||{};io.q=io.q||{};io.t=io.t||{};CLS.q.forEach(function(e){clsApply(io,e);});CLS.io=io;clsLS('io',{s:CLS.stagione,io:io});}
+  clsMeDraw();if(!$('clsBox')||$('clsBox').hidden)return;if(CLS.view==='sum')clsSummary();else clsBoardDraw();}
+function clsFetch(){
+  return fetch('/api/punti',{cache:'no-store',credentials:'same-origin'}).then(function(r){return r.json().catch(function(){return{};}).then(function(j){if(!r.ok)throw j;return j;});})
+    .then(function(j){clsGot(j);if(!j.io)return clsPost({op:'ciao'});}).catch(function(){CLS.on=false;clsMeDraw();});}
+function clsPost(b){
+  return fetch('/api/punti',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(function(j){clsGot(j);return j;});}
+function clsFlush(){
+  if(!CLS.on||CLS.busy||!CLS.q.length)return;
+  var sent=CLS.q.slice();CLS.busy=true;
+  clsPost({op:'ev',stagione:CLS.stagione,ev:sent}).then(function(j){
+    if(!j.scartati){CLS.q=CLS.q.slice(sent.length);clsLS('q',{s:CLS.stagione,q:CLS.q});if(j.io){var io=j.io;CLS.q.forEach(function(e){clsApply(io,e);});CLS.io=io;clsLS('io',{s:CLS.stagione,io:io});clsMeDraw();}}
+  }).catch(function(){}).then(function(){CLS.busy=false;});}
+function clsBeacon(){
+  if(!CLS.on||!CLS.q.length||!navigator.sendBeacon)return;
+  try{if(navigator.sendBeacon('/api/punti',new Blob([JSON.stringify({op:'ev',stagione:CLS.stagione,ev:CLS.q})],{type:'application/json'}))){CLS.q=[];clsLS('q',{s:CLS.stagione,q:[]});}}catch(e){}}
+(function(){
+  var g=clsLS('gara');CLS.gara=!!g;
+  var sq=clsLS('q'),si=clsLS('io');if(si&&si.io){CLS.stagione=si.s||0;CLS.io=si.io;}if(sq&&sq.q&&sq.s===CLS.stagione)CLS.q=sq.q;
+  window.addEventListener('pagehide',clsBeacon);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')clsBeacon();});
+  setInterval(function(){clsFlush();},45000);
+  setTimeout(clsFetch,1200);
+})();
+
+/* --- le regole dei punti, nel gioco --- */
+/* scoperta: 10 passando, 20 arrivando; col binocolo la metà; ogni luogo conta una volta per gara (arrivando dopo esserci passati si prende la differenza) */
+scFound=function(p,big){
+  SC.found[p.id]=1;SC.foundN++;
+  var first=!SC.passport[p.pk];
+  if(first){SC.passport[p.pk]=Date.now();store.set('passport',SC.passport);scRefresh(p);}
+  var bi=!!(typeof BINO!=='undefined'&&BINO.on),v=(big?20:10)/(bi?2:1);
+  var pts=clsEv({k:bi?'bi':'sc',id:'P'+clsH(p.pk),v:v});
+  SC.score+=pts;store.set('pts_tot',(store.get('pts_tot',0)||0)+pts);
+  if(!big){
+    say((first?'Nuova scoperta: ':'Di nuovo qui: ')+p.n+(pts?' · +'+pts+' punti'+(bi?' (binocolo: metà)':''):' · già contata'),'good',3500);
+    SC.last=p;SC.lastT=gameT;$('btnDisc').textContent='Scheda: '+(p.n.length>22?p.n.slice(0,21)+'…':p.n);$('btnDisc').hidden=false;
+  }
+  return pts;};
+/* domande: 1 punto per risposta giusta, una volta sola per gara */
+function clsQKey(q){return'Q'+clsH(q.d+'|'+(q.r||[]).join('|'));}
+function clsQDone(q){return !!(CLS.io&&CLS.io.q&&CLS.io.q[clsQKey(q)]!=null);}
+function clsQuiz(q,ok){return clsEv({k:'qz',id:clsQKey(q),ok:!!ok});}
+/* nella scheda di un luogo compare una delle domande inserite dai docenti, se non ha già avuto risposta */
+var clsCard0=scCard;scCard=function(p,opt){
+  opt=opt||{};
+  if(!opt.q&&p&&p.domande&&p.domande.length){for(var i=0;i<p.domande.length;i++){var q=p.domande[i];if(q&&q.d&&q.r&&q.r.length>1&&!clsQDone(q)){opt.q=q;break;}}}
+  clsCard0(p,opt);};
+/* patente: i punti persi si tolgono dalla classifica; ogni esame costa 5 punti */
+var clsPat0=patLose;patLose=function(n,msg){clsPat0(n,msg);if(n>0)clsEv({k:'pa',v:n});};
+var clsQz0=quizStart;quizStart=function(){clsEv({k:'es'});clsQz0();var r=$('pqR');if(r)r.textContent='L’esame costa 5 punti in classifica.';};
+/* sentieri: 1 punto ogni 5 minuti di cammino, se si arriva fino al luogo */
+function clsTrId(t){return'T'+(t.poi!=null?t.poi:'x')+'-'+Math.round(t.len||0);}
+var clsWS0=walkStart;walkStart=function(t){clsWS0(t);if(!WALK.on||WALK.t!==t)return;
+  WALK.tsum=0;if(WALK.cola&&WALK.s>60){var sv=clsLS('wt');if(sv&&sv.id===clsTrId(t))WALK.tsum=+sv.s||0;}WALK.tsv=0;};
+var clsWT0=walkTick;walkTick=function(dt){clsWT0(dt);if(!WALK.on||paused)return;
+  if(!WALK.arr)WALK.tsum=(WALK.tsum||0)+dt;
+  if(WALK.cola){WALK.tsv=(WALK.tsv||0)-dt;if(WALK.tsv<=0){WALK.tsv=5;clsLS('wt',{id:clsTrId(WALK.t),s:Math.round(WALK.tsum)});}}};
+var clsWA0=walkArrive;walkArrive=function(){
+  var t=WALK.t,p=t&&typeof trPoi==='function'?trPoi(t):null,m=Math.floor((WALK.tsum||0)/60);
+  clsWA0();
+  if(p&&m>=5){var n=clsEv({k:'se',id:clsTrId(t),m:m});if(n){SC.score+=n;setTimeout(function(){say('Cammino di '+m+' minuti fino a '+p.n+': +'+n+' punti','good',3500);},3800);}}
+  clsLS('wt',null);};
+
+/* --- modalità gara: niente ×2…×5, «Salta», «300 m» --- */
+function clsGara(){document.body.classList.toggle('gara',!!CLS.gara);clsRulesDraw();}
+var clsAS0=scAutoSet;scAutoSet=function(k){if(CLS.gara&&k>1)k=SC.auto===1?0:1;clsAS0(k);};
+var clsNear0=scNear;scNear=function(){if(CLS.gara){say('In gara non ci sono scorciatoie: guida fino alla meta','warn',3000);return;}clsNear0();};
+var clsSkip0=scSkip;scSkip=function(){if(CLS.gara){say('In gara non ci sono scorciatoie: guida fino alla meta','warn',3000);return;}clsSkip0();};
+var clsWT1=walkTick;walkTick=function(dt){if(CLS.gara&&WALK.on&&WALK.auto>1){WALK.auto=1;walkDraw();}clsWT1(dt);};
+var clsNat1=natTick;natTick=function(dt){clsNat1(dt);if(!CLS.gara)return;
+  if(typeof PW!=='undefined'&&PW.mult>1){PW.mult=1;if(typeof pwBarSync==='function')pwBarSync();}
+  if(typeof CAVE!=='undefined'&&CAVE.mult>1){CAVE.mult=1;if(typeof caveBarSync==='function')caveBarSync();}
+  if(typeof COLL!=='undefined'&&COLL.mult>1){COLL.mult=1;if(typeof colBarSync==='function')colBarSync();}};
+/* in gara le schede si aprono e le scoperte valgono come sempre; i punti partono dalla nuova stagione */
+
+/* --- schermata iniziale: chi sei, classifica, regole --- */
+(function(){
+  var st=document.createElement('style');st.textContent=
+    'body.gara #walkBar [data-wa="2"],body.gara #walkBar [data-wa="3"],body.gara #walkBar [data-wa="4"],body.gara #wbSkip,body.gara #btnSkip,body.gara [data-pm="2"],body.gara [data-pm="4"],body.gara [data-cm="2"],body.gara [data-cm="4"]{display:none!important}'+
+    '#clsMe{margin:0 0 10px;font-size:14px;color:var(--dim,#aab)}#clsMe b{color:#ffd166;letter-spacing:.04em}'+
+    '#clsRules{margin:0 0 12px;padding:10px 14px;border-radius:12px;background:rgba(80,200,255,.08);border:1px solid rgba(80,200,255,.35);font-size:14px;line-height:1.45;max-width:560px}#clsRules[hidden]{display:none}'+
+    '#clsRules h3{margin:0 0 6px;font-size:15px;color:#7fe3ff}#clsRules ul{margin:0;padding-left:18px}#clsRules li{margin:2px 0}'+
+    '#clsBox{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);padding:12px}#clsBox[hidden]{display:none}'+
+    '#clsBox .arc{position:relative;width:min(560px,100%);max-height:calc(100% - 8px);overflow:auto;background:#05060d;border:3px solid #2de2ff;border-radius:6px;box-shadow:0 0 0 3px #05060d,0 0 0 6px #ff3df0,0 0 30px rgba(45,226,255,.45);padding:16px 16px 14px;color:#e8f6ff;font:12px/1.7 "Press Start 2P",ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}'+
+    '#clsBox .arc:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px)}'+
+    '#clsBox h2{margin:0 0 4px;text-align:center;font:inherit;font-size:18px;color:#ffe14d;text-shadow:0 0 8px #ff9d00,3px 3px 0 #b3006b}#clsBox .sub{text-align:center;color:#ff7ae9;margin:0 0 12px;font-size:10px}'+
+    '#clsBox table{width:100%;border-collapse:collapse}#clsBox td{padding:3px 4px;white-space:nowrap}#clsBox td.n{white-space:normal;word-break:break-word}#clsBox td.r{text-align:right}#clsBox th{font-weight:400;color:#7d8aa8;font-size:10px;text-align:left;padding:0 4px 6px}#clsBox th.r{text-align:right}'+
+    '#clsBox tr.c0 td{color:#ffd84a}#clsBox tr.c1 td{color:#dfe7f0}#clsBox tr.c2 td{color:#ffa45c}#clsBox tr.c3 td{color:#2de2ff}#clsBox tr.c4 td{color:#8dff6a}'+
+    '#clsBox tr.io td{background:rgba(255,61,240,.18);animation:clsBl 1s steps(2) infinite}@keyframes clsBl{50%{color:#fff}}#clsBox .gap td{color:#555c70;text-align:center}'+
+    '#clsBox .note{margin:12px 0 0;font-size:9px;color:#8a93ab;text-transform:none;font-family:system-ui,sans-serif;font-size:12px;line-height:1.4}'+
+    '#clsBox .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}#clsBox button{font:inherit;font-size:11px;color:#05060d;background:#2de2ff;border:0;border-radius:4px;padding:9px 14px;cursor:pointer;box-shadow:3px 3px 0 #ff3df0}#clsBox button.alt{background:#ffe14d}'+
+    '#clsBox .clsTot td{border-top:2px dashed #2de2ff;padding-top:8px;color:#ffe14d}#clsBox .neg{color:#ff6b6b}#clsBox .blink{animation:clsBl2 1.1s steps(2) infinite;text-align:center;color:#ff7ae9;margin-top:10px;font-size:10px}@keyframes clsBl2{50%{opacity:0}}'+
+    '@media (max-height:460px){#clsBox .arc{font-size:10px;padding:10px 12px}#clsBox h2{font-size:14px}}';
+  document.head.appendChild(st);
+  try{var lk=document.createElement('link');lk.rel='stylesheet';lk.href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';document.head.appendChild(lk);}catch(e){}
+  var lede=document.querySelector('#start .lede');
+  var me=document.createElement('p');me.id='clsMe';
+  var ru=document.createElement('div');ru.id='clsRules';ru.hidden=true;
+  ru.innerHTML='<h3>Gara in corso: come si fanno i punti</h3><ul>'+
+    '<li>Scopri un luogo passandoci vicino: <b>10 punti</b>; arrivandoci e aprendo la scheda da vicino: <b>20</b>. Ogni luogo conta una volta sola (se prima ci passi e poi ci arrivi, prendi la differenza).</li>'+
+    '<li>Scoperta col binocolo: <b>metà dei punti</b>.</li>'+
+    '<li>Sentiero a piedi fino a un luogo: <b>+1 punto ogni 5 minuti</b> di cammino.</li>'+
+    '<li>Domande nelle schede e nei percorsi: <b>+1</b> per ogni risposta giusta (si risponde una volta sola).</li>'+
+    '<li>Patente: i punti che perdi <b>si tolgono dal totale</b>; ogni esame per riaverla costa <b>5 punti</b>.</li>'+
+    '<li>Proposte approvate dai docenti: <b>testo +7</b>, <b>immagini +5</b>.</li>'+
+    '<li>Niente velocizzazioni: spariscono ×2…×5, «Salta» e «300 m».</li></ul>';
+  if(lede){lede.parentNode.insertBefore(me,lede.nextSibling);lede.parentNode.insertBefore(ru,me.nextSibling);}
+  var b=document.createElement('button');b.className='chip';b.type='button';b.id='btnCls';b.textContent='🏆 Classifica';
+  var bp=$('btnPass');if(bp&&bp.parentNode)bp.parentNode.insertBefore(b,bp.nextSibling);
+  b.addEventListener('click',function(){clsBoard(true);});
+  clsGara();clsMeDraw();
+})();
+function clsRulesDraw(){var r=$('clsRules');if(r)r.hidden=!CLS.gara;}
+function clsMeDraw(){
+  var el=$('clsMe');if(!el)return;
+  if(!CLS.on||!CLS.io||!CLS.io.n){el.textContent='';el.hidden=true;return;}
+  el.hidden=false;el.textContent='';var b=document.createElement('b');b.textContent=CLS.io.n;el.appendChild(document.createTextNode('In classifica sei '));el.appendChild(b);
+  el.appendChild(document.createTextNode(' · '+(CLS.io.p||0)+' punti'+(CLS.pos?' · '+CLS.pos+'° posto su '+CLS.tot:'')));}
+
+/* --- classifica da sala giochi --- */
+function clsPad(n){var s=String(Math.abs(n));while(s.length<5)s='0'+s;return(n<0?'-':'')+s;}
+function clsBoxEl(){var b=$('clsBox');if(b)return b;b=document.createElement('div');b.id='clsBox';b.hidden=true;b.innerHTML='<div class="arc" role="dialog" aria-modal="true" aria-labelledby="clsH"></div>';
+  document.body.appendChild(b);b.addEventListener('pointerdown',function(e){e.stopPropagation();});
+  b.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;if(t.dataset.a==='x'){b.hidden=true;if(CLS.wasP!=null){paused=CLS.wasP;CLS.wasP=null;}}else if(t.dataset.a==='lb'){clsBoard(true);}});return b;}
+function clsBoard(open){
+  var b=clsBoxEl();if(open){if(b.hidden&&state==='drive'){CLS.wasP=paused;paused=true;}b.hidden=false;clsBoardDraw();if(CLS.on)clsFlush();clsFetch();}}
+function clsBoardDraw(){
+  CLS.view='board';var a=clsBoxEl().firstChild,h='<h2 id="clsH">★ Classifica ★</h2><p class="sub">Ciociaria da scoprire'+(CLS.gara?' · gara in corso':'')+'</p>';
+  if(!CLS.on){h+='<p class="note">La classifica non è raggiungibile adesso (serve la connessione e l’accesso con l’account della scuola). I punti di questa partita restano sul dispositivo e partono appena torna la rete.</p>';}
+  else if(!CLS.top||!CLS.top.length){h+='<p class="note">Ancora nessun punteggio: il primo posto è libero.</p>';}
+  else{var R=['1st','2nd','3rd'];h+='<table><thead><tr><th>Pos</th><th>Nome</th><th class="r">Punti</th></tr></thead><tbody>';
+    CLS.top.forEach(function(r,i){h+='<tr class="c'+Math.min(i,4)+(r.io?' io':'')+'"><td>'+(R[i]||(i+1)+'th')+'</td><td class="n">'+clsEsc(r.n)+'</td><td class="r">'+clsPad(r.p)+'</td></tr>';});
+    if(CLS.io&&CLS.pos>CLS.top.length){h+='<tr class="gap"><td colspan="3">· · ·</td></tr><tr class="c3 io"><td>'+CLS.pos+'th</td><td class="n">'+clsEsc(CLS.io.n)+'</td><td class="r">'+clsPad(CLS.io.p||0)+'</td></tr>';}
+    h+='</tbody></table>';
+    if(CLS.io)h+='<p class="blink">Tu sei '+clsEsc(CLS.io.n)+'</p>';}
+  h+='<div class="acts"><button type="button" data-a="x">Chiudi</button></div>';a.innerHTML=h;}
+function clsEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+/* --- computo a fine partita (tornando al menu) --- */
+function clsSummary(){
+  CLS.view='sum';var b=clsBoxEl(),a=b.firstChild,S=CLS.sum||{},tot=0,rows='';
+  ['sc','bi','se','qz','pa','es'].forEach(function(k){if(!S[k])return;tot+=S[k];rows+='<tr class="c3"><td class="n">'+CLSV[k]+'</td><td class="r'+(S[k]<0?' neg':'')+'">'+(S[k]>0?'+':'')+S[k]+'</td></tr>';});
+  var h='<h2 id="clsH">Fine partita</h2><p class="sub">Il computo dei punti</p><table><tbody>'+rows+'<tr class="clsTot"><td class="n">Totale della partita</td><td class="r">'+(tot>0?'+':'')+tot+'</td></tr></tbody></table>';
+  if(CLS.io)h+='<p class="blink">'+clsEsc(CLS.io.n||'Tu')+': '+(CLS.io.p||0)+' punti in classifica'+(CLS.pos?' · '+CLS.pos+'° posto':'')+'</p>';
+  h+='<p class="note">Testi e immagini che hai proposto valgono 7 e 5 punti quando un docente li approva: li trovi nel totale appena succede.'+(CLS.on?'':' Adesso la classifica non è raggiungibile: i punti partono appena torna la rete.')+'</p>';
+  h+='<div class="acts"><button type="button" class="alt" data-a="lb">Classifica</button><button type="button" data-a="x">Chiudi</button></div>';
+  a.innerHTML=h;b.hidden=false;}
+var clsGM0=goMenu;goMenu=function(){var was=state==='drive'&&CLS.play,ses=CLS.ses;clsGM0.apply(this,arguments);
+  if(was){CLS.play=false;CLS.sum=ses;clsFlush();setTimeout(clsSummary,350);setTimeout(clsFetch,2500);}CLS.ses={};};
+var clsSS0=scStart;scStart=function(){CLS.ses={};CLS.play=false;clsSS0.apply(this,arguments);};
+/* ================= fine PUNTI ================= */
 /* controllo continuo (anche a piedi): a 3 metri dal luogo in attesa si apre la scheda */
 var scPendNat0=natTick;natTick=function(dt){scPendNat0(dt);try{var p=SC.pend;if(!p)return;
   if(SC.pendDst&&!(nrun.dst&&nrun.dst.poi===p)){SC.pend=null;return;}   /* nuova destinazione scelta: si lascia perdere */

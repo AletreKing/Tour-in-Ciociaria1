@@ -97,6 +97,7 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
 #ghBox .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 #ghBox small{opacity:.8}
 #manBox{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.45)}#manBox[hidden]{display:none}#manBox .in{background:var(--bg);color:var(--ink);border-radius:14px;padding:18px;display:grid;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.35)}#manBox label{display:grid;gap:4px}#manBox .row{display:flex;gap:8px;justify-content:flex-end;align-items:center}#manList .mi{display:flex;gap:10px;align-items:center;border:1px solid var(--line,#ccc);border-radius:10px;padding:6px}#manList img{width:52px;height:70px;object-fit:cover;border-radius:4px}
+#clsAdm{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.45)}#clsAdm[hidden]{display:none}#clsAdm .in{background:var(--bg);color:var(--ink);border-radius:14px;padding:18px;display:grid;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.35)}#clsAdm .row{display:flex;gap:8px;justify-content:flex-end;align-items:center}#clsAdm .pl{display:grid;grid-template-columns:2.2em 1fr auto;gap:8px;padding:4px 8px;border-radius:6px;background:rgba(127,127,127,.08)}
 #propBox{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.45)}#propBox[hidden]{display:none}#propBox .in{background:var(--bg);color:var(--ink);border-radius:14px;padding:18px;display:grid;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.35)}#propBox .row{display:flex;gap:8px;justify-content:flex-end;align-items:center}
 </style>
 
@@ -109,6 +110,7 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
     <button class="btn pri" type="button" id="expAll">Scarica per il sito</button>
     <label class="btn" title="Vale per tutti quando il pacchetto viene caricato sul sito"><input type="checkbox" id="setRadio"> Radio nel gioco</label>
     <button class="btn" type="button" id="manBtn" title="Il manifesto con il programma della festa: compare sul cartellone accanto al parcheggio del paese, nel gioco">Aggiungi manifesto</button>
+    <button class="btn" type="button" id="clsBtn" title="Classifica dei giocatori, nuova gara">Classifica</button>
     <button class="btn" type="button" id="propBtn" title="Foto, testi, video e modelli 3D mandati dai ragazzi dal gioco">Proposte dei ragazzi</button>
     <button class="btn pri" type="button" id="pubGh" title="Solo per il responsabile del sito: serve la chiave di GitHub">Pubblica sul sito</button>
   </div>
@@ -134,6 +136,14 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
   <div class="row"><button class="btn" type="button" id="manClose">Chiudi</button><button class="btn pri" type="button" id="manSave">Aggiungi il manifesto</button></div>
   <h3 style="margin:6px 0 0">Manifesti caricati</h3>
   <div id="manList" style="display:grid;gap:8px"></div>
+</div></div>
+<div id="clsAdm" hidden><div class="in" style="max-width:760px;width:100%;max-height:90vh;overflow:auto">
+  <h2 style="margin:0">Classifica dei giocatori</h2>
+  <p style="margin:0" class="note">Ogni alunno ha un nome casuale; qui vedi nomi e punti (gli indirizzi email non vengono salvati). Per i comandi serve la parola segreta della modalità God.</p>
+  <label>Parola segreta della modalità God <input id="clsPw" type="password" autocomplete="off"></label>
+  <p id="clsMsg" style="margin:0"></p>
+  <div id="clsList" style="display:grid;gap:4px;font-size:14px"></div>
+  <div class="row" style="flex-wrap:wrap"><button class="btn" type="button" id="clsLoad">Mostra la classifica</button><button class="btn" type="button" id="clsSpeed" hidden>Velocizzazioni</button><button class="btn del" type="button" id="clsReset">Azzera i punteggi e avvia la gara</button><button class="btn" type="button" id="clsClose">Chiudi</button></div>
 </div></div>
 <div id="propBox" hidden><div class="in" style="max-width:860px;width:100%;max-height:90vh;overflow:auto">
   <h2 style="margin:0">Proposte dei ragazzi</h2>
@@ -249,6 +259,8 @@ function edit(){
   h+='<fieldset><legend>Video</legend>'+(s.video||[]).map(function(v,i){return'<div class="item"><label class="f">Titolo<input data-vi="'+i+'" data-vf="titolo" value="'+esc(v.titolo)+'"></label><label class="f">Indirizzo (YouTube, Vimeo o file .mp4)<input data-vi="'+i+'" data-vf="url" value="'+esc(v.url)+'"></label><div class="row"><button class="btn sm del" type="button" data-a="vdel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="vadd">Aggiungi un video</button></div></fieldset>';
   /* approfondimenti */
   h+='<fieldset><legend>Approfondimenti (si vedono all’arrivo)</legend>'+(s.extra||[]).map(function(x,i){return'<div class="item"><label class="f">Titolo<input data-xi="'+i+'" data-xf="titolo" value="'+esc(x.titolo)+'"></label><label class="f">Testo<textarea data-xi="'+i+'" data-xf="testo">'+esc(x.testo)+'</textarea></label><div class="row"><button class="btn sm del" type="button" data-a="xdel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="xadd">Aggiungi un approfondimento</button></div></fieldset>';
+  /* domande */
+  h+='<fieldset><legend>Domande (1 punto in classifica per ogni risposta giusta)</legend><p class="note">Compaiono nel gioco quando si apre la scheda del luogo; ogni giocatore risponde una volta sola. Scrivi almeno due risposte e segna quella giusta.</p>'+(s.domande||[]).map(function(q,i){return'<div class="item"><label class="f">Domanda<input data-qi="'+i+'" data-qf="d" value="'+esc(q.d)+'"></label>'+[0,1,2,3].map(function(r){return'<label class="row" style="gap:6px;align-items:center"><input type="radio" name="qok'+i+'" data-qi="'+i+'" data-qok="'+r+'"'+(+q.ok===r?' checked':'')+' title="Risposta giusta"><input style="flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:5px 9px" data-qi="'+i+'" data-qr="'+r+'" placeholder="Risposta '+(r+1)+(r>1?' (facoltativa)':'')+'" value="'+esc((q.r||[])[r]||'')+'"></label>';}).join('')+'<div class="row"><button class="btn sm del" type="button" data-a="qdel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="qadd">Aggiungi una domanda</button></div></fieldset>';
   /* link */
   h+='<fieldset><legend>Link e documenti</legend>'+(s.link||[]).map(function(l,i){return'<div class="item"><label class="f">Titolo<input data-li="'+i+'" data-lf="titolo" value="'+esc(l.titolo)+'"></label><label class="f">Indirizzo<input data-li="'+i+'" data-lf="url" value="'+esc(l.url)+'"></label><div class="row"><button class="btn sm del" type="button" data-a="ldel" data-i="'+i+'">Togli</button></div></div>';}).join('')+'<div class="row"><button class="btn sm" type="button" data-a="ladd">Aggiungi un link</button></div></fieldset>';
   if(s.modello){var M=s.modello;h+='<fieldset><legend>Modello 3D</legend><p class="note">'+esc(M.src)+(M.autore?' · di '+esc(M.autore):'')+'</p><div class="row">'+[['rot','Rotazione (gradi)',5],['scala','Scala',.05],['dx','Sposta est-ovest (m)',.5],['dz','Sposta nord-sud (m)',.5],['dy','Alza/abbassa (m)',.1]].map(function(f){return'<label class="f" style="flex:1;min-width:120px">'+f[1]+'<input type="number" step="'+f[2]+'" data-m="'+f[0]+'" value="'+(M[f[0]]!=null?M[f[0]]:(f[0]==='scala'?1:0))+'"></label>';}).join('')+'</div><canvas id="mprev" width="640" height="300" style="width:100%;max-width:640px;border-radius:10px;background:#1b2433"></canvas><p class="note">Anteprima: la griglia ha quadretti di 1 metro, la sagoma rossa è una persona di 1,80 m. Il modello si appoggia da solo al terreno, al centro del luogo.</p><div class="row"><button class="btn sm del" type="button" data-a="mdel">Togli il modello</button></div></fieldset>';}
@@ -277,11 +289,13 @@ ED.addEventListener('input',function(e){
   else if(d.vi!=null)s.video[+d.vi][d.vf]=t.value;
   else if(d.xi!=null)s.extra[+d.xi][d.xf]=t.value;
   else if(d.li!=null)s.link[+d.li][d.lf]=t.value;
+  else if(d.qi!=null&&d.qf)s.domande[+d.qi][d.qf]=t.value;
+  else if(d.qi!=null&&d.qr!=null){var Q=s.domande[+d.qi];Q.r=Q.r||['','','',''];Q.r[+d.qr]=t.value;}
   else if(d.m!=null&&s.modello){s.modello[d.m]=+t.value||0;mPrev(s.modello);}
   else return;
   clearTimeout(ED._t);ED._t=setTimeout(function(){touch(k);},400);
 });
-ED.addEventListener('change',function(e){var t=e.target;if(t.id==='fb'){work(S.sel).bozza=t.checked;touch(S.sel);}if(t.id==='fup')upload(t.files);});
+ED.addEventListener('change',function(e){var t=e.target;if(t.dataset&&t.dataset.qok!=null){work(S.sel).domande[+t.dataset.qi].ok=+t.dataset.qok;touch(S.sel);return;}if(t.id==='fb'){work(S.sel).bozza=t.checked;touch(S.sel);}if(t.id==='fup')upload(t.files);});
 ED.addEventListener('click',function(e){
   var b=e.target.closest('[data-a]');if(!b)return;var k=S.sel,a=b.dataset.a,i=+b.dataset.i,s;
   if(a==='wsearch'){wsearch($('wq').value);return;}
@@ -295,6 +309,8 @@ ED.addEventListener('click',function(e){
   else if(a==='vdel')s.video.splice(i,1);
   else if(a==='xadd')(s.extra=s.extra||[]).push({titolo:'',testo:''});
   else if(a==='xdel')s.extra.splice(i,1);
+  else if(a==='qadd')(s.domande=s.domande||[]).push({d:'',r:['','','',''],ok:0});
+  else if(a==='qdel')s.domande.splice(i,1);
   else if(a==='ladd')(s.link=s.link||[]).push({titolo:'',url:''});
   else if(a==='ldel')s.link.splice(i,1);
   else if(a==='mdel')delete s.modello;
@@ -429,7 +445,8 @@ function prOk(i){
   if(want.video&&m.video){(s.video=s.video||[]).push({titolo:m.titolo||('Video di '+who),url:m.video});}
   if(want.foto)m.files.filter(function(f){return /^foto-\d\.jpg$/.test(f.name);}).forEach(function(f,j){chain=chain.then(function(){return ghReq(c,f.path,null,true).then(function(r){if(!r.ok)throw new Error('foto non scaricata');return r.blob();}).then(function(b){var name='foto/'+base+'-'+(j+1)+'.jpg';return putImg(name,b).then(function(){(s.foto=s.foto||[]).push({src:name,autore:who,licenza:'Per gentile concessione'});});});});});
   if(want.mod){var mf=m.files.filter(function(f){return f.name==='modello.glb';})[0];if(mf)chain=chain.then(function(){return ghReq(c,mf.path,null,true).then(function(r){if(!r.ok)throw new Error('modello non scaricato');return r.blob();}).then(function(b){var name='modelli/'+base+'.glb';return putImg(name,b).then(function(){s.modello={src:name,rot:0,scala:1,dx:0,dz:0,dy:0,autore:who};});});});}
-  chain.then(function(){touch(k);return prDel(c,m);})
+  var prem={testo:!!((want.testo||want.desc)&&m.testo),foto:!!(want.foto&&m.files.some(function(f){return /^foto-\d\.jpg$/.test(f.name);}))};
+  chain.then(function(){touch(k);return clsPremio(m,prem);}).then(function(){return prDel(c,m);})
   .then(function(){PR.list.splice(i,1);prDraw();S.sel=k;draw();edit();prMsg('Aggiunto alla scheda «'+p.n+'». Controlla e poi premi «Pubblica sul sito».');toast('Aggiunto alla scheda «'+p.n+'»: controllala e poi «Pubblica sul sito»');if(!PR.list.length)$('propBox').hidden=true;})
   .catch(function(e){prMsg('Qualcosa non va: '+(e&&e.message||e));});
 }
@@ -440,6 +457,29 @@ $('propList').addEventListener('click',function(e){var b=e.target.closest('[data
   if(b.dataset.pa==='ok')prOk(i);
   else if(confirm('Scartare la proposta di '+(m.autore||'?')+'? Verrà cancellata.')){prMsg('Scarto…');prDel(ghCfg(),m).then(function(){PR.list.splice(i,1);prDraw();prMsg('Proposta scartata.');}).catch(function(){prMsg('Non riesco a scartarla.');});}
 });
+/* ---------- classifica: nuova gara, velocizzazioni, punti per le proposte approvate ---------- */
+function clsPwGet(){var v=$('clsPw')&&$('clsPw').value.trim();if(!v)try{v=sessionStorage.getItem('clsPw')||'';}catch(e){}return v;}
+function clsApi(b){var pw=clsPwGet();if(!pw)return Promise.reject(new Error('serve la parola segreta della modalità God (pulsante «Classifica»)'));try{sessionStorage.setItem('clsPw',pw);}catch(e){}b.pw=pw;
+  return fetch('/api/punti',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().catch(function(){return{};}).then(function(j){if(!r.ok)throw new Error(j.error||('errore '+r.status));return j;});});}
+function clsPremio(m,pr){
+  if(!pr.testo&&!pr.foto)return Promise.resolve();
+  if(!m.pid){toast('Proposta inviata prima della classifica: niente punti automatici');return Promise.resolve();}
+  if(!clsPwGet()){var w=prompt('Per dare i punti all’autore (testo 7, immagini 5) serve la parola segreta della modalità God:');if(w){try{sessionStorage.setItem('clsPw',w.trim());}catch(e){}}}
+  return clsApi({op:'premio',id:m.id,pid:m.pid,testo:pr.testo,foto:pr.foto}).then(function(j){toast(j.gia?'Punti già dati per questa proposta':('+'+j.punti+' punti a '+(j.nome||'l’autore')));})
+    .catch(function(e){toast('Punti non assegnati: '+(e&&e.message||e));});}
+var CLA={gara:false};
+function clsAdmLoad(){$('clsMsg').textContent='Carico…';
+  clsApi({op:'tutti'}).then(function(j){CLA.gara=!!j.gara;$('clsSpeed').hidden=false;$('clsSpeed').textContent=j.gara?'Riattiva le velocizzazioni':'Togli le velocizzazioni';
+    $('clsMsg').textContent='Stagione '+j.stagione+(j.gara?' · gara in corso dal '+(j.avvio?new Date(j.avvio).toLocaleString('it-IT'):'?')+', velocizzazioni tolte':' · velocizzazioni attive')+' · '+j.giocatori.length+' giocatori';
+    var V={sc:'scoperte',bi:'binocolo',se:'sentieri',qz:'domande',pa:'patente',es:'esami',te:'testi',im:'immagini'};
+    $('clsList').innerHTML=j.giocatori.map(function(g,i){return'<div class="pl"><b>'+(i+1)+'</b><span>'+esc(g.n)+' <span class="note">'+Object.keys(V).filter(function(k){return g.v&&g.v[k];}).map(function(k){return V[k]+' '+g.v[k];}).join(' · ')+'</span></span><b>'+g.p+'</b></div>';}).join('')||'<p class="note">Nessun giocatore ancora.</p>';})
+  .catch(function(e){$('clsMsg').textContent='Non riesco: '+(e&&e.message||e);});}
+$('clsBtn').addEventListener('click',function(){$('clsAdm').hidden=false;try{$('clsPw').value=sessionStorage.getItem('clsPw')||'';}catch(e){}if(clsPwGet())clsAdmLoad();});
+$('clsClose').addEventListener('click',function(){$('clsAdm').hidden=true;});
+$('clsLoad').addEventListener('click',clsAdmLoad);
+$('clsReset').addEventListener('click',function(){if(!confirm('Azzerare i punteggi di tutti i giocatori e avviare la gara?\n\nI nomi restano; spariscono le velocizzazioni (×2…×5, «Salta», «300 m») e nella schermata iniziale del gioco compaiono le regole dei punti. Non si può annullare.'))return;
+  $('clsMsg').textContent='Azzero…';clsApi({op:'azzera'}).then(function(){toast('Gara avviata: punteggi azzerati');clsAdmLoad();}).catch(function(e){$('clsMsg').textContent='Non riesco: '+(e&&e.message||e);});});
+$('clsSpeed').addEventListener('click',function(){var on=!CLA.gara;$('clsMsg').textContent='…';clsApi({op:'gara',on:on}).then(function(){toast(on?'Velocizzazioni tolte':'Velocizzazioni di nuovo attive');clsAdmLoad();}).catch(function(e){$('clsMsg').textContent='Non riesco: '+(e&&e.message||e);});});
 /* ---------- anteprima del modello 3D ---------- */
 var MP={r:null,lib:0,cb:[]};
 function mLibs(cb){

@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     if (b.op === 'new') {
       const luogo = s(b.luogo, 200); if (!luogo) return A.json(res, 400, { error: 'manca il luogo' });
       const d = new Date(), id = d.toISOString().slice(0, 19).replace(/[-:T]/g, '') + '-' + crypto.randomBytes(3).toString('hex');
-      const meta = { id, luogo, nomeLuogo: s(b.nomeLuogo, 200), autore: s(b.autore || u.name, 80), classe: s(b.classe, 20), email: u.email, titolo: s(b.titolo, 160), testo: s(b.testo, 6000),
+      const meta = { id, luogo, nomeLuogo: s(b.nomeLuogo, 200), autore: s(b.autore || u.name, 80), classe: s(b.classe, 20), email: u.email, pid: A.pidOf(u.email), titolo: s(b.titolo, 160), testo: s(b.testo, 6000),
         video: s(b.video, 400), file: [], quando: d.toISOString() };
       if (meta.video && !/^https:\/\/(www\.)?(youtube\.com|youtu\.be|youtube-nocookie\.com|vimeo\.com|player\.vimeo\.com)\//i.test(meta.video)) return A.json(res, 400, { error: 'Il video deve essere un link di YouTube o Vimeo' });
       await ensureBranch();

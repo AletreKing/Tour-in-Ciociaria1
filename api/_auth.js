@@ -42,4 +42,6 @@ function sameOrigin(req) {
   const o = req.headers.origin; if (!o) return true;
   try { return new URL(o).host === req.headers.host; } catch (e) { return false; }
 }
-module.exports = { NAME, enabled, sign, verify, user, setCookie, json, readBody, sameOrigin, b64u };
+// impronta dell'account per la classifica (nel repository pubblico non finisce l'email)
+function pidOf(email) { return require('crypto').createHmac('sha256', secret()).update('pid|' + String(email).toLowerCase()).digest('hex').slice(0, 16); }
+module.exports = { pidOf, NAME, enabled, sign, verify, user, setCookie, json, readBody, sameOrigin, b64u };
