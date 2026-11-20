@@ -6706,7 +6706,7 @@ function colaOpen(){
     box.innerHTML='<div class="box"><h2>Lo scrigno di Fosso Colaceco</h2><p id="colaTxt"></p><div class="row"><button type="button" id="colaNo">Più tardi</button><button type="button" class="go" id="colaGo">Fai volare il drone</button></div></div>';
     $('game').appendChild(box);box.addEventListener('pointerdown',function(e){e.stopPropagation();});
     box.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;box.hidden=true;paused=false;if(b.id==='colaGo')drnStart();});}
-  $('colaTxt').textContent=(first?'Sette chilometri a piedi, fino in fondo: complimenti! ':'')+'Dentro lo scrigno c’è un drone. Da ora è tuo: quando sei fermo (in auto o a piedi) trovi il pulsante «🚁 Drone» e puoi volare sopra la Ciociaria e guardarla dall’alto. Batteria: 10 minuti a volo.';
+  $('colaTxt').textContent=(first?'Sette chilometri a piedi, fino in fondo: complimenti! ':'')+'Dentro lo scrigno c’è un drone. Da ora è tuo: ogni volta che giochi, fermati con l’auto e tira il freno a mano (o fermati a piedi): compare il pulsante «🚁 Drone» e puoi volare sopra la Ciociaria e guardarla dall’alto. Batteria: 10 minuti a volo.';
   box.hidden=false;paused=true;
   if(first&&typeof fanfare==='function')try{fanfare();}catch(e){}}
 /* tocco sullo scrigno: prima di tutti gli altri gestori */
@@ -6721,7 +6721,7 @@ function colaOpen(){
 var DRN={on:false,x:0,z:0,y:0,agl:30,yaw:0,pitch:-.35,bat:600,keys:{},home:null,save:null,drag:null,btn:null,R:3000};
 function drnHas(){return colaGet('au_drone')==='1';}
 function drnCan(){return drnHas()&&state==='drive'&&world==='net'&&NET&&!paused&&!WALK.on&&!BINO.on&&!(typeof GOD!=='undefined'&&GOD.on)&&!(typeof SKYV!=='undefined'&&SKYV.on)&&
-  !(typeof CAVE!=='undefined'&&CAVE.on)&&!(typeof COLL!=='undefined'&&COLL.on)&&!(SC&&SC.auto)&&((PW&&PW.on)||Math.hypot(car.vx,car.vz)<.5);}
+  !(typeof CAVE!=='undefined'&&CAVE.on)&&!(typeof COLL!=='undefined'&&COLL.on)&&!(SC&&SC.auto)&&((PW&&PW.on)||(car.hb&&Math.hypot(car.vx,car.vz)<.5));}
 function drnUI(){
   if($('drnBar'))return;var g=$('game');
   var b=document.createElement('button');b.id='btnDrone';b.className='chip hud';b.type='button';b.textContent='🚁 Drone';b.hidden=true;g.appendChild(b);
@@ -6787,7 +6787,8 @@ function drnCam(){
   camera.lookAt(DRN.x-OX+Math.sin(DRN.yaw)*cp*10,DRN.y+Math.sin(DRN.pitch)*10,DRN.z-OZ+Math.cos(DRN.yaw)*cp*10);
   camera.fov=(camera.aspect||1)<1?78:62;camera.near=.5;camera.updateProjectionMatrix();
   if(scene.fog){scene.fog.near=Math.max(scene.fog.near,900+DRN.agl*4);scene.fog.far=Math.max(scene.fog.far,5000+DRN.agl*20);}}
-function drnBtnTick(dt){DRN.bt=(DRN.bt||0)-dt;if(DRN.bt>0)return;DRN.bt=.3;if(!drnHas()){if(DRN.btn)DRN.btn.hidden=true;return;}if(!DRN.btn){if(world!=='net'||!NET)return;drnUI();}DRN.btn.hidden=DRN.on||!drnCan();}
+function drnBtnTick(dt){DRN.bt=(DRN.bt||0)-dt;if(DRN.bt>0)return;DRN.bt=.3;if(!drnHas()){if(DRN.btn)DRN.btn.hidden=true;return;}if(!DRN.btn){if(world!=='net'||!NET)return;drnUI();}DRN.btn.hidden=DRN.on||!drnCan();
+  if(!DRN.on&&!DRN.hint&&!(PW&&PW.on)&&!car.hb&&state==='drive'&&!paused&&world==='net'&&Math.hypot(car.vx,car.vz)<.5){DRN.still=(DRN.still||0)+.3;if(DRN.still>4){DRN.hint=1;say('Hai il drone: tira il freno a mano e compare il pulsante «🚁 Drone»','good',4200);}}else DRN.still=0;}
 var colaNat0=natTick;natTick=function(dt){colaNat0(dt);try{colaTick(dt);drnBtnTick(dt);}catch(e){}};
 
 /* ================= IL DOLMEN DI MONTE PECCIA: un grande lastrone di calcare poggiato su pietre ritte, nel bosco vicino a Fosso Colaceco ================= */
