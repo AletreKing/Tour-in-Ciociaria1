@@ -463,9 +463,8 @@ function clsApi(b){var pw=clsPwGet();if(!pw)return Promise.reject(new Error('ser
   return fetch('/api/punti',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().catch(function(){return{};}).then(function(j){if(!r.ok)throw new Error(j.error||('errore '+r.status));return j;});});}
 function clsPremio(m,pr){
   if(!pr.testo&&!pr.foto)return Promise.resolve();
-  if(!m.pid){toast('Proposta inviata prima della classifica: niente punti automatici');return Promise.resolve();}
   if(!clsPwGet()){var w=prompt('Per dare i punti all’autore (testo 7, immagini 5) serve la parola segreta della modalità God:');if(w){try{sessionStorage.setItem('clsPw',w.trim());}catch(e){}}}
-  return clsApi({op:'premio',id:m.id,pid:m.pid,testo:pr.testo,foto:pr.foto}).then(function(j){toast(j.gia?'Punti già dati per questa proposta':('+'+j.punti+' punti a '+(j.nome||'l’autore')));})
+  return clsApi({op:'premio',id:m.id,pid:m.pid||'',testo:pr.testo,foto:pr.foto}).then(function(j){toast(j.gia?'Punti già dati per questa proposta':('+'+j.punti+' punti a '+(j.nome||'l’autore')));})
     .catch(function(e){toast('Punti non assegnati: '+(e&&e.message||e));});}
 var CLA={gara:false};
 function clsAdmLoad(){$('clsMsg').textContent='Carico…';

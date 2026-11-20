@@ -165,8 +165,14 @@ module.exports = async (req, res) => {
       return A.json(res, 200, { ok: true, gara: on });
     }
     if (b.op === 'premio') {   // proposta approvata: 7 punti per il testo, 5 per le immagini
-      const id = String(b.id || ''), to = String(b.pid || '');
-      if (!/^\d{14}-[0-9a-f]{6}$/.test(id) || !/^[0-9a-f]{16}$/.test(to)) return A.json(res, 400, { error: 'proposta non riconosciuta' });
+      const id = String(b.id || ''); let to = String(b.pid || '');
+      if (!/^\d{14}-[0-9a-f]{6}$/.test(id)) return A.json(res, 400, { error: 'proposta non riconosciuta' });
+      if (!to) {   // proposte arrivate prima della classifica: l'autore si ricava dall'account salvato nella proposta
+        const r = await gh('/contents/proposte/' + id + '/meta.json?ref=proposte');
+        if (r.ok) { try { const j = await r.json(); const m = JSON.parse(Buffer.from(j.content, 'base64').toString('utf8')); if (m.pid) to = m.pid; else if (m.email) to = pidOf(m.email); } catch (e) {} }
+        if (!to) return A.json(res, 404, { error: 'non trovo l\'autore di questa proposta' });
+      }
+      if (!/^[0-9a-f]{16}$/.test(to)) return A.json(res, 400, { error: 'proposta non riconosciuta' });
       const te = b.testo ? 7 : 0, im = b.foto ? 5 : 0;
       const r = await update(d => { if (d.premi[id]) return false; d.premi[id] = te + im; const p = player(d, to); add(p, 'te', te); add(p, 'im', im); }, 'Punti per una proposta approvata');
       const g = r.data.giocatori[to];
