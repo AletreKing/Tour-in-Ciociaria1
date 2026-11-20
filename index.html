@@ -1338,6 +1338,11 @@ function netLoad(){
     else if(link)half=ow?3:3.6;
     else if(cls<=1)half=ow?NHALF[cls]:NHALF[cls]*1.8;
     else half=ow?NHALF[cls]*.8:NHALF[cls];
+    /* punte: un vertice dove la strada torna indietro di colpo (oltre 135°) tra due tratti corti è un errore del tracciato;
+       lì le due metà della carreggiata si sovrapponevano a quote diverse e il selciato sembrava accartocciato */
+    if(p.length>=6){var pq=p,chg=true,guardS=0;while(chg&&guardS++<6){chg=false;for(var vi=1;vi<pq.length/2-1;vi++){var ux1=pq[2*vi]-pq[2*vi-2],uz1=pq[2*vi+1]-pq[2*vi-1],ux2=pq[2*vi+2]-pq[2*vi],uz2=pq[2*vi+3]-pq[2*vi+1],l1=Math.hypot(ux1,uz1),l2=Math.hypot(ux2,uz2);
+      if(l1<20&&l2<20&&l1>0&&l2>0&&(ux1*ux2+uz1*uz2)/(l1*l2)<-.7){pq.splice(2*vi,2);chg=true;break;}}}
+      p=pq;}
     var len=0;for(i=2;i<p.length;i+=2)len+=Math.hypot(p[i]-p[i-2],p[i+1]-p[i-1]);
     E.push({orb:(r[2]&64)>0,br:(r[2]&16)>0,tu:(r[2]&32)>0,a:r[0],b:r[1],cls:cls,link:link,ow:ow,lanes:ln,half:half,name:raw.names[r[5]],ref:raw.names[r[6]],p:p,len:len});
     adj[r[0]].push(ei);if(r[1]!==r[0])adj[r[1]].push(ei);
@@ -2144,7 +2149,7 @@ function netTile(tx,tz){
       Q(core?SELB:F,-h,h,0,HC.as,0,1);
       [1,-1].forEach(function(sv){var hit=false;for(var q=0;q<=2&&!hit;q++){var tq=q/2,mx=x0+(x1-x0)*tq+(ax+(bx-ax)*tq)*sv*(h+1.2),mz=z0+(z1-z0)*tq+(az+(bz-az)*tq)*sv*(h+1.2);if(netOnOther(mx+ox,mz+oz,P.e[p],.3))hit=true;}
         var ws=1.8;for(var q2=0;q2<=2;q2++){var tq2=q2/2,bx2=x0+(x1-x0)*tq2+ox,bz2=z0+(z1-z0)*tq2+oz,nx2=(ax+(bx-ax)*tq2)*sv,nz2=(az+(bz-az)*tq2)*sv,yy=py0+(py1-py0)*tq2;
-          for(var w2=.3;w2<=1.81;w2+=.3){var oy=netOtherY(bx2+nx2*(h+w2),bz2+nz2*(h+w2),P.e[p]);if(oy!=null&&Math.abs(oy-yy)>.3){ws=Math.min(ws,w2-.3);break;}}}
+          for(var w2=.3;w2<=1.81;w2+=.3){var oy=netOtherY(bx2+nx2*(h+w2),bz2+nz2*(h+w2),P.e[p]);if((oy!=null&&Math.abs(oy-yy)>.3)||netOnSelf(bx2+nx2*(h+w2),bz2+nz2*(h+w2),p,-.2)){ws=Math.min(ws,w2-.3);break;}}}   /* la banchina non si stende sopra un altro tratto della stessa strada (interno dei tornanti): lì si accartocciava */
         if(ws<.25)return;
         if(sv>0)Q(core?SELB:F,h,h+ws,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);else Q(core?SELB:F,-h-ws,-h,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);});
       for(var sk=-1;sk<=1;sk+=2){
@@ -9545,8 +9550,8 @@ function pwMake(kind,hat){
   return P;
 }
 function pwTownName(s){var best=null,bd=1e9;(NET.towns||[]).forEach(function(t){if(t.c<1)return;var d=Math.hypot(t.x-s.ix,t.z-s.iz);if(d<bd&&d<t.r*1.2+200){bd=d;best=t;}});return best?best.n:'';}
-/* si può fare quel passo? non si sale su un gradino più alto di mezzo metro e non si salta giù da un muro */
-function pwCanStep(y0,x1,z1){var g=gndY(x1,z1,y0);return isFinite(g)&&g-y0<=.55&&y0-g<=1.25;}
+/* si può fare quel passo? si sale su gradini, marciapiedi e muretti fino a 1,3 m e si scende da qualunque salto: a piedi si va dove si vuole, fermano solo case e muri */
+function pwCanStep(y0,x1,z1){var g=gndY(x1,z1,y0);return isFinite(g)&&g-y0<=1.3;}
 function pwWallX(x0,z0,x1,z1){   /* il passo attraversa un muretto (segmento solido)? */
   var tx=Math.floor(x1/NT),tz=Math.floor(z1/NT);
   for(var i=-1;i<=1;i++)for(var j=-1;j<=1;j++){var T=netTiles[nk(tx+i,tz+j)];if(!T||!T.obs)continue;
@@ -11372,6 +11377,32 @@ var watSm0=watRoadFix;watRoadFix=function(){
       var m=1e9;for(i=0;i<n;i++){if(NF[i]){m=o[i];R.y[i]=o[i];continue;}m=Math.min(m,o[i]);R.y[i]=m;}});}
   return watSm0.apply(this,arguments);};
 
+/* ================= BIFORCAZIONI SOPRA LE CASCATE (Isola del Liri): il fiume che arriva, il ramo della cascata e l'altro ramo partono alla stessa quota
+   del ciglio, e ogni ramo scende sempre verso valle. Prima il rilievo dava quote diverse: il ramo della Cascata Grande stava 12 m sopra il fiume
+   che lo alimenta e l'acqua sembrava risalire ================= */
+function watForkFix(){
+  var nfix=0;
+  WAT.F.forEach(function(f){if(!f.big)return;var R=null,ri=-1,bi=-1,bd=40;
+    WAT.R.forEach(function(Q,qi){if(Q.k==='t')return;for(var i=0;i<Q.x.length;i++){var d=Math.hypot(Q.x[i]-f.x,Q.z[i]-f.z);if(d<bd){bd=d;R=Q;ri=qi;bi=i;}}});
+    if(!R)return;var k=-1;for(var i=Math.max(0,bi-3);i<R.x.length-1&&i<bi+4;i++)if(R.y[i]-R.y[i+1]>f.H*.5){k=i;break;}if(k<0)return;
+    if(R.s[k]>320)return;   /* il ramo della cascata deve cominciare poco sopra il ciglio */
+    var jx=R.x[0],jz=R.z[0];
+    /* il fiume che arriva: passa (o finisce) vicino all'inizio del ramo */
+    var U=null,ui=-1,ud=35;WAT.R.forEach(function(Q,qi){if(Q===R||Q.k==='t'||Q.x.length<3)return;for(var i=0;i<Q.x.length;i++){var d=Math.hypot(Q.x[i]-jx,Q.z[i]-jz);if(d<ud){ud=d;U=Q;ui=i;}}});
+    if(!U)return;
+    /* quota del pelo dell'acqua a monte, lontano dalla biforcazione (lì il rilievo è sporcato dalla rupe) */
+    var i150=ui;while(i150>0&&U.s[ui]-U.s[i150]<150)i150--;var L=f.top;for(var j=i150;j>=0&&U.s[i150]-U.s[j]<250;j--)L=Math.min(L,U.y[j]);
+    if(!(L>f.bot+3)||Math.abs(L-f.top)>20)return;
+    for(var i=0;i<U.x.length;i++){if(i>=i150||U.y[i]<L)U.y[i]=i>=i150?L:U.y[i];}var mm=1e9;for(var i=0;i<U.x.length;i++){mm=Math.min(mm,Math.max(U.y[i],L));U.y[i]=mm;}
+    for(var i=0;i<=k;i++)R.y[i]=L;f.top=L;f.H=f.top-f.bot;f.big=f.H>5;
+    /* gli altri rami che partono dalla fine del fiume che arriva: dalla quota del ciglio scendono con una rapida, sempre in discesa */
+    var ex=U.x[U.x.length-1],ez=U.z[U.z.length-1];
+    WAT.R.forEach(function(B){if(B===R||B===U||B.k==='t'||B.x.length<2)return;if(Math.hypot(B.x[0]-ex,B.z[0]-ez)>12&&Math.hypot(B.x[0]-jx,B.z[0]-jz)>12)return;
+      var prev=L;for(var i=0;i<B.x.length;i++){var v=Math.min(prev,Math.max(B.y[i],L-.12*B.s[i]));B.y[i]=v;prev=v;}nfix++;});
+    nfix++;});
+  WAT.ffn=nfix;return nfix;}
+var watFk0=watRoadFix;watRoadFix=function(){var first=!WAT.rf,n=watFk0.apply(this,arguments);if(first&&WAT.rf&&!WAT.fk){WAT.fk=1;try{watForkFix();}catch(e){}}return n;};
+
 /* controllo continuo (anche a piedi): a 3 metri dal luogo in attesa si apre la scheda */
 var scPendNat0=natTick;natTick=function(dt){scPendNat0(dt);try{var p=SC.pend;if(!p)return;
   if(SC.pendDst&&!(nrun.dst&&nrun.dst.poi===p)){SC.pend=null;return;}   /* nuova destinazione scelta: si lascia perdere */
@@ -11902,11 +11933,9 @@ function ferDuomo(F,p,G){var o=ferKit(F,p),Q=ferGround(p,15,10.8,15.6),g0=Q.g0,y
     if(side!==3)T.arch(T.face(side,s2,s2,.05),nn,0,.8,gf+7.4,1.9,FC.dark);});
   /* sagrato lastricato */
   o.box(A,A+3.2,-BW-.6,BW+.6,y0,gf-.02,hc(0x9a958b));
-  /* la piazza davanti: lastricato a grandi cerchi; parapetto sul lato verso valle */
+  /* la piazza davanti: lastricato a grandi cerchi, aperta (nessun parapetto: a piedi ci si va da ogni lato) */
   ferPave(p,G,A+3.2,44,-16.5,13.3,{tex:ferPiazzaTex,uv:12,clip:function(a,b,c){return c.t<g0-1.5;}});
-  for(var pa=A+2;pa<44;pa+=2){var px=p.x+p.ux*(pa+1)-p.uz*13.6,pz=p.z+p.uz*(pa+1)+p.ux*13.6,gi=gndY(p.x+p.ux*(pa+1)-p.uz*12.6,p.z+p.uz*(pa+1)+p.ux*12.6),bt=Math.min(terrH(p.x+p.ux*(pa+1)-p.uz*16,p.z+p.uz*(pa+1)+p.ux*16),gi)-1;
-    o.box(pa,pa+2,13.4,13.9,bt,gi+.95,CRN,MAR2);}
-  return[[0,0,15,10.8],[BK,0,AR*.8,AR*.8],[ta,tb,s2,s2],[A+15,13.65,14,.3]];}
+  return[[0,0,15,10.8],[BK,0,AR*.8,AR*.8],[ta,tb,s2,s2]];}
 /* ---------- Porta Santa Croce: rudere di porta romana (I sec. a.C.), un solo arco a tutto sesto in grossi conci a cuneo, più in basso della strada; ci si scende con una scalinata ---------- */
 /* il terreno attorno alla porta si abbassa (la porta sta circa 3 m sotto la Circonvallazione) */
 var FERD=null;
