@@ -2323,9 +2323,10 @@ function netTile(tx,tz){
     for(k2=0;k2<n;k2++){var a0=k2/n*Math.PI*2,a1=(k2+1)/n*Math.PI*2,c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1),col=k2%2?HN.kerbW:HN.kerbR,y0=RY[k2],y1=RY[k2+1];
       F.quad([[cx+c0*ri,y0-.3,cz+s0*ri],[cx+c1*ri,y1-.3,cz+s1*ri],[cx+c1*ri,y1+.22,cz+s1*ri],[cx+c0*ri,y0+.22,cz+s0*ri]],[ (c0+c1)/2,0,(s0+s1)/2],N4,col);
       F.quad([[cx,y+.3,cz],[cx+c1*ri,y1+.22,cz+s1*ri],[cx+c0*ri,y0+.22,cz+s0*ri],[cx,y+.3,cz]],[0,1,0],N4,HN.isle);}
-    if(ri>4)nTree(F,r,cx,cz,y+.2);
+    if(ri>4&&!xmOn())nTree(F,r,cx,cz,y+.2);   /* a Natale sulla rotatoria c'è l'albero addobbato */
     obs.push([2,R2.x,R2.z,ri,y]);
   });
+  try{xmasTile(g,tx,tz,ox,oz,obs,townAt,T);}catch(e){}
   g.add(netTerrain(ox,oz));selTile(g,ox,oz,townAt,obs);studTile(g);
   if(typeof watTile==='function')watTile(g,tx,tz,ox,oz,r,obs);
   var BLST=typeof bedTileEnd==='function'?bedTileEnd(W,F,tx,tz,ox,oz,obs):[];BCTX=null;
@@ -11403,6 +11404,194 @@ function watForkFix(){
   WAT.ffn=nfix;return nfix;}
 var watFk0=watRoadFix;watRoadFix=function(){var first=!WAT.rf,n=watFk0.apply(this,arguments);if(first&&WAT.rf&&!WAT.fk){WAT.fk=1;try{watForkFix();}catch(e){}}return n;};
 
+/* ================= NATALE (dall'8 dicembre al 7 gennaio): addobbi in tutta la provincia, stella cometa, Babbo Natale e la Befana in cielo ================= */
+var XM={on:null,sky:null,pass:null,next:30,cnt:0,cm:null,mat:null};
+function xmOn(){if(XM.on!=null)return XM.on;var q=String(location.search||'');
+  if(/natale=0/.test(q))return XM.on=false;if(/natale=1/.test(q))return XM.on=true;
+  var d=new Date(),m=d.getMonth()+1,g=d.getDate();return XM.on=(m===12&&g>=8)||(m===1&&g<=7);}
+var XMC={red:hc(0xc8202a),red2:hc(0xa3141d),wht:hc(0xf4f1ea),grn:hc(0x1d5a2c),grn2:hc(0x2a7136),grn3:hc(0x174a24),gold:hc(0xe8b923),brn:hc(0x6b4426),brn2:hc(0x8a5a32),dbrn:hc(0x3d2616),skin:hc(0xf0c7a0),blk:hc(0x1c1a19),wax:hc(0xf2ead6),wax2:hc(0xb3202a),wood:hc(0x7a4a26),silv:hc(0xc9cdd4),
+  gift:[hc(0xc8202a),hc(0x1f6fb5),hc(0x2a8a3e),hc(0xe8b923),hc(0x8a3fb0),hc(0x18a6a6)],rib:[hc(0xe8b923),hc(0xf4f1ea),hc(0xc8202a)]};
+var XMB=[0xff3b3b,0xffd23f,0x6fd0ff];
+/* parallelepipedo orientato: a lungo (ux,uz), b di traverso */
+function xmBox(F,cx,cz,ux,uz,a0,a1,b0,b1,y0,y1,col,top){var vx=-uz,vz=ux;function P(a,b,y){return[cx+ux*a+vx*b,y,cz+uz*a+vz*b];}
+  F.quad([P(a1,b0,y0),P(a1,b1,y0),P(a1,b1,y1),P(a1,b0,y1)],[ux,0,uz],N4,col);F.quad([P(a0,b1,y0),P(a0,b0,y0),P(a0,b0,y1),P(a0,b1,y1)],[-ux,0,-uz],N4,col);
+  F.quad([P(a0,b1,y0),P(a1,b1,y0),P(a1,b1,y1),P(a0,b1,y1)],[vx,0,vz],N4,col);F.quad([P(a1,b0,y0),P(a0,b0,y0),P(a0,b0,y1),P(a1,b0,y1)],[-vx,0,-vz],N4,col);
+  F.quad([P(a0,b0,y1),P(a1,b0,y1),P(a1,b1,y1),P(a0,b1,y1)],[0,1,0],N4,top||col);}
+/* cilindro a n facce */
+function xmCyl(F,x,z,r,y0,y1,col,n,r1){n=n||6;r1=r1==null?r:r1;for(var k=0;k<n;k++){var a0=k/n*Math.PI*2,a1=(k+1)/n*Math.PI*2,am=(a0+a1)/2;
+  F.quad([[x+Math.cos(a0)*r,y0,z+Math.sin(a0)*r],[x+Math.cos(a1)*r,y0,z+Math.sin(a1)*r],[x+Math.cos(a1)*r1,y1,z+Math.sin(a1)*r1],[x+Math.cos(a0)*r1,y1,z+Math.sin(a0)*r1]],[Math.cos(am),0,Math.sin(am)],N4,col);}
+  if(r1>.01)for(var k=1;k<n-1;k+=2){var a=[0,k,k+1,Math.min(k+2,n-1)].map(function(i){return i/n*Math.PI*2;});F.quad(a.map(function(q){return[x+Math.cos(q)*r1,y1,z+Math.sin(q)*r1];}),[0,1,0],N4,col);}}
+/* ----- gli oggetti ----- */
+function xmTree(F,BL,x,z,y,h,r,ox,oz){
+  xmCyl(F,x-ox,z-oz,h*.035+.06,y,y+h*.16,XMC.dbrn,5);
+  var lv=[[.12,.45,.40],[.36,.36,.34],[.58,.27,.28],[.78,.17,.22]];
+  lv.forEach(function(q,i){nCone(F,x-ox,z-oz,h*q[1],y+h*q[0],h*q[2],i%2?XMC.grn2:XMC.grn);});
+  /* palline e catena di luci a spirale */
+  var n=Math.round(h*7),c=new THREE.Color();for(var k=0;k<n;k++){var t=k/n,a=t*Math.PI*2*(3+h*.12)+r()*.3,yy=y+h*(.16+t*.74),rr=h*.44*(1-t*.88)+.05,bx=x+Math.cos(a)*rr,bz=z+Math.sin(a)*rr;
+    c.setHex(XMB[k%3]);nBulb(BL[k%3],bx-ox,yy,bz-oz,Math.cos(a),Math.sin(a),c,h>6?.24:.17);
+    if(k%3===1){var bc=XMC.gift[k%5];xmBox(F,bx-ox+Math.cos(a)*.04,bz-oz+Math.sin(a)*.04,Math.cos(a),Math.sin(a),-.11,.11,-.11,.11,yy-.38,yy-.16,bc);}}
+  /* il puntale: stella dorata che brilla */
+  c.setHex(0xffe27a);[[1,0],[0,1],[-1,0],[0,-1]].forEach(function(q){nBulb(BL[1],x-ox,y+h*.97,z-oz,q[0],q[1],c,h>6?.62:.42);});
+  var sx=x-ox,sz=z-oz,sy=y+h*.97,s=h>6?.55:.36;F.quad([[sx-s,sy,sz],[sx,sy-s*.4,sz],[sx+s,sy,sz],[sx,sy+s,sz]],[0,0,1],N4,XMC.gold);F.quad([[sx,sy,sz-s],[sx,sy-s*.4,sz],[sx,sy,sz+s],[sx,sy+s,sz]],[1,0,0],N4,XMC.gold);
+  /* qualche regalo sotto l'albero */
+  for(var k=0;k<3+(h>6?4:0);k++){var a=r()*Math.PI*2,d=h*.2+r()*h*.18;xmGift(F,x+Math.cos(a)*d-ox,z+Math.sin(a)*d-oz,a,y,.35+r()*.35,r);}}
+function xmGift(F,x,z,a,y,s,r){var ux=Math.cos(a),uz=Math.sin(a),c=XMC.gift[Math.floor(r()*XMC.gift.length)],rb=XMC.rib[Math.floor(r()*3)];if(rb===c)rb=XMC.gold;
+  var h=s*(.7+r()*.5);xmBox(F,x,z,ux,uz,-s/2,s/2,-s/2,s/2,y,y+h,c);xmBox(F,x,z,ux,uz,-s/2-.01,s/2+.01,-.05,.05,y,y+h+.01,rb);xmBox(F,x,z,ux,uz,-.05,.05,-s/2-.01,s/2+.01,y,y+h+.01,rb);
+  xmBox(F,x,z,ux,uz,-.1,.1,-.04,.04,y+h,y+h+.12,rb);}
+function xmGifts(F,x,z,y,r){for(var k=0;k<4+Math.floor(r()*4);k++){var a=r()*Math.PI*2,d=r()*.9;xmGift(F,x+Math.cos(a)*d,z+Math.sin(a)*d,r()*3,y,.4+r()*.5,r);}
+  xmGift(F,x,z,r()*3,y+.62,.38,r);}
+function xmCane(F,x,z,ux,uz,y,H){var segs=12,R=.11,hk=.42;for(var k=0;k<segs;k++){xmCyl(F,x,z,R,y+H*k/segs,y+H*(k+1)/segs,k%2?XMC.wht:XMC.red,6);}
+  /* il manico curvo: mezzo giro di cubetti a righe */
+  var hcx=x+ux*hk,hcz=z+uz*hk,n=9;for(var k=0;k<=n;k++){var t=Math.PI*k/n,px=hcx-ux*Math.cos(t)*hk,pz=hcz-uz*Math.cos(t)*hk,py=y+H+Math.sin(t)*hk;
+    xmBox(F,px,pz,ux,uz,-R*1.05,R*1.05,-R,R,py-R,py+R,k%2?XMC.wht:XMC.red);}
+  xmCyl(F,x+ux*hk*2,z+uz*hk*2,R,y+H-.32,y+H,XMC.red,6);}
+function xmDeer(F,BL,x,z,ux,uz,y,s,rud,ox,oz){var vx=-uz,vz=ux,B=function(a0,a1,b0,b1,y0,y1,c){xmBox(F,x,z,ux,uz,a0*s,a1*s,b0*s,b1*s,y+y0*s,y+y1*s,c);};
+  B(-.55,.5,-.2,.2,.62,1.02,XMC.brn2);B(-.62,-.5,-.1,.1,.85,1.0,XMC.wht);   /* corpo, coda */
+  [[-.45,-.13],[-.45,.07],[.32,-.13],[.32,.07]].forEach(function(q){B(q[0],q[0]+.11,q[1],q[1]+.07,0,.66,XMC.brn);B(q[0]-.01,q[0]+.12,q[1]-.01,q[1]+.08,0,.08,XMC.dbrn);});
+  B(.38,.58,-.1,.1,.95,1.38,XMC.brn2);B(.5,.86,-.12,.12,1.3,1.52,XMC.brn2);B(.84,.92,-.07,.07,1.34,1.46,XMC.dbrn);   /* collo, testa, muso */
+  [-1,1].forEach(function(sd){B(.56,.62,sd*.08,sd*.08+sd*.05,1.5,1.92,XMC.dbrn);B(.4,.62,sd*.1,sd*.15,1.82,1.86,XMC.dbrn);B(.46,.5,sd*.1,sd*.14,1.7,1.84,XMC.dbrn);B(.6,.75,sd*.1,sd*.15,1.72,1.76,XMC.dbrn);
+    B(.5,.56,sd*.12,sd*.2,1.42,1.5,XMC.brn);});   /* corna e orecchie */
+  B(.4,.47,-.22,.22,1.04,1.12,XMC.red);   /* collare */
+  if(rud){var c=new THREE.Color(0xff2a20);[[1,0],[0,1],[0,-1]].forEach(function(q){nBulb(BL[0],x+ux*.93*s+vx*q[1]*.02-ox,y+1.4*s,z+uz*.93*s+vz*q[1]*.02-oz,ux*q[0]+vx*q[1],uz*q[0]+vz*q[1],c,.12*s);});}}
+function xmElf(F,x,z,ux,uz,y,s,r){var B=function(a0,a1,b0,b1,y0,y1,c){xmBox(F,x,z,ux,uz,a0*s,a1*s,b0*s,b1*s,y+y0*s,y+y1*s,c);},tun=r()<.5?XMC.grn2:XMC.red;
+  B(-.08,.06,-.13,-.03,0,.35,XMC.red);B(-.08,.06,.03,.13,0,.35,XMC.wht);B(-.08,.14,-.14,-.02,0,.07,XMC.brn);B(-.08,.14,.02,.14,0,.07,XMC.brn);   /* calze a righe e scarpe a punta */
+  nCone(F,x,z,.26*s,y+.32*s,.42*s,tun);B(-.13,.13,-.2,.2,.62,.68,XMC.gold);B(-.1,.1,-.17,.17,.66,.78,tun);   /* tunica, cintura */
+  B(-.04,.04,-.27,-.17,.42,.74,tun);B(-.04,.04,.17,.27,.42,.74,tun);B(-.04,.05,-.27,-.18,.36,.44,XMC.skin);B(-.04,.05,.18,.27,.36,.44,XMC.skin);
+  B(-.11,.11,-.11,.11,.78,1.0,XMC.skin);B(.1,.13,-.03,.03,.86,.9,hc(0xe0957a));B(-.03,.03,-.16,-.1,.88,.98,XMC.skin);B(-.03,.03,.1,.16,.88,.98,XMC.skin);   /* testa, naso, orecchie a punta */
+  B(.105,.115,-.07,-.04,.92,.95,XMC.blk);B(.105,.115,.04,.07,.92,.95,XMC.blk);
+  B(-.13,.13,-.13,.13,.98,1.03,XMC.wht);nCone(F,x-ux*.05*s,z-uz*.05*s,.13*s,y+1.02*s,.36*s,tun===XMC.red?XMC.grn2:XMC.red);xmCyl(F,x-ux*.12*s,z-uz*.12*s,.04*s,y+1.3*s,y+1.38*s,XMC.wht,5,0);}
+function xmSled(F,x,z,ux,uz,y,r){var B=function(a0,a1,b0,b1,y0,y1,c){xmBox(F,x,z,ux,uz,a0,a1,b0,b1,y+y0,y+y1,c);};
+  [-.55,.47].forEach(function(b){B(-1.3,1.1,b,b+.08,0,.08,XMC.gold);B(1.1,1.3,b,b+.08,.05,.45,XMC.gold);B(1.22,1.38,b,b+.08,.4,.62,XMC.gold);[-.9,0,.8].forEach(function(a){B(a,a+.08,b,b+.08,.08,.35,XMC.gold);});});
+  B(-1.25,1.0,-.62,.62,.35,.8,XMC.red);B(-1.25,-.95,-.62,.62,.8,1.45,XMC.red);B(.75,1.05,-.62,.62,.8,1.05,XMC.red);B(-1.27,1.07,-.64,.64,.78,.84,XMC.gold);B(-1.28,-.93,-.65,.65,1.42,1.5,XMC.gold);
+  B(-.9,.3,-.5,.5,.8,.92,hc(0x6a1820));
+  /* il sacco con i regali */
+  xmCyl(F,x+ux*.1,z+uz*.1,.42,y+.8,y+1.3,hc(0x8b6a43),7,.3);xmCyl(F,x+ux*.1,z+uz*.1,.3,y+1.3,y+1.45,hc(0x8b6a43),7,.08);
+  for(var k=0;k<3;k++)xmGift(F,x+ux*(.55+k*.12)-uz*(k-1)*.3,z+uz*(.55+k*.12)+ux*(k-1)*.3,r()*3,y+.8,.3+r()*.15,r);}
+function xmCandles(F,BL,x,z,y,r,ox,oz){var c=new THREE.Color(0xffb347);xmCyl(F,x-ox,z-oz,.75,y,y+.18,XMC.gold,8,.7);xmCyl(F,x-ox,z-oz,.62,y+.18,y+.22,XMC.grn,8,.6);
+  [[0,0,1.25],[.33,.15,.85],[-.28,.22,.65],[.05,-.34,1.0]].forEach(function(q,i){var cx=x+q[0]-ox,cz=z+q[1]-oz,top=y+.22+q[2];xmCyl(F,cx,cz,.13,y+.22,top,i%2?XMC.wax2:XMC.wax,7);xmCyl(F,cx,cz,.012,top,top+.06,XMC.blk,4);
+    [[1,0],[0,1],[-1,0],[0,-1]].forEach(function(d){nBulb(BL[1],cx,top+.13,cz,d[0],d[1],c,.1);});});
+  /* rametti di agrifoglio con le bacche */
+  for(var k=0;k<6;k++){var a=k/6*Math.PI*2,hx=x-ox+Math.cos(a)*.62,hz=z-oz+Math.sin(a)*.62;xmBox(F,hx,hz,Math.cos(a),Math.sin(a),-.12,.12,-.05,.05,y+.2,y+.26,XMC.grn3);xmBox(F,hx,hz,1,0,-.03,.03,-.03,.03,y+.26,y+.31,XMC.red);}}
+/* ----- dove metterli: lungo le strade dei paesi (e qualcuno in campagna), mai sulla carreggiata, sotto un ponte o addosso a una casa ----- */
+function xmFree(x,z,rad,obs){var pr=netProbe(x,z);if(pr&&pr.d<NET.E[pr.e].half+rad+.6)return false;if(netUnder(x,z,1e9,-1,rad+.5))return false;
+  for(var i=0;i<obs.length;i++){var o=obs[i];if(o[0]===1){var dx=x-o[1],dz=z-o[2],a=Math.abs(dx*o[3]+dz*o[4])-o[5],b=Math.abs(-dx*o[4]+dz*o[3])-o[6];if(a<rad+.5&&b<rad+.5)return false;}
+    else if(o[0]===2){if(Math.hypot(x-o[1],z-o[2])<o[3]+rad+.4)return false;}else if(o[0]===3||o[0]===4){if(o.length>2&&Math.hypot(x-o[1],z-o[2])<rad+1.5)return false;}}
+  if(typeof WAT!=='undefined'&&WAT.ready){try{var w=watNear(x,z);if(w&&w.d<rad+1)return false;}catch(e){}}
+  var g=gndY(x,z);if(!isFinite(g))return false;for(var k=0;k<4;k++){var a=k*Math.PI/2,gg=gndY(x+Math.cos(a)*rad,z+Math.sin(a)*rad);if(!isFinite(gg)||Math.abs(gg-g)>.7)return false;}
+  return true;}
+function xmasTile(g,tx,tz,ox,oz,obs,townAt,T){if(!xmOn()||!NET)return;
+  var r=rng(777001+tx*7919+tz*104729),F=new GB(),BL=[new GB(),new GB(),new GB()],P=NET.P,n=0;
+  function put(kind,x,z,ux,uz){var rad=kind==='tree'?2.2:kind==='big'?4:kind==='sled'?1.6:kind==='gifts'?1.3:kind==='candles'?1:kind==='deer'?1.3:.9;
+    if(!xmFree(x,z,rad,obs))return false;var y=gndY(x,z)-.05;
+    if(kind==='tree')xmTree(F,BL,x,z,y,3.2+r()*2,r,ox,oz);else if(kind==='big')xmTree(F,BL,x,z,y,8+r()*3,r,ox,oz);
+    else if(kind==='gifts')xmGifts(F,x-ox,z-oz,y,r);else if(kind==='cane'){xmCane(F,x-ox,z-oz,ux,uz,y,1.9);xmCane(F,x-ox+ux*1.6,z-oz+uz*1.6,-ux,-uz,y,1.6);}
+    else if(kind==='deer'){xmDeer(F,BL,x,z,ux,uz,y,1,r()<.35,ox,oz);if(r()<.6)xmDeer(F,BL,x-ux*1.6+(-uz)*1.1,z-uz*1.6+ux*1.1,ux,uz,y,.75,false,ox,oz);}
+    else if(kind==='elf'){xmElf(F,x-ox,z-oz,-uz,ux,y,1,r);if(r()<.6)xmElf(F,x-ox+ux*.8,z-oz+uz*.8,-uz,ux,y,.85,r);if(r()<.5)xmGifts(F,x-ox-ux*1.0,z-oz-uz*1.0,y,r);}
+    else if(kind==='sled')xmSled(F,x-ox,z-oz,ux,uz,y,r);else if(kind==='candles')xmCandles(F,BL,x,z,y,r,ox,oz);
+    obs.push([2,x,z,kind==='big'?1:kind==='tree'?.6:rad*.6]);n++;return true;}
+  /* il grande albero in centro a ogni paese */
+  NET.towns.forEach(function(t){if(t.c<1||Math.floor(t.x/NT)!==tx||Math.floor(t.z/NT)!==tz)return;
+    for(var k=0;k<40;k++){var a=k*2.4,d=k*1.6,x=t.x+Math.cos(a)*d,z=t.z+Math.sin(a)*d;if(put('big',x,z,1,0))break;}});
+  /* sulle rotatorie */
+  (NET.ringT.get(nk(tx,tz))||[]).forEach(function(R2){var ri=R2.r-R2.half-.5;if(ri<2.5)return;var h=Math.min(10,2+ri*1.1);xmTree(F,BL,R2.x,R2.z,R2.y+.25,h,r,ox,oz);n++;});
+  /* lungo le strade */
+  if(T)T.p.forEach(function(p){var e=NET.E[P.e[p]];if(e.tu||e.br||e.cls===0||e.link)return;var x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L=Math.hypot(dx,dz);if(L<4)return;dx/=L;dz/=L;
+    var mx=x0+dx*L/2,mz=z0+dz*L/2,tw=townAt(mx,mz)[0],step=tw>.3?34-tw*14:tw>.05?120:420;
+    for(var s=r()*step;s<L;s+=step*(.7+r()*.6)){var sd=r()<.5?-1:1,off=e.half+1.8+r()*1.6,x=x0+dx*s+dz*off*sd,z=z0+dz*s-dx*off*sd,ux=dx,uz=dz;
+      var k=r(),kind=tw>.3?(k<.3?'tree':k<.44?'gifts':k<.57?'cane':k<.68?'deer':k<.8?'elf':k<.9?'candles':'sled'):(k<.4?'tree':k<.6?'deer':k<.75?'sled':k<.88?'gifts':'cane');
+      if(kind==='deer'||kind==='sled'){ux=dx*(r()<.5?1:-1);uz=dz*(ux===dx?1:-1);}
+      put(kind,x,z,ux,uz);}});
+  if(!n)return;g.add(F.mesh(XM.mat||(XM.mat=new THREE.MeshLambertMaterial({vertexColors:true}))));
+  BL.forEach(function(b,i){if(b.i.length){var m=b.mesh(bulbM[i]);m.renderOrder=2;g.add(m);}});}
+/* ----- il cielo: stella cometa di notte; ogni tanto passa, lontano, Babbo Natale con la slitta (o la Befana sulla scopa) ----- */
+function xmTex(draw,w,h){var c=document.createElement('canvas');c.width=w;c.height=h||w;draw(c.getContext('2d'),w,h||w);return new THREE.CanvasTexture(c);}
+function xmSkyInit(){if(XM.sky)return;var G=new THREE.Group();G.renderOrder=-1;
+  /* la cometa: chioma luminosa con una lunga coda */
+  var ct=xmTex(function(x,w,h){var g=x.createLinearGradient(0,h/2,w,h/2);g.addColorStop(0,'rgba(255,240,200,0)');g.addColorStop(.75,'rgba(255,236,190,.35)');g.addColorStop(1,'rgba(255,250,235,.9)');
+    x.fillStyle=g;x.beginPath();x.moveTo(0,h/2-2);x.lineTo(w*.9,h/2-h*.32);x.lineTo(w,h/2);x.lineTo(w*.9,h/2+h*.32);x.lineTo(0,h/2+2);x.closePath();x.fill();
+    var r=x.createRadialGradient(w*.93,h/2,0,w*.93,h/2,h*.5);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.25,'rgba(255,245,210,.9)');r.addColorStop(1,'rgba(255,230,170,0)');x.fillStyle=r;x.fillRect(w*.75,0,w*.25,h);},512,128);
+  var cm=new THREE.Mesh(new THREE.PlaneGeometry(260,65),new THREE.MeshBasicMaterial({map:ct,transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,opacity:0}));
+  cm.frustumCulled=false;cm.renderOrder=-1;cm.position.set(-112,0,0);var cg=new THREE.Group();cg.add(cm);G.add(cg);XM.cm=cm;XM.cg=cg;
+  var st=new THREE.Sprite(new THREE.SpriteMaterial({map:xmTex(function(x,w){var r=x.createRadialGradient(w/2,w/2,0,w/2,w/2,w/2);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.12,'rgba(255,248,220,.95)');r.addColorStop(.4,'rgba(255,230,160,.25)');r.addColorStop(1,'rgba(255,220,150,0)');x.fillStyle=r;x.fillRect(0,0,w,w);
+    x.strokeStyle='rgba(255,250,230,.8)';x.lineWidth=2;[[0,1],[1,0],[.7,.7],[.7,-.7]].forEach(function(q){x.beginPath();x.moveTo(w/2-q[0]*w*.48,w/2-q[1]*w*.48);x.lineTo(w/2+q[0]*w*.48,w/2+q[1]*w*.48);x.stroke();});},128),transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending,opacity:0}));
+  st.scale.set(70,70,1);st.renderOrder=-1;G.add(st);XM.cs=st;
+  /* la slitta con le renne e la Befana: sagome piccole, lontane */
+  XM.santa=xmSantaMesh();XM.befana=xmBefanaMesh();XM.santa.visible=XM.befana.visible=false;G.add(XM.santa,XM.befana);
+  var dust=new THREE.Points(new THREE.BufferGeometry(),new THREE.PointsMaterial({size:3,sizeAttenuation:false,color:0xffe9a8,transparent:true,opacity:.9,fog:false,depthWrite:false,blending:THREE.AdditiveBlending}));
+  dust.geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(120*3),3));dust.frustumCulled=false;dust.visible=false;G.add(dust);XM.dust=dust;XM.dl=[];
+  skyMesh.add(G);XM.sky=G;}
+function xmMB(c){return new THREE.MeshBasicMaterial({color:c,fog:false});}
+function xmPart(G,w,h,d,x,y,z,c,ry,rz){var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),xmMB(c));m.position.set(x,y,z);if(ry)m.rotation.y=ry;if(rz)m.rotation.z=rz;G.add(m);return m;}
+function xmSantaMesh(){var G=new THREE.Group(),S=new THREE.Group();G.add(S);   /* +x: verso dove va */
+  xmPart(S,7,2.6,4,0,0,0,0xc8202a);xmPart(S,2,3,4,-3,2.2,0,0xc8202a);xmPart(S,7.6,.5,.5,.2,-2,1.6,0xe8b923);xmPart(S,7.6,.5,.5,.2,-2,-1.6,0xe8b923);xmPart(S,.5,2.2,.5,4,-1,1.6,0xe8b923,0,.6);xmPart(S,.5,2.2,.5,4,-1,-1.6,0xe8b923,0,.6);
+  xmPart(S,2.6,3,2.6,-.6,2.6,0,0xc8202a);xmPart(S,2.8,.6,2.8,-.6,1.4,0,0xf4f1ea);xmPart(S,1.5,1.5,1.5,-.4,4.7,0,0xf0c7a0);xmPart(S,1.7,1.3,1.6,.1,3.8,0,0xf4f1ea);xmPart(S,1.6,1.4,1.6,-.6,5.8,0,0xc8202a);xmPart(S,.6,.6,.6,-1.3,6.4,0,0xf4f1ea);
+  xmPart(S,2.4,2.4,2.4,2,2.2,0,0x8b6a43);
+  XM.deer=[];for(var k=0;k<4;k++)for(var s=-1;s<=1;s+=2){var D=new THREE.Group();D.position.set(9+k*5.2,0,s*1.7);xmPart(D,3.4,1.4,1.1,0,0,0,0x8a5a32);xmPart(D,.8,1.8,.8,1.5,1,0,0x8a5a32,0,-.4);xmPart(D,1.4,.8,.8,2.2,1.8,0,0x8a5a32);
+    xmPart(D,.25,1.6,.25,1.6,2.8,.3,0x3d2616,0,.3);xmPart(D,.25,1.6,.25,1.6,2.8,-.3,0x3d2616,0,.3);[[-1.2,.35],[-1.2,-.35],[1.1,.35],[1.1,-.35]].forEach(function(q){var l=xmPart(D,.3,1.6,.3,q[0],-1.3,q[1],0x6b4426);l.userData.leg=q[0];});
+    if(k===3&&s===-1){var nose=new THREE.Sprite(new THREE.SpriteMaterial({map:bulbTex,color:0xff2a20,fog:false,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));nose.scale.set(2.2,2.2,1);nose.position.set(3,1.8,0);D.add(nose);}
+    S.add(D);XM.deer.push(D);}
+  xmPart(S,20,.12,.12,13,0,1.2,0xe8b923);xmPart(S,20,.12,.12,13,0,-1.2,0xe8b923);
+  return G;}
+function xmBefanaMesh(){var G=new THREE.Group(),S=new THREE.Group();G.add(S);
+  xmPart(S,13,.45,.45,0,0,0,0x7a4a26);for(var k=0;k<7;k++)xmPart(S,3.4,.35,.35,-7.6,(k-3)*.25,(k%3-1)*.3,0xb88a4a,0,(k-3)*.08);   /* la scopa */
+  xmPart(S,3,3.4,2.4,-.6,1.9,0,0x2b2b33);xmPart(S,4.2,1.4,2.6,-.4,.3,0,0x3a2e4a);xmPart(S,2.4,1.2,2,1.6,-.4,0,0x3a2e4a);   /* gonna e mantello */
+  xmPart(S,3.2,.8,2.8,-.6,3.4,0,0x8a1f2b);xmPart(S,1.5,1.6,1.4,-.4,4.6,0,0xd9b08c);xmPart(S,.5,.6,.4,.5,4.4,0,0xc99272);   /* scialle, viso, naso */
+  xmPart(S,2.2,1.2,2.1,-.6,5.4,0,0x5a3b6b);xmPart(S,1,1.4,1.4,-1.7,5.2,0,0x5a3b6b);   /* fazzoletto in testa */
+  xmPart(S,2.6,2.8,2.6,-2.9,2.4,0,0x8b6a43);xmPart(S,.5,2.8,.5,-1.6,2.4,1.3,0x2b2b33,0,-.5);   /* il sacco */
+  xmPart(S,1.4,1.4,.3,2.3,.4,1.25,0x1c1a19);
+  return G;}
+function xmSkyStart(){var who=(new Date().getMonth()===0)?(XM.cnt%3?'b':'s'):(XM.cnt%3===2?'b':'s');XM.cnt++;
+  var az=Math.random()*Math.PI*2,sp=(Math.random()<.5?1:-1)*(.035+Math.random()*.01),alt=.2+Math.random()*.16;
+  XM.pass={who:who,t:0,dur:36,az0:az,sp:sp,alt:alt,snd:false};var M=who==='s'?XM.santa:XM.befana;XM.santa.visible=who==='s';XM.befana.visible=who==='b';M.scale.setScalar(who==='s'?2.2:2.8);
+  XM.dl=[];XM.dust.visible=true;
+  if(state==='drive'){try{say(who==='s'?'🎅 Guarda il cielo: passa Babbo Natale con la slitta!':'🧹 Guarda il cielo: passa la Befana!','',3200);}catch(e){}}
+  if(who==='s')xmJingle();else xmChimes();}
+function xmSkyTick(dt){if(!xmOn()||typeof skyMesh==='undefined')return;xmSkyInit();var d=typeof nwDark==='function'?nwDark():0;
+  /* la cometa sta a sud-est, alta sull'orizzonte */
+  var A=2.3,H=.62,R=930,v=[-Math.sin(A)*Math.cos(H)*R,Math.sin(H)*R,Math.cos(A)*Math.cos(H)*R],o=d>.35?Math.min(1,(d-.35)*2.5):0;
+  XM.cs.position.set(v[0],v[1],v[2]);XM.cs.material.opacity=o;XM.cs.visible=o>0;
+  XM.cg.position.set(v[0]*.998,v[1]*.998,v[2]*.998);XM.cg.lookAt(0,0,0);XM.cg.rotateZ(.6);XM.cm.material.opacity=o*.85;XM.cg.visible=o>0;
+  /* il passaggio */
+  if(!XM.pass){if(state==='drive'){XM.next-=dt;if(XM.next<=0){XM.next=140+Math.random()*120;xmSkyStart();}}return;}
+  var P=XM.pass;P.t+=dt;var k=P.t/P.dur,M=P.who==='s'?XM.santa:XM.befana;
+  if(k>=1){XM.pass=null;M.visible=false;XM.dust.visible=false;return;}
+  var a=P.az0+P.sp*P.t,al=P.alt+Math.sin(k*Math.PI)*.07+Math.sin(P.t*1.3)*.012,RR=760;function pos(a,al){return[-Math.sin(a)*Math.cos(al)*RR,Math.sin(al)*RR,Math.cos(a)*Math.cos(al)*RR];}
+  var p=pos(a,al),q=pos(a+P.sp*.3,al+Math.cos(k*Math.PI)*.07*Math.PI/P.dur*.3);M.position.set(p[0],p[1],p[2]);M.lookAt(0,p[1],0);
+  /* orienta la sagoma lungo il moto (asse x locale) */
+  var dx=q[0]-p[0],dy=q[1]-p[1],dz=q[2]-p[2];M.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),new THREE.Vector3(dx,dy,dz).normalize());
+  var up=new THREE.Vector3(0,1,0).applyQuaternion(M.quaternion);if(up.y<0)M.rotateX(Math.PI);
+  var vis=k<.04?k/.04:k>.96?(1-k)/.04:1;M.children[0].children.forEach(function(c){if(c.material&&c.material.opacity!=null){c.material.transparent=true;c.material.opacity=vis;}});
+  if(P.who==='s')XM.deer.forEach(function(D,i){D.position.y=Math.sin(P.t*6+i*.8)*.5;D.children.forEach(function(c){if(c.userData.leg!=null)c.rotation.z=Math.sin(P.t*9+i)*.5*(c.userData.leg>0?1:-1);});});
+  else M.children[0].rotation.x=Math.sin(P.t*2)*.08;
+  /* scia di polvere dorata (si vede soprattutto di notte) */
+  XM.dl.push([p[0],p[1]-2,p[2],1.4]);if(XM.dl.length>120)XM.dl.shift();var arr=XM.dust.geometry.attributes.position.array;
+  for(var i=0;i<120;i++){var s=XM.dl[i];if(s){s[3]-=dt;s[1]-=dt*2;arr[i*3]=s[0]+(Math.random()-.5)*2;arr[i*3+1]=s[3]>0?s[1]:-1e5;arr[i*3+2]=s[2]+(Math.random()-.5)*2;}else arr[i*3+1]=-1e5;}
+  XM.dust.geometry.attributes.position.needsUpdate=true;XM.dust.material.opacity=.35+.6*d;}
+/* ----- musica: Jingle Bells (melodia di J. Pierpont, 1857, di pubblico dominio) con i sonagli; per la Befana un carillon ----- */
+function xmOut(){if(!AC||!au||!opts.snd||AC.state!=='running')return null;var g=AC.createGain();g.gain.value=0;g.connect(au.master);return g;}
+function xmJingle(){var out=xmOut();if(!out)return;var t0=AC.currentTime+.6,B=.27;
+  var C5=523.25,D5=587.33,E5=659.25,F5=698.46,G5=783.99,
+    L1=[[E5,1],[E5,1],[E5,2],[E5,1],[E5,1],[E5,2],[E5,1],[G5,1],[C5,1.5],[D5,.5],[E5,4]],
+    L2=[[F5,1],[F5,1],[F5,1.5],[F5,.5],[F5,1],[E5,1],[E5,1],[E5,.5],[E5,.5],[E5,1],[D5,1],[D5,1],[E5,1],[D5,2],[G5,2]],
+    L4=[[F5,1],[F5,1],[F5,1.5],[F5,.5],[F5,1],[E5,1],[E5,1],[E5,.5],[E5,.5],[G5,1],[G5,1],[F5,1],[D5,1],[C5,4]],
+    mel=L1.concat(L2,L1,L4),t=t0;
+  out.gain.setValueAtTime(0,t0-.1);out.gain.linearRampToValueAtTime(.16,t0+.4);
+  mel.forEach(function(n){var o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),du=n[1]*B;o.type='triangle';o2.type='sine';o.frequency.value=n[0];o2.frequency.value=n[0]*2;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.55,t+.015);g.gain.exponentialRampToValueAtTime(.2,t+du*.6);g.gain.exponentialRampToValueAtTime(.001,t+du*.98);
+    var g2=AC.createGain();g2.gain.value=.25;o.connect(g);o2.connect(g2);g2.connect(g);g.connect(out);o.start(t);o2.start(t);o.stop(t+du);o2.stop(t+du);t+=du;});
+  var T=t;   /* basso: do, fa, sol sui tempi */
+  var bars=[0,0,0,0,5,5,7,7,0,0,0,0,5,5,7,0],nb=bars.length*4;for(var b=0;b<Math.ceil((T-t0)/B);b++){var root=[130.81,0,0,0,0,174.61,0,196.0][bars[Math.floor(b/4)%bars.length]]||130.81,tb=t0+b*B;if(b%2)continue;
+    var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=root*(b%4?1.5:1);g.gain.setValueAtTime(0,tb);g.gain.linearRampToValueAtTime(.35,tb+.01);g.gain.exponentialRampToValueAtTime(.001,tb+B*1.6);o.connect(g);g.connect(out);o.start(tb);o.stop(tb+B*1.7);}
+  /* i sonagli della slitta, a ogni mezzo tempo */
+  var len=AC.sampleRate*.12|0,buf=AC.createBuffer(1,len,AC.sampleRate),ch=buf.getChannelData(0);for(var i=0;i<len;i++)ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+  var hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=5500;var hg=AC.createGain();hg.gain.value=.5;hp.connect(hg);hg.connect(out);
+  for(var tt=t0;tt<T;tt+=B/2){var s=AC.createBufferSource();s.buffer=buf;s.connect(hp);s.start(tt+(Math.random()-.5)*.01);}
+  out.gain.setValueAtTime(.16,T);out.gain.linearRampToValueAtTime(0,T+1.5);}
+function xmChimes(){var out=xmOut();if(!out)return;var t0=AC.currentTime+.3;out.gain.setValueAtTime(.12,t0);out.gain.setValueAtTime(.12,t0+9);out.gain.linearRampToValueAtTime(0,t0+11);
+  var sc=[1046.5,1174.7,1318.5,1568,1760,2093];for(var k=0;k<26;k++){var t=t0+k*.38+(k%4===3?.19:0),f=sc[Math.floor(Math.random()*sc.length)],o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.4,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+1.6);o.connect(g);g.connect(out);o.start(t);o.stop(t+1.7);}}
+var xmTr0=trSync;trSync=function(dt){xmTr0(dt);try{xmSkyTick(dt);}catch(e){}};
+/* ================= fine NATALE ================= */
 /* controllo continuo (anche a piedi): a 3 metri dal luogo in attesa si apre la scheda */
 var scPendNat0=natTick;natTick=function(dt){scPendNat0(dt);try{var p=SC.pend;if(!p)return;
   if(SC.pendDst&&!(nrun.dst&&nrun.dst.poi===p)){SC.pend=null;return;}   /* nuova destinazione scelta: si lascia perdere */
