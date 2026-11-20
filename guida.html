@@ -1694,6 +1694,15 @@ function netNear(x,z,ei,m,y,dy){
   return best;
 }
 /* c'è un'altra strada più in basso (di almeno 2,5 m) entro m metri dal suo bordo? */
+/* il punto sta su un altro pezzo della stessa strada (interno delle curve, tornanti, tracciati che ripiegano su se stessi)? */
+function netOnSelf(x,z,p0,m){
+  var G=NET.grid,P=NET.P,ei=P.e[p0],h0=NET.E[ei].half,cx=Math.floor(x/NG),cz=Math.floor(z/NG),i,j,k,a,p,gap=2*h0+5;
+  for(i=-1;i<=1;i++)for(j=-1;j<=1;j++){a=G.get(nk(cx+i,cz+j));if(!a)continue;
+    for(k=0;k<a.length;k++){p=a[k];if(P.e[p]!==ei||p===p0)continue;
+      var x0=P.x0[p],z0=P.z0[p],dx=P.x1[p]-x0,dz=P.z1[p]-z0,L2=dx*dx+dz*dz||1e-9,t=((x-x0)*dx+(z-z0)*dz)/L2;t=t<0?0:t>1?1:t;
+      var ex=x0+dx*t-x,ez=z0+dz*t-z;if(ex*ex+ez*ez<(h0+m)*(h0+m))return true;}}
+  return false;
+}
 function netUnder(x,z,y,ei,m){
   var G=NET.grid,P=NET.P,cx=Math.floor(x/NG),cz=Math.floor(z/NG),i,j,k,a,p;
   for(i=-1;i<=1;i++)for(j=-1;j<=1;j++){a=G.get(nk(cx+i,cz+j));if(!a)continue;
@@ -2139,22 +2148,26 @@ function netTile(tx,tz){
         if(ws<.25)return;
         if(sv>0)Q(core?SELB:F,h,h+ws,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);else Q(core?SELB:F,-h-ws,-h,hit?-.02:-.05,hit?HC.as:HN.verge,0,1);});
       for(var sk=-1;sk<=1;sk+=2){
-        var A=[],need=false,overRoad=false;
+        var A=[],overRoad=false;
         for(var te=0;te<=1;te++){
           var vx=te?bx:ax,vz=te?bz:az,cy2=(te?py1:py0)-.05,ex=(te?x1:x0)+vx*sk*(h+1.8),ez=(te?z1:z0)+vz*sk*(h+1.8);
-          var drop=cy2-Math.min(netGround(ex+vx*sk*2.5+ox,ez+vz*sk*2.5+oz),terrH(ex+vx*sk*2.5+ox,ez+vz*sk*2.5+oz),terrH(ex+ox,ez+oz)),w=0;
-          if(netUnder(ex+ox,ez+oz,cy2,P.e[p],2.5))overRoad=true;
-          if(drop>.5){need=true;w=twWall?1.3:Math.min(drop*.9+1,16);
-            for(var it=1;it<=6;it++){var dd=w*it/6;if(netOnOther(ex+vx*sk*dd+ox,ez+vz*sk*dd+oz,P.e[p],.8)||netUnder(ex+vx*sk*dd+ox,ez+vz*sk*dd+oz,cy2,P.e[p],.6)){w=Math.max(0,dd-w/6-.6);break;}}
-            if(w<1.2){w=0;need=false;}else w=.15;}
-          var fx=ex+vx*sk*w,fz=ez+vz*sk*w,fy=w?Math.min(netGround(fx+ox,fz+oz),terrH(fx+ox,fz+oz),cy2)-1:cy2;
-          A.push([ex,cy2,ez],[fx,fy,fz]);
-        }
+          if(netUnder(ex+ox,ez+oz,cy2,P.e[p],2.5))overRoad=true;A.push([ex,cy2,ez],[ex,cy2,ez]);}
         if(overRoad||e.br){   /* impalcato del ponte: fianco in cemento e intradosso */
           F.quad([A[0],A[2],[A[2][0],A[2][1]-1.5,A[2][2]],[A[0][0],A[0][1]-1.5,A[0][2]]],[ax*sk,0,az*sk],N4,HN.deck);
           if(sk>0)F.quad([[x0+ax*(h+1.8),py0-1.55,z0+az*(h+1.8)],[x1+bx*(h+1.8),py1-1.55,z1+bz*(h+1.8)],[x1-bx*(h+1.8),py1-1.55,z1-bz*(h+1.8)],[x0-ax*(h+1.8),py0-1.55,z0-az*(h+1.8)]],[0,-1,0],N4,HN.deckU);
-        }
-        else if(need)F.quad([A[0],A[2],A[3],A[1]],[ax*sk,0,az*sk],N4,(twWall||twp[0]>.2)?HN.stoneWall:HN.bank);
+          continue;}
+        /* muro di sostegno a pezzi di circa 3 m: un pezzo si disegna solo se a entrambi i capi serve (salto vero, niente altra strada sul filo del muro).
+           Prima si faceva un unico muro per tutto il tratto: dove un capo finiva su un'altra strada restava un cuneo sospeso in mezzo alla carreggiata */
+        var sL=Math.hypot(x1-x0,z1-z0),ns=Math.max(1,Math.ceil(sL/3)),prv=null,wcol=(twWall||twp[0]>.2)?HN.stoneWall:HN.bank;
+        for(var si=0;si<=ns;si++){var tt=si/ns,vx=ax+(bx-ax)*tt,vz=az+(bz-az)*tt,vl=Math.hypot(vx,vz)||1,cy2=py0+(py1-py0)*tt-.05,cx=x0+(x1-x0)*tt,cz=z0+(z1-z0)*tt,ex=cx+vx*sk*(h+1.8),ez=cz+vz*sk*(h+1.8),nvx=vx/vl*sk,nvz=vz/vl*sk;
+          var drop=cy2-Math.min(netGround(ex+nvx*2.5+ox,ez+nvz*2.5+oz),terrH(ex+nvx*2.5+ox,ez+nvz*2.5+oz),terrH(ex+ox,ez+oz),netGround(ex+nvx*.4+ox,ez+nvz*.4+oz)),ok=drop>.5,w=0;
+          if(ok&&(netOnOther(ex+ox,ez+oz,P.e[p],.3)||netOnSelf(ex+ox,ez+oz,p,.3)||netOnSelf(ex+nvx*.6+ox,ez+nvz*.6+oz,p,.2)||netOnOther(ex+nvx*.6+ox,ez+nvz*.6+oz,P.e[p],.2)||netUnder(ex+nvx*.4+ox,ez+nvz*.4+oz,cy2,P.e[p],.6)))ok=false;
+          if(ok){w=twWall?1.3:Math.min(drop*.9+1,16);
+            for(var it=1;it<=6;it++){var dd=w*it/6;if(netOnOther(ex+nvx*dd+ox,ez+nvz*dd+oz,P.e[p],.8)||netUnder(ex+nvx*dd+ox,ez+nvz*dd+oz,cy2,P.e[p],.6)){w=Math.max(0,dd-w/6-.6);break;}}
+            if(w<1.2)ok=false;}
+          var fx=ex+nvx*.15,fz=ez+nvz*.15,fy=Math.min(netGround(fx+ox,fz+oz),terrH(fx+ox,fz+oz),netGround(fx+nvx*1.5+ox,fz+nvz*1.5+oz),cy2)-1,cur={t:[ex,cy2,ez],f:[fx,fy,fz],ok:ok};
+          if(prv&&prv.ok&&cur.ok)F.quad([prv.t,cur.t,cur.f,prv.f],[nvx,0,nvz],N4,wcol);
+          prv=cur;}
       }
       if(e.br){var pmx=(x0+x1)/2+ox,pmz=(z0+z1)/2+oz,pmy=(py0+py1)/2,gyb=Math.min(netGround(pmx,pmz),terrH(pmx,pmz));
         if(pmy-gyb>2.5&&!netOnOther(pmx,pmz,P.e[p],1.5)){var pw=Math.min(h*1.4,6);cbox(F,pmx-ox,(gyb-1+pmy-1.5)/2,pmz-oz,1.3,pmy-1.5-gyb+1,1.3,HN.deck);if(h>3.5){cbox(F,pmx-ox+az*pw*.5,(gyb-1+pmy-1.5)/2,pmz-oz-ax*pw*.5,1.1,pmy-1.5-gyb+1,1.1,HN.deck);}}}
@@ -2194,7 +2207,7 @@ function netTile(tx,tz){
             }
             if(!need)continue;if(typeof trOnW0==='function'&&TRL.ready&&trOnW0(mx,mz,1.4))continue;
             var xa=P.x0[p]+(P.x1[p]-P.x0[p])*ta+nx*off,za=P.z0[p]+(P.z1[p]-P.z0[p])*ta+nz*off,xb=P.x0[p]+(P.x1[p]-P.x0[p])*tb+nx*off,zb=P.z0[p]+(P.z1[p]-P.z0[p])*tb+nz*off;
-            if(e.rb||netRingAt((xa+xb)/2,(za+zb)/2,14)||netRailBlocks(xa,za,xb,zb,py0+(py1-py0)*tm)||(!med&&netNear((xa+xb)/2,(za+zb)/2,P.e[p],.4,py0+(py1-py0)*tm,2.5)))continue;
+            if(e.rb||netOnSelf(mx,mz,p,.4)||netOnSelf(xa,za,p,.25)||netOnSelf(xb,zb,p,.25)||netRingAt((xa+xb)/2,(za+zb)/2,14)||netRailBlocks(xa,za,xb,zb,py0+(py1-py0)*tm)||(!med&&netNear((xa+xb)/2,(za+zb)/2,P.e[p],.4,py0+(py1-py0)*tm,2.5)))continue;
             if(rlClash(obs,xa,za,xb,zb,py0+(py1-py0)*tm,P.e[p],med))continue;
             if(twWall&&!med){nParapet(F,xa-ox-nx*.1,py0+(py1-py0)*ta,za-oz-nz*.1,xb-ox-nx*.1,py0+(py1-py0)*tb,zb-oz-nz*.1,nx,nz);obs.push([3,(xa+xb)/2,(za+zb)/2,xa,za,xb,zb,py0+(py1-py0)*tm,-nx,-nz]);RS[sg+1].push([ra-2,rb+2]);continue;}
             nRail(F,xa-ox,py0+(py1-py0)*ta,za-oz,xb-ox,py0+(py1-py0)*tb,zb-oz,nx,nz);
