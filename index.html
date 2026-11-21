@@ -12548,14 +12548,24 @@ function rpAgostino(F,p,G){var o=ferKit(F,p),Q=ferGround(p,10,21,9),g0=Q.g0,y0=M
   return[[-6.5,0,9,21.6],[-17.3,0,1.4,3.2]];}
 
 /* ---------- monumento ai caduti: aiuola recintata da catene su paletti di pietra, basamento a gradoni con palle di pietra, dado con la lapide, vasi nelle nicchie tonde, corona d'alloro in cima ---------- */
-function rpCaduti(F,p,G){var o=ferKit(F,p),Q=ferGround(p,4,4,0),g0=Q.g0,y0=g0-1.2,n=o.NU,P=o.P,gl=g0+.55,S=[hc(0xc9c5b9),hc(0xb9b5a8),hc(0xd4d0c4),hc(0xa9a598)];
-  /* aiuola */
-  o.box(-16,4.3,-2.9,2.9,y0,gl-.05,S[1]);o.box(-15.85,4.15,-2.75,2.75,gl-.05,gl,RC.grass);
-  for(var a=-15.6;a<=4.01;a+=2.2)[-2.6,2.6].forEach(function(b){o.box(a-.13,a+.13,b-.13,b+.13,gl,gl+.6,S[2]);});
-  for(var b0=-2.6;b0<=2.61;b0+=1.3){o.box(3.9,4.16,b0-.13,b0+.13,gl,gl+.6,S[2]);o.box(-15.86,-15.6,b0-.13,b0+.13,gl,gl+.6,S[2]);}
-  /* catene: due segmenti a festone tra i paletti */
-  function chain(a0,b0,a1,b1){var N=6;for(var k=0;k<N;k++){var t0=k/N,t1=(k+1)/N,s0=.5-.22*Math.sin(Math.PI*t0),s1=.5-.22*Math.sin(Math.PI*t1);
-    o.Q([P(a0+(a1-a0)*t0,b0+(b1-b0)*t0,gl+s0),P(a0+(a1-a0)*t1,b0+(b1-b0)*t1,gl+s1),P(a0+(a1-a0)*t1,b0+(b1-b0)*t1,gl+s1+.05),P(a0+(a1-a0)*t0,b0+(b1-b0)*t0,gl+s0+.05)],n,RC.iron);}}
+function rpCaduti(F,p,G){var o=ferKit(F,p),n=o.NU,P=o.P,S=[hc(0xc9c5b9),hc(0xb9b5a8),hc(0xd4d0c4),hc(0xa9a598)];
+  /* l'aiuola segue il terreno: quota del suolo in ogni punto */
+  function hg(a,b){var q=P(a,b,0);return gndY(q[0],q[2])+p.dy;}
+  var A0=-16,A1=4.3,B=2.9,lo=1e9,gl=hg(0,0)+.4,y0;for(var aa=A0;aa<=A1+.01;aa+=1)for(var bb=-B;bb<=B+.01;bb+=B)lo=Math.min(lo,hg(aa,bb));y0=lo-.6;
+  function hl(a,b){return hg(a,b)+.3;}
+  /* aiuola: cordolo di pietra e prato, a fette di 1 m lungo l'asse */
+  var AS=[];for(var a=A0;a<A1-.01;a+=1)AS.push([a,Math.min(a+1,A1)]);
+  AS.forEach(function(q){var a0=q[0],a1=q[1];[-B,B].forEach(function(b){var bi=b<0?-B+.15:B-.15;
+      o.Q([P(a0,b,y0),P(a1,b,y0),P(a1,b,hl(a1,b)),P(a0,b,hl(a0,b))],b<0?o.MV:o.NV,S[1]);
+      o.Q([P(a0,b,hl(a0,b)),P(a1,b,hl(a1,b)),P(a1,bi,hl(a1,bi)),P(a0,bi,hl(a0,bi))],[0,1,0],S[2]);});
+    for(var k=0;k<2;k++){var b0=-B+.15+k*(B-.15),b1=b0+(B-.15);o.Q([P(a0,b0,hl(a0,b0)+.01),P(a1,b0,hl(a1,b0)+.01),P(a1,b1,hl(a1,b1)+.01),P(a0,b1,hl(a0,b1)+.01)],[0,1,0],k?RC.grass:RC.grassD);}});
+  [A0,A1].forEach(function(a){for(var k=0;k<2;k++){var b0=-B+k*B,b1=b0+B;o.Q([P(a,b0,y0),P(a,b1,y0),P(a,b1,hl(a,b1)),P(a,b0,hl(a,b0))],a>0?n:o.MU,S[1]);}});
+  /* paletti e catene, ognuno alla quota del prato */
+  var PO=[];for(var a=-15.6;a<=4.01;a+=2.2)PO.push([a,-2.6],[a,2.6]);for(var b0=-1.3;b0<=1.31;b0+=1.3)PO.push([4.03,b0],[-15.73,b0]);
+  PO.forEach(function(q){var y=hl(q[0],q[1]);o.box(q[0]-.13,q[0]+.13,q[1]-.13,q[1]+.13,y-.1,y+.6,S[2]);});
+  function chain(a0,b0,a1,b1){var N=6;for(var k=0;k<N;k++){var t0=k/N,t1=(k+1)/N,s0=.5-.22*Math.sin(Math.PI*t0),s1=.5-.22*Math.sin(Math.PI*t1),
+    xa=a0+(a1-a0)*t0,xb=b0+(b1-b0)*t0,ya=a0+(a1-a0)*t1,yb=b0+(b1-b0)*t1,h0=hl(a0,b0)+(hl(a1,b1)-hl(a0,b0))*t0,h1=hl(a0,b0)+(hl(a1,b1)-hl(a0,b0))*t1;
+    o.Q([P(xa,xb,h0+s0),P(ya,yb,h1+s1),P(ya,yb,h1+s1+.05),P(xa,xb,h0+s0+.05)],n,RC.iron);}}
   for(var a2=-15.6;a2<4;a2+=2.2){var a3=Math.min(a2+2.2,4.03);chain(a2,-2.6,a3,-2.6);chain(a2,2.6,a3,2.6);}
   for(var b2=-2.6;b2<2.6;b2+=1.3){chain(4.03,b2,4.03,b2+1.3);chain(-15.73,b2,-15.73,b2+1.3);}
   /* basamento a gradoni */
@@ -12575,7 +12585,7 @@ function rpCaduti(F,p,G){var o=ferKit(F,p),Q=ferGround(p,4,4,0),g0=Q.g0,y0=g0-1.
   var N=16,cy=gl+6.15,R0=.38,R1=.62;for(var k=0;k<N;k++){var a=Math.PI*2*k/N,b=Math.PI*2*(k+1)/N;var c0=P(Math.cos(a)*R0,Math.sin(a)*R0,cy),c1=P(Math.cos(b)*R0,Math.sin(b)*R0,cy),c2=P(Math.cos(b)*R1,Math.sin(b)*R1,cy+.12),c3=P(Math.cos(a)*R1,Math.sin(a)*R1,cy+.12);
     o.Q([c0,c1,c2,c3],[0,1,0],k%2?RC.leaf[0]:RC.leaf[2]);var d0=P(Math.cos(a)*R0,Math.sin(a)*R0,cy+.3),d1=P(Math.cos(b)*R0,Math.sin(b)*R0,cy+.3);o.Q([c3,c2,d1,d0],[0,1,0],k%2?RC.leaf[1]:RC.leaf[3]);}
   /* due alberi sull'aiuola, dietro */
-  [-9,-13.5].forEach(function(a,i){var c=P(a,0,0);o.box(a-.18,a+.18,-.18,.18,gl,gl+2.6,RC.bark);rpBlob(F,c[0],gl+4.2,c[2],2.0,2.1,RC.leaf,ferRnd(91+i));});
+  [-9,-13.5].forEach(function(a,i){var c=P(a,0,0),yt=hl(a,0);o.box(a-.18,a+.18,-.18,.18,yt-.1,yt+2.6,RC.bark);rpBlob(F,c[0],yt+4.2,c[2],2.0,2.1,RC.leaf,ferRnd(91+i));});
   return[[-6,0,10.2,2.9]];}
 
 /* ---------- porte del castrum: arco in conci di pietra chiara nel muro intonacato, casa sopra, passaggio voltato ---------- */
