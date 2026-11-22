@@ -12801,6 +12801,17 @@ var rpCrxTick0=crxTick;crxTick=function(dt){rpCrxTick0(dt);if(!CRX.list||!CRX.g.
   CRX.list.forEach(function(c){if(!c.pos||!c.g.visible)return;var O=typeof edOff==='function'?edOff(c.q):null,x=c.pos.x+(O?+O.dx||0:0),z=c.pos.z+(O?+O.dz||0:0),D=Math.hypot(x-OX-cp.x,z-OZ-cp.z);
     if(D>CRXR){c.g.visible=false;return;}c.g.scale.multiplyScalar(clamp(D/110,1,46)/clamp(D/350,1,14));if(D>CRXR-600)c.g.scale.multiplyScalar(Math.max(.05,(CRXR-D)/600));});
   if(CRXTM){var on=CRX.on,t=performance.now()/1000;CRXTM.body.opacity=on*.9;CRXTM.star.opacity=on;CRXTM.L.forEach(function(m,i){var b=Math.sin(t*2.6+i*2.09);m.opacity=on*(b>-.2?1:.25);});}};
+/* ================= niente «muri invisibili» sull'asfalto: se l'auto è dentro la carreggiata e anche il punto dell'urto sta sull'asfalto della strada (alla stessa quota),
+   un ostacolo fisso lì è un errore (palo, muretto, guard rail o sagoma di un edificio finiti sulla strada) e non ferma l'auto. Contano sempre il traffico, la pattuglia e i caselli ================= */
+function rpOnLane(x,z,y){var pr=netProbeY(x,z,y);if(!pr)return false;var e=NET.E[pr.e];if(!e||e.tu||e.cls===0||e.link)return false;if(pr.d>e.half-.3)return false;return Math.abs(netRoadY(pr)-y)<1.6;}
+var rpMob0=mobHit;mobHit=function(px,pz,r){var m=rpMob0(px,pz,r);if(m)m.mob=1;return m;};
+var rpNH0=netHit;netHit=function(px,pz,r){var b=rpNH0(px,pz,r);if(!b||b.tr||b.mob||world!=='net'||!NET)return b;
+  var y=car.y;if(WALK&&WALK.on)return b;if(rpArmNear(px,pz))return b;if(rpOnLane(px,pz,y)&&rpOnLane(px-b.nx*r,pz-b.nz*r,y)){RPWALL.n++;RPWALL.last=[Math.round(px),Math.round(pz)];return null;}return b;};
+var RPWALL={n:0,last:null};
+function rpArmNear(px,pz){var T=netTiles[nk(Math.floor(px/NT),Math.floor(pz/NT))];if(!T||!T.arms)return false;for(var i=0;i<T.arms.length;i++){var A=T.arms[i];if(A.open<=.45&&Math.min(Math.hypot(px-A.x0,pz-A.z0),Math.hypot(px-A.x1,pz-A.z1))<12)return true;}return false;}
+/* i paletti di plastica a bordo strada e i pali sottili dei cartelli non fermano più l'auto di colpo come un muro (in realtà si piegano): si attraversano */
+function rpThinOff(T){if(!T||!T.obs)return;for(var i=T.obs.length-1;i>=0;i--){var o=T.obs[i];if(o[0]===2&&o[3]<=.12)T.obs.splice(i,1);}}
+var rpTile0=netTile;netTile=function(tx,tz){var T=rpTile0(tx,tz);try{rpThinOff(T);}catch(e){}return T;};
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
