@@ -12737,6 +12737,28 @@ function rpZoneObs(ox,oz){var L=[];plAll('F').forEach(function(e){var d=FER.dim[
 function rpWithZones(fn){return function(W,F,tx,tz,ox,oz,obs){var Z=rpZoneObs(ox,oz);if(!Z.length)return fn.apply(this,arguments);var n0=obs.length;Array.prototype.push.apply(obs,Z);
   try{return fn.apply(this,arguments);}finally{obs.splice(n0,Z.length);}};}
 rowFill=rpWithZones(rowFill);bldFill=rpWithZones(bldFill);
+/* ================= incroci «a punta»: un nodo molto più alto di tutte le strade che vi arrivano (es. via Porta Santa Croce con via Aristide Salvatori a Ripi) si riporta alla quota stradale ================= */
+function netSpikeFix(){if(!NET||NET.spikeFix)return;NET.spikeFix=1;var P=NET.P,n=0;
+  for(var nd=0;nd<NET.ny.length;nd++){var A=NET.adj[nd];if(!A||A.length<2)continue;var hi=-1e9,steep=0,ok=true;
+    for(var k=0;k<A.length;k++){var e=NET.E[A[k]];if(!e||e.br||e.tu||e.p1-e.p0<1){ok=false;break;}var p=e.a===nd?e.p0:e.p1-1,yf=e.a===nd?P.y1[p]:P.y0[p],L=Math.max(.5,P.s1[p]-P.s0[p]);
+      hi=Math.max(hi,yf);steep=Math.max(steep,(NET.ny[nd]-yf)/L);}
+    if(!ok||NET.ny[nd]-hi<.8||steep<.3)continue;var y=hi;NET.ny[nd]=y;
+    for(k=0;k<A.length;k++){var e2=NET.E[A[k]];if(e2.a===nd)P.y0[e2.p0]=y;if(e2.b===nd)P.y1[e2.p1-1]=y;}n++;}
+  NET.spikeFixed=n;}
+var rpNL0=netLoad;netLoad=function(){var r=rpNL0.apply(this,arguments);try{netSpikeFix();}catch(e){}return r;};
+
+/* ================= i camion non entrano nei centri storici (le vie lastricate dei paesi): all'incrocio scelgono un'altra strada o tornano indietro ================= */
+function ntrCore(ei){var e=NET.E[ei];if(e.core!=null)return e.core;var c=false;
+  if(e.cls>=4&&!e.br&&!e.tu)for(var k=1;k<4&&!c;k++){var q=ntrAt(ei,e.len*k/4),tw=selTown(q[0],q[1]);if((tw[0]>.5&&tw[1]>=1)||(e.lanes===1&&tw[0]>.25))c=true;}
+  e.core=c;return c;}
+var rpSp0=ntrSpawn;ntrSpawn=function(){var n0=NTRF.length,r=rpSp0.apply(this,arguments);if(NTRF.length>n0){var t=NTRF[NTRF.length-1];
+  if(t.type==='truck'&&ntrCore(t.ei)){trafG.remove(t.g);NTRF.pop();return false;}}return r;};
+var rpNx0=ntrNext;ntrNext=function(t){if(t.type!=='truck')return rpNx0(t);
+  var e=NET.E[t.ei],node=t.dir>0?e.b:e.a,A=NET.adj[node],ok=[];
+  for(var k=0;k<A.length;k++){var ei=A[k];if(ei===t.ei)continue;var f=NET.E[ei],dir=f.a===node?1:-1;if(f.a===f.b||!ntrOk(ei,dir))continue;if(f.cls===0&&e.cls!==0&&!f.link)continue;if(ntrCore(ei))continue;ok.push([ei,dir]);}
+  var o;if(ok.length)o=ok[Math.floor(Math.random()*ok.length)];else{var d2=-t.dir;if(!ntrOk(t.ei,d2))return false;o=[t.ei,d2];}   /* nessuna uscita fuori dal centro: inversione */
+  var f2=NET.E[o[0]];t.ei=o[0];t.dir=o[1];t.s=o[1]>0?0:f2.len;t.ln=f2.lanes>1?Math.floor(Math.random()*f2.lanes):0;
+  var q=ntrAt(t.ei,t.s);t.v0=Math.min(ntrLimit(t.ei,q[0],q[1]),22);return true;};
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
