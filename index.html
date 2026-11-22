@@ -12746,7 +12746,22 @@ function netSpikeFix(){if(!NET||NET.spikeFix)return;NET.spikeFix=1;var P=NET.P,n
     if(!ok||NET.ny[nd]-hi<.8||steep<.3)continue;var y=hi;NET.ny[nd]=y;
     for(k=0;k<A.length;k++){var e2=NET.E[A[k]];if(e2.a===nd)P.y0[e2.p0]=y;if(e2.b===nd)P.y1[e2.p1-1]=y;}n++;}
   NET.spikeFixed=n;}
-var rpNL0=netLoad;netLoad=function(){var r=rpNL0.apply(this,arguments);try{netSpikeFix();}catch(e){}return r;};
+/* ================= gradini nelle salite dei paesi: tante stradine corte (3-5 m) con quote a scalino (es. via Consolare a Ferentino sopra porta Sant'Agata, +4,8 m in 2,5 m).
+   Le quote dei nodi coinvolti si ammorbidiscono verso la media dei vicini (pesata sulle distanze), poi ogni tratto si riadatta e si rifà il controllo delle pendenze ================= */
+function netStepFix(){if(!NET||NET.stepFix)return;NET.stepFix=1;var P=NET.P,E=NET.E,N=NET.ny.length,bad={},fixed=0;
+  function eFree(e){return e&&!e.br&&!e.tu&&e.p1>e.p0;}
+  E.forEach(function(e){if(!eFree(e)||e.len>15)return;var g=Math.abs(NET.ny[e.b]-NET.ny[e.a])/Math.max(1,e.len);if(g>.28){bad[e.a]=1;bad[e.b]=1;}});
+  var S=Object.keys(bad).map(Number);for(var h=0;h<2;h++){var add=[];S.forEach(function(n){(NET.adj[n]||[]).forEach(function(ei){var e=E[ei];if(!eFree(e)||e.len>40)return;var m=e.a===n?e.b:e.a;if(!bad[m]){bad[m]=1;add.push(m);}});});S=S.concat(add);}
+  var lock={};S.forEach(function(n){(NET.adj[n]||[]).forEach(function(ei){if(!eFree(E[ei]))lock[n]=1;});});
+  var y0={};S.forEach(function(n){y0[n]=NET.ny[n];});
+  for(var it=0;it<60;it++)S.forEach(function(n){if(lock[n])return;var sw=0,sy=0;(NET.adj[n]||[]).forEach(function(ei){var e=E[ei];if(!eFree(e))return;var m=e.a===n?e.b:e.a,w=1/Math.max(1.5,e.len);sw+=w;sy+=w*NET.ny[m];});
+    if(sw>0){var y=sy/sw;NET.ny[n]=Math.max(y0[n]-3.5,Math.min(y0[n]+3.5,y));}});
+  /* ogni tratto toccato si sposta in modo lineare tra le nuove quote dei suoi estremi */
+  var touched={};S.forEach(function(n){(NET.adj[n]||[]).forEach(function(ei){touched[ei]=1;});});
+  Object.keys(touched).forEach(function(k){var e=E[+k];if(!eFree(e))return;var da=NET.ny[e.a]-P.y0[e.p0],db=NET.ny[e.b]-P.y1[e.p1-1];if(Math.abs(da)<.01&&Math.abs(db)<.01)return;
+    var s0=P.s0[e.p0],L=(P.s1[e.p1-1]-s0)||1;for(var q=e.p0;q<e.p1;q++){var t0=(P.s0[q]-s0)/L,t1=(P.s1[q]-s0)/L;P.y0[q]+=da+(db-da)*t0;P.y1[q]+=da+(db-da)*t1;}fixed++;});
+  NET.stepFixed=fixed;NET.gradeFix=0;netGradeFix();}
+var rpNL0=netLoad;netLoad=function(){var r=rpNL0.apply(this,arguments);try{netSpikeFix();}catch(e){}try{netStepFix();}catch(e){}return r;};
 
 /* ================= i camion non entrano nei centri storici (le vie lastricate dei paesi): all'incrocio scelgono un'altra strada o tornano indietro ================= */
 function ntrCore(ei){var e=NET.E[ei];if(e.core!=null)return e.core;var c=false;
@@ -12762,6 +12777,30 @@ var rpNx0=ntrNext;ntrNext=function(t){if(t.type!=='truck')return rpNx0(t);
   var q=ntrAt(t.ei,t.s);t.v0=Math.min(ntrLimit(t.ei,q[0],q[1]),22);return true;};
 /* niente muretto della strada lungo il belvedere: il bordo è il belvedere stesso */
 function rpNoWall(x,z){try{var C=RPBV.cache||rpBelvFrame();if(!C)return false;var p=C.p,dx=x-p.x,dz=z-p.z,a=dx*p.ux+dz*p.uz,b=-dx*p.uz+dz*p.ux;return a>-3&&a<RPBV.U&&b>-RPBV.L-2&&b<RPBV.L+2;}catch(e){return false;}}
+/* ================= CROCI LUMINOSE: si vedono fino a 5 km (oltre si spengono piano); nel periodo di Natale diventano alberi di Natale con le luci colorate ================= */
+var CRXR=5000,CRXT=null,CRXTM=null;
+function crxTreeGeo(){var B=new GB(),Ls=[new GB(),new GB(),new GB()],S=new GB(),c=hc(0xffffff),r=ferRnd(1225),N=10;
+  /* tre palchi di rami a cono e il tronco */
+  [[0,4.2,3.6],[3,7.2,2.7],[5.8,9.6,1.8]].forEach(function(t){var y0=t[0]+1.2,y1=t[1]+1.2,R=t[2];for(var i=0;i<N;i++){var a0=Math.PI*2*i/N,a1=Math.PI*2*(i+1)/N,am=(a0+a1)/2;
+    B.quad([[Math.sin(a0)*R,y0,Math.cos(a0)*R],[Math.sin(a1)*R,y0,Math.cos(a1)*R],[0,y1,0],[0,y1,0]],[Math.sin(am),.5,Math.cos(am)],N4,c);
+    B.quad([[Math.sin(a1)*R,y0,Math.cos(a1)*R],[Math.sin(a0)*R,y0,Math.cos(a0)*R],[0,y0+.2,0],[0,y0+.2,0]],[0,-1,0],N4,c);}
+    /* lampadine sparse sulla chioma */
+    for(var k=0;k<26;k++){var h=r(),a=r()*Math.PI*2,y=y0+(y1-y0)*h*.92,rr=R*(1-h*.92)+.12,x=Math.sin(a)*rr,z=Math.cos(a)*rr,s=.5;cbox(Ls[k%3],x,y,z,s,s,s,c);}});
+  cbox(B,0,.6,0,.6,1.4,.6,c);
+  /* stella in cima */
+  for(var i=0;i<5;i++){var a=Math.PI*2*i/5;S.quad([[0,11.2,0],[Math.sin(a)*1.1,11.2+Math.cos(a)*1.1,0],[Math.sin(a+.63)*.45,11.2+Math.cos(a+.63)*.45,0],[Math.sin(a+.63)*.45,11.2+Math.cos(a+.63)*.45,0]],[0,0,1],N4,c);
+    S.quad([[0,11.2,0],[Math.sin(a-.63)*.45,11.2+Math.cos(a-.63)*.45,0],[Math.sin(a)*1.1,11.2+Math.cos(a)*1.1,0],[Math.sin(a)*1.1,11.2+Math.cos(a)*1.1,0]],[0,0,1],N4,c);}
+  var M=new THREE.MeshBasicMaterial();return{body:B.mesh(M).geometry,L:Ls.map(function(g){return g.mesh(M).geometry;}),star:S.mesh(M).geometry};}
+function crxTreeMats(){if(CRXTM)return CRXTM;function mk(c){return new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0,fog:false});}
+  CRXTM={body:mk(0x1f6a33),L:[mk(0xff3b3b),mk(0xffd23f),mk(0x6fd0ff)],star:new THREE.MeshBasicMaterial({color:0xffe27a,transparent:true,opacity:0,fog:false,side:THREE.DoubleSide})};return CRXTM;}
+var rpCrxInit0=crxInit;crxInit=function(){var had=!!CRX.list;rpCrxInit0();if(had||!CRX.list||typeof xmOn!=='function'||!xmOn())return;
+  CRXT=CRXT||crxTreeGeo();var M=crxTreeMats();
+  CRX.list.forEach(function(c){var g=c.g,old=g.children[0];g.remove(old);var t=new THREE.Group();t.add(new THREE.Mesh(CRXT.body,M.body));CRXT.L.forEach(function(G,i){t.add(new THREE.Mesh(G,M.L[i]));});t.add(new THREE.Mesh(CRXT.star,M.star));
+    var k=c.k==='cross'?.62:.5;t.scale.setScalar(k);g.add(t);var h=g.children[0];if(h&&h.isSprite){h.position.y=6.5*k;h.scale.set(20,20,1);}c.tree=1;});};
+var rpCrxTick0=crxTick;crxTick=function(dt){rpCrxTick0(dt);if(!CRX.list||!CRX.g.visible)return;var cp=camera.position;
+  CRX.list.forEach(function(c){if(!c.pos||!c.g.visible)return;var O=typeof edOff==='function'?edOff(c.q):null,x=c.pos.x+(O?+O.dx||0:0),z=c.pos.z+(O?+O.dz||0:0),D=Math.hypot(x-OX-cp.x,z-OZ-cp.z);
+    if(D>CRXR){c.g.visible=false;return;}c.g.scale.multiplyScalar(clamp(D/110,1,46)/clamp(D/350,1,14));if(D>CRXR-600)c.g.scale.multiplyScalar(Math.max(.05,(CRXR-D)/600));});
+  if(CRXTM){var on=CRX.on,t=performance.now()/1000;CRXTM.body.opacity=on*.9;CRXTM.star.opacity=on;CRXTM.L.forEach(function(m,i){var b=Math.sin(t*2.6+i*2.09);m.opacity=on*(b>-.2?1:.25);});}};
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
