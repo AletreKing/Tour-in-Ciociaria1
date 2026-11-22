@@ -2165,7 +2165,7 @@ function netTile(tx,tz){
            Prima si faceva un unico muro per tutto il tratto: dove un capo finiva su un'altra strada restava un cuneo sospeso in mezzo alla carreggiata */
         var sL=Math.hypot(x1-x0,z1-z0),ns=Math.max(1,Math.ceil(sL/3)),prv=null,wcol=(twWall||twp[0]>.2)?HN.stoneWall:HN.bank;
         for(var si=0;si<=ns;si++){var tt=si/ns,vx=ax+(bx-ax)*tt,vz=az+(bz-az)*tt,vl=Math.hypot(vx,vz)||1,cy2=py0+(py1-py0)*tt-.05,cx=x0+(x1-x0)*tt,cz=z0+(z1-z0)*tt,ex=cx+vx*sk*(h+1.8),ez=cz+vz*sk*(h+1.8),nvx=vx/vl*sk,nvz=vz/vl*sk;
-          var drop=cy2-Math.min(netGround(ex+nvx*2.5+ox,ez+nvz*2.5+oz),terrH(ex+nvx*2.5+ox,ez+nvz*2.5+oz),terrH(ex+ox,ez+oz),netGround(ex+nvx*.4+ox,ez+nvz*.4+oz)),ok=drop>.5,w=0;
+          var drop=cy2-Math.min(netGround(ex+nvx*2.5+ox,ez+nvz*2.5+oz),terrH(ex+nvx*2.5+ox,ez+nvz*2.5+oz),terrH(ex+ox,ez+oz),netGround(ex+nvx*.4+ox,ez+nvz*.4+oz)),ok=drop>.5&&!(typeof rpNoWall==='function'&&rpNoWall(ex+ox,ez+oz)),w=0;
           if(ok&&(netOnOther(ex+ox,ez+oz,P.e[p],.3)||netOnSelf(ex+ox,ez+oz,p,.3)||netOnSelf(ex+nvx*.6+ox,ez+nvz*.6+oz,p,.2)||netOnOther(ex+nvx*.6+ox,ez+nvz*.6+oz,P.e[p],.2)||netUnder(ex+nvx*.4+ox,ez+nvz*.4+oz,cy2,P.e[p],.6)))ok=false;
           if(ok){w=twWall?1.3:Math.min(drop*.9+1,16);
             for(var it=1;it<=6;it++){var dd=w*it/6;if(netOnOther(ex+nvx*dd+ox,ez+nvz*dd+oz,P.e[p],.8)||netUnder(ex+nvx*dd+ox,ez+nvz*dd+oz,cy2,P.e[p],.6)){w=Math.max(0,dd-w/6-.6);break;}}
@@ -2210,7 +2210,7 @@ function netTile(tx,tz){
               var g1=Math.min(netGround(mx+nx*1.2,mz+nz*1.2),netGround(mx+nx*5,mz+nz*5)),g2=demH(mx+nx*40,mz+nz*40);
               need=g1<ry-(e.cls===4&&e.lanes===1&&inTown?2.2:.8)||(e.cls<=1&&!e.link)||(!inTown&&(g2<ry-5||demH(mx+nx*20,mz+nz*20)<ry-2.5));   /* nei centri solo dove c'è un salto vero */
             }
-            if(!need)continue;if(typeof trOnW0==='function'&&TRL.ready&&trOnW0(mx,mz,1.4))continue;
+            if(!need||(typeof rpNoWall==='function'&&rpNoWall(mx,mz)))continue;if(typeof trOnW0==='function'&&TRL.ready&&trOnW0(mx,mz,1.4))continue;
             var xa=P.x0[p]+(P.x1[p]-P.x0[p])*ta+nx*off,za=P.z0[p]+(P.z1[p]-P.z0[p])*ta+nz*off,xb=P.x0[p]+(P.x1[p]-P.x0[p])*tb+nx*off,zb=P.z0[p]+(P.z1[p]-P.z0[p])*tb+nz*off;
             if(e.rb||netOnSelf(mx,mz,p,.4)||netOnSelf(xa,za,p,.25)||netOnSelf(xb,zb,p,.25)||netRingAt((xa+xb)/2,(za+zb)/2,14)||netRailBlocks(xa,za,xb,zb,py0+(py1-py0)*tm)||(!med&&netNear((xa+xb)/2,(za+zb)/2,P.e[p],.4,py0+(py1-py0)*tm,2.5)))continue;
             if(rlClash(obs,xa,za,xb,zb,py0+(py1-py0)*tm,P.e[p],med))continue;
@@ -12696,6 +12696,7 @@ gndY=function(x,z,yref){var g=rpGnd0(x,z,yref);var C=RPBV.cache;if(!C)return g;v
 /* ---------- la chiesa generica del SS. Salvatore lascia il posto a quella fatta dalla foto (con lo stesso spostamento fatto in modalità God) ---------- */
 var rpPlAll0=plAll;plAll=function(kind){var L=rpPlAll0(kind);
   if(kind==='C')return L.filter(function(e){return e.pk!=='C:ripi-salvatore';});
+  if(kind==='F')L.forEach(function(e){if(e.o&&(e.o.x==null||e.o.z==null)&&FER.def[e.pk]){var d=FER.def[e.pk];e.o={x:d.x,z:d.z,dx:(e.o.dx||0)+(d.dx||0),dz:(e.o.dz||0)+(d.dz||0),dy:(e.o.dy||0)+(d.dy||0),rot:(e.o.rot||0)+(d.rot||0)};}});   /* Canc in modalità God rimette il monumento al posto iniziale (prima spariva) */
   if(kind==='F')L.forEach(function(e){if(e.pk==='F:ripi-salvatore'&&e.o===FER.def['F:ripi-salvatore']){var k='C:ripi-salvatore',c=ED.off[k]||(CDSG_IMP.pos||{})[k];if(c&&!c.del)e.o={x:c.x,z:c.z,dx:c.dx||0,dz:c.dz||0,dy:c.dy||0,rot:c.rot||0};}});
   return L;};
 FERB['F:ripi-salvatore']=rpSalvatore;FERB['F:ripi-agostino']=rpAgostino;FERB['F:ripi-caduti']=rpCaduti;FERB['F:ripi-pscroce']=rpPSCroce;FERB['F:ripi-psangelo']=rpPSAngelo;FERB['F:ripi-subiaco']=rpSubiaco;
@@ -12759,6 +12760,8 @@ var rpNx0=ntrNext;ntrNext=function(t){if(t.type!=='truck')return rpNx0(t);
   var o;if(ok.length)o=ok[Math.floor(Math.random()*ok.length)];else{var d2=-t.dir;if(!ntrOk(t.ei,d2))return false;o=[t.ei,d2];}   /* nessuna uscita fuori dal centro: inversione */
   var f2=NET.E[o[0]];t.ei=o[0];t.dir=o[1];t.s=o[1]>0?0:f2.len;t.ln=f2.lanes>1?Math.floor(Math.random()*f2.lanes):0;
   var q=ntrAt(t.ei,t.s);t.v0=Math.min(ntrLimit(t.ei,q[0],q[1]),22);return true;};
+/* niente muretto della strada lungo il belvedere: il bordo è il belvedere stesso */
+function rpNoWall(x,z){try{var C=RPBV.cache||rpBelvFrame();if(!C)return false;var p=C.p,dx=x-p.x,dz=z-p.z,a=dx*p.ux+dz*p.uz,b=-dx*p.uz+dz*p.ux;return a>-3&&a<RPBV.U&&b>-RPBV.L-2&&b<RPBV.L+2;}catch(e){return false;}}
 
 function start(saved){
   if(saved&&saved.carId&&carIdx(saved.carId)>=0){opts.car=carIdx(saved.carId);spec=CARS[opts.car];}
