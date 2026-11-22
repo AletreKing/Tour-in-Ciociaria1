@@ -12686,7 +12686,7 @@ function rpBelvFest(G,p,C){var L=RPBV.L,U=RPBV.U,o=lmFrame(new GB(),p.x,p.z,p.ux
   var mw=W.mesh(FSTB);g.add(mw);var mf=FL.mesh(FSTB);mf.userData.rpCol=1;g.add(mf);var mt=TR.mesh(FSTB);mt.userData.rpTri=1;g.add(mt);
   g.traverse(function(x){x.raycast=function(){};});g.visible=false;RPBV.fest=g;G.push(g);}
 function rpFestTick(){var g=RPBV.fest;if(!g)return;var on=typeof FST!=='undefined'&&FST.towns&&FST.towns.some(function(o){return o.t.n==='Ripi';});g.visible=!!on;if(!on)return;
-  var naz=rpNaz(new Date());g.children.forEach(function(m){if(m.userData.rpCol)m.visible=!naz;if(m.userData.rpTri)m.visible=!!naz;});}
+  var naz=rpNaz(new Date());g.children.forEach(function(m){var tri=!!naz&&naz.k!=='lav';if(m.userData.rpCol)m.visible=!tri;if(m.userData.rpTri)m.visible=tri;});}
 
 /* ---------- il piano del belvedere: chi cammina o parcheggia sta alla quota della strada ---------- */
 var rpGnd0=gndY;
@@ -12703,13 +12703,13 @@ FERB['F:ripi-salvatore']=rpSalvatore;FERB['F:ripi-agostino']=rpAgostino;FERB['F:
 FERB['F:ripi-belvedere']=function(F,p,G){RPBV.cache=null;rpBelvFrame();return rpBelvedere(F,p,G);};
 
 /* ================= feste nazionali: il 25 aprile bandiere e festa in tutti i paesi; a Ripi la festa sul belvedere anche il 23 aprile (San Giorgio) e nelle altre feste nazionali ================= */
-var RPNAZ=[['04-25','25 aprile, Festa della Liberazione',1],['05-01','1º maggio, Festa dei lavoratori',0],['06-02','2 giugno, Festa della Repubblica',0],['10-04','4 ottobre, San Francesco patrono d\'Italia',0],['11-04','4 novembre, Unità nazionale e Forze armate',0]];
-function rpNaz(D){for(var i=0;i<RPNAZ.length;i++)if(fstMatch(RPNAZ[i][0],D))return{n:RPNAZ[i][1],all:!!RPNAZ[i][2]};return null;}
+var RPNAZ=[['04-25','25 aprile, Festa della Liberazione',1],['05-01','1º maggio, Festa dei lavoratori',1,'lav'],['06-02','2 giugno, Festa della Repubblica',0],['10-04','4 ottobre, San Francesco patrono d\'Italia',0],['11-04','4 novembre, Unità nazionale e Forze armate',0]];
+function rpNaz(D){for(var i=0;i<RPNAZ.length;i++)if(fstMatch(RPNAZ[i][0],D))return{n:RPNAZ[i][1],all:!!RPNAZ[i][2],k:RPNAZ[i][3]||''};return null;}
 var RPMENU=false;
 var rpSaint0=fstSaint;fstSaint=function(name,D){var s=rpSaint0(name,D);if(s)return s;if((opts.festa||'real')!=='real')return s;var z=rpNaz(D);if(!z)return null;
   if(name==='Ripi'||(z.all&&!RPMENU))return z.n;return null;};
 var rpMenu0=fstMenu;fstMenu=function(){RPMENU=true;try{rpMenu0();}finally{RPMENU=false;}var el=$('festaTag');if(!el||(opts.festa||'real')!=='real')return;var z=rpNaz(new Date());
-  if(z&&z.all){el.innerHTML='<div><b>Oggi è il '+fstEsc(z.n)+': bandiere e festa in tutti i paesi!</b></div>'+el.innerHTML;el.hidden=false;}};
+  if(z&&z.all){el.innerHTML='<div><b>Oggi è il '+fstEsc(z.n)+(z.k==='lav'?': festa, luci e garofani rossi in tutti i paesi!':': bandiere e festa in tutti i paesi!')+'</b></div>'+el.innerHTML;el.hidden=false;}};
 /* a Ripi la festa si fa sul belvedere, se in modalità God non si è scelta un'altra zona */
 var rpArea0=fstArea;fstArea=function(n){var A=rpArea0(n);if(A||n!=='Ripi')return A;var C=RPBV.cache||(NET?rpBelvFrame():null);if(!C)return null;var p=C.p;return{x:p.x+p.ux*9,z:p.z+p.uz*9,r:85};};
 /* tricolori alle finestre nelle feste nazionali (il 25 aprile in tutti i paesi) */
@@ -12717,11 +12717,13 @@ function rpTownOf(n){var T=NET&&NET.towns;if(!T)return null;for(var i=0;i<T.leng
 var rpFD0=fstDecor;fstDecor=function(T,towns){var g=rpFD0(T,towns),z=rpNaz(new Date());if(!z||(opts.festa||'real')!=='real')return g;
   var F=new GB(),cc=new THREE.Color(),ox=T.ox,oz=T.oz,n=0,TRI=[0x1f8a4c,0xf4f1ea,0xc8312f];
   var TW=towns.map(function(o){return rpTownOf(o.t.n)||o.t;}).filter(function(t){return z.all||t.n==='Ripi';});if(!TW.length)return g;
-  (T.brec||[]).forEach(function(b,bi){if(bi%2)return;var x=b[0],z2=b[1],ok=false;for(var q=0;q<TW.length;q++){if(Math.hypot(x-TW[q].x,z2-TW[q].z)<TW[q].r*1.05){ok=true;break;}}if(!ok)return;
+  var LAV=z.k==='lav',RR=rng(777+ox*5+oz);
+  (T.brec||[]).forEach(function(b,bi){if(bi%2&&!LAV)return;var x=b[0],z2=b[1],ok=false;for(var q=0;q<TW.length;q++){if(Math.hypot(x-TW[q].x,z2-TW[q].z)<TW[q].r*1.05){ok=true;break;}}if(!ok)return;
     if(b[7]-b[6]<5)return;var pr=netProbe(x,z2);if(!pr||pr.d>NET.E[pr.e].half+22)return;
     var ux=b[2],uz=b[3],vx=-uz,vz=ux,hw=b[4],hd=b[5],PP=NET.P,qx=PP.x0[pr.p]+(PP.x1[pr.p]-PP.x0[pr.p])*pr.t-x,qz=PP.z0[pr.p]+(PP.z1[pr.p]-PP.z0[pr.p])*pr.t-z2,best=null,bd=-1e9;
     [[ux,uz,hw,hd],[-ux,-uz,hw,hd],[vx,vz,hd,hw],[-vx,-vz,hd,hw]].forEach(function(f){var d=f[0]*qx+f[1]*qz;if(d>bd){bd=d;best=f;}});
     var nx=best[0],nz=best[1],rx=nz,rz=-nx,off=((bi*7)%5-2)/2*best[3]*.4,wy=b[6]+Math.min(4.6,(b[7]-b[6])*.5),wx=x+nx*(best[2]+.05)+rx*off,wz=z2+nz*(best[2]+.05)+rz*off;
+    if(LAV){rpCarnBox(F,cc,ox,oz,wx,wy-1.1,wz,nx,nz,rx,rz,Math.min(1.1,best[3]*.6),RR);if(best[3]>3.2)rpCarnBox(F,cc,ox,oz,wx-rx*off*2,wy+1.9,wz-rz*off*2,nx,nz,rx,rz,.8,RR);n++;return;}
     /* asta inclinata verso la strada e bandiera appesa: verde vicino all'asta, poi bianco e rosso */
     var L=2.3,ex=wx+nx*L*.8,ey=wy+L*.6,ez=wz+nz*L*.8,t=.03;cc.setHex(0xdedbd2);
     F.quad([[wx-ox-rx*t,wy,wz-oz-rz*t],[wx-ox+rx*t,wy,wz-oz+rz*t],[ex-ox+rx*t,ey,ez-oz+rz*t],[ex-ox-rx*t,ey,ez-oz-rz*t]],[nx,0,nz],N4,cc);
@@ -12729,7 +12731,31 @@ var rpFD0=fstDecor;fstDecor=function(T,towns){var g=rpFD0(T,towns),z=rpNaz(new D
     for(var k=0;k<3;k++){var a0=s0,a1=1;var p0=[wx+nx*L*.8*a0,wy+L*.6*a0,wz+nz*L*.8*a0],p1=[ex,ey,ez];cc.setHex(TRI[k]);
       F.quad([[p0[0]-ox+rx*sw*k,p0[1]-hh*k,p0[2]-oz+rz*sw*k],[p1[0]-ox+rx*sw*k,p1[1]-hh*k,p1[2]-oz+rz*sw*k],[p1[0]-ox+rx*sw*(k+1),p1[1]-hh*(k+1),p1[2]-oz+rz*sw*(k+1)],[p0[0]-ox+rx*sw*(k+1),p0[1]-hh*(k+1),p0[2]-oz+rz*sw*(k+1)]],[rx,0,rz],N4,cc);}
     n++;});
+  if(LAV)n+=rpCarnStreet(F,cc,T,TW,RR);
   if(!n)return g;if(!g)g=new THREE.Group();g.add(F.mesh(FSTB));return g;};
+/* 1º maggio: un garofano rosso (testa a petali sfrangiati, gambo verde) */
+var CARNC=[0xc8102e,0xd61a3c,0xb00c26,0xe0283f];
+function rpCarn(F,cc,ox,oz,x,y,z,s,R,stem){var a=R()*3.14;
+  if(stem){cc.setHex(0x3f7a2c);var c=Math.cos(a)*.012,d=Math.sin(a)*.012;F.quad([[x-c-ox,y-stem,z-d-oz],[x+c-ox,y-stem,z+d-oz],[x+c-ox,y,z+d-oz],[x-c-ox,y,z-d-oz]],[0,0,1],N4,cc);}
+  cc.setHex(CARNC[Math.floor(R()*CARNC.length)]);
+  for(var k=0;k<3;k++){var b=a+k*1.047,c1=Math.cos(b)*s,s1=Math.sin(b)*s;F.quad([[x-c1-ox,y-s*.35,z-s1-oz],[x+c1-ox,y-s*.35,z+s1-oz],[x+c1*.8-ox,y+s*.75,z+s1*.8-oz],[x-c1*.8-ox,y+s*.75,z-s1*.8-oz]],[s1,0,-c1],N4,cc);}
+  F.quad([[x-s-ox,y+s*.3,z-oz],[x-ox,y+s*.3,z-s-oz],[x+s-ox,y+s*.3,z-oz],[x-ox,y+s*.3,z+s-oz]],[0,1,0],N4,cc);}
+/* fioriera di garofani rossi sotto la finestra */
+function rpCarnBox(F,cc,ox,oz,x,y,z,nx,nz,rx,rz,hw,R){var d=.22,h=.2;
+  cc.setHex(0xa4553a);var bx=x+nx*d,bz=z+nz*d;
+  F.quad([[bx-rx*hw-ox,y,bz-rz*hw-oz],[bx+rx*hw-ox,y,bz+rz*hw-oz],[bx+rx*hw-ox,y+h,bz+rz*hw-oz],[bx-rx*hw-ox,y+h,bz-rz*hw-oz]],[nx,0,nz],N4,cc);
+  F.quad([[x-rx*hw-ox,y,z-rz*hw-oz],[x+rx*hw-ox,y,z+rz*hw-oz],[bx+rx*hw-ox,y,bz+rz*hw-oz],[bx-rx*hw-ox,y,bz-rz*hw-oz]],[0,-1,0],N4,cc);
+  cc.setHex(0x2f6a26);F.quad([[x-rx*hw-ox,y+h,z-rz*hw-oz],[x+rx*hw-ox,y+h,z+rz*hw-oz],[bx+rx*hw+nx*.04-ox,y+h+.1,bz+rz*hw+nz*.04-oz],[bx-rx*hw+nx*.04-ox,y+h+.1,bz-rz*hw+nz*.04-oz]],[0,1,0],N4,cc);
+  var m=Math.max(4,Math.round(hw*16));for(var i=0;i<m;i++){var a=(R()*2-1)*(hw-.05),t=R()*d,hh=.14+R()*.24;rpCarn(F,cc,ox,oz,x+rx*a+nx*(t+.02),y+h+hh,z+rz*a+nz*(t+.02),.08,R,hh);}}
+/* garofani lanciati per strada e sui marciapiedi, tra i coriandoli */
+function rpCarnStreet(F,cc,T,TW,R){var TT=NET.tiles.get(nk(Math.floor(T.ox/NT),Math.floor(T.oz/NT))),PP=NET.P,n=0;if(!TT)return 0;
+  TT.p.forEach(function(p){var e=NET.E[PP.e[p]];if(e.br||e.tu)return;var mx=(PP.x0[p]+PP.x1[p])/2,mz=(PP.z0[p]+PP.z1[p])/2,ok=false;
+    for(var q=0;q<TW.length;q++)if(Math.hypot(mx-TW[q].x,mz-TW[q].z)<TW[q].r*.9){ok=true;break;}if(!ok)return;
+    var L=Math.hypot(PP.x1[p]-PP.x0[p],PP.z1[p]-PP.z0[p]),m=Math.min(140,Math.floor(L*1.3)),ax=PP.ax[p],az=PP.az[p];
+    for(var j=0;j<m;j++){var t=R(),d=(R()*2-1)*(e.half+.5),x=PP.x0[p]+(PP.x1[p]-PP.x0[p])*t+ax*d,z=PP.z0[p]+(PP.z1[p]-PP.z0[p])*t+az*d,y=PP.y0[p]+(PP.y1[p]-PP.y0[p])*t+.05;
+      rpCarn(F,cc,T.ox,T.oz,x,y+.02,z,.075,R,0);
+      if(R()<.5){cc.setHex(0x3f7a2c);var a=R()*6.3,c=Math.cos(a)*.16,s=Math.sin(a)*.16,w=.01;F.quad([[x-T.ox-c+s*w,y-.01,z-T.oz-s-c*w],[x-T.ox+c+s*w,y-.01,z-T.oz+s-c*w],[x-T.ox+c-s*w,y-.01,z-T.oz+s+c*w],[x-T.ox-c-s*w,y-.01,z-T.oz-s+c*w]],[0,1,0],N4,cc);}}
+    n++;});return n;}
 setTimeout(fstMenu,0);
 var rpTr0=trSync;trSync=function(dt){rpTr0(dt);try{rpFestTick();}catch(e){}};
 /* le case a schiera e di riempimento non nascono sopra i monumenti di Ripi (il controllo sulla strada non basta: la casa sta a qualche metro dalla strada) */
