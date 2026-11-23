@@ -4,8 +4,8 @@
   "radio": true,
   "pos": {
    "Grotte di Pastena|Pastena": {
-    "dx": -447.92,
-    "dz": 299.95,
+    "dx": -227.95,
+    "dz": 154.05,
     "dy": 0,
     "rot": 0
    },
@@ -1075,9 +1075,15 @@
     "dy": 0,
     "dz": 0.82,
     "dx": 1.2
+   },
+   "egg:speleo2": {
+    "dx": 115.05,
+    "dz": -105.01,
+    "dy": 0,
+    "rot": 0
    }
   }
  },
  "schede": {},
- "aggiornato": "2026-11-22T00:31:18.707Z"
+ "aggiornato": "2026-11-23T09:56:47.181Z"
 }
