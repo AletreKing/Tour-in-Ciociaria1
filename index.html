@@ -11724,7 +11724,7 @@ var clsNat1=natTick;natTick=function(dt){clsNat1(dt);if(!CLS.gara)return;
     '<li>Scopri un luogo passandoci vicino: <b>10 punti</b>; arrivandoci e aprendo la scheda da vicino: <b>20</b>. Ogni luogo conta una volta sola (se prima ci passi e poi ci arrivi, prendi la differenza).</li>'+
     '<li>Scoperta col binocolo: <b>metà dei punti</b>.</li>'+
     '<li>Sentiero a piedi fino a un luogo: <b>+1 punto ogni 5 minuti</b> di cammino.</li>'+
-    '<li>Domande nelle schede e nei percorsi: <b>+1</b> per ogni risposta giusta (si risponde una volta sola).</li>'+
+    '<li>Domande nelle schede, nei percorsi e dei professori in cattedra all’ingresso di otto paesi: <b>+1</b> per ogni risposta giusta (si risponde una volta sola).</li>'+
     '<li>Patente: i punti che perdi <b>si tolgono dal totale</b>; ogni esame per riaverla costa <b>5 punti</b>.</li>'+
     '<li>Proposte approvate dai docenti: <b>testo +7</b>, <b>immagini +5</b>.</li>'+
     '<li>Niente velocizzazioni: spariscono ×2…×5, «Salta» e «300 m».</li></ul>';
@@ -12234,6 +12234,21 @@ function prfOpen(P){
 var prfEdT0=edTargets;edTargets=function(){var L=prfEdT0();PRF.L.forEach(function(P){if(P.pos)L.push({pk:P.p.pk,n:P.p.n,x:P.pos.x,z:P.pos.z,kind:'egg'});});return L;};
 var prfTr0=trSync;trSync=function(dt){prfTr0(dt);try{prfTick(dt);}catch(e){if(!PRF.err){PRF.err=1;console.error(e);}}};
 /* ===== FINE PROFESSORI ===== */
+/* ================= GROTTE DI PASTENA 2: lo speleologo sta sulla stessa sponda del sentiero, a sinistra di chi arriva, pochi passi prima dell'imbocco ================= */
+EGGS.forEach(function(E){if(E.k==='speleo')E.p.pk='egg:speleo3';});   /* i vecchi spostamenti a mano lo portavano lontano dalla grotta */
+var psEgg0=eggPlace;eggPlace=function(E){
+  if(E.k!=='speleo')return psEgg0(E);
+  var c=typeof batPoi==='function'?batPoi():null,m=c&&c.mouth;if(!m)return null;
+  var best=null;
+  if(typeof TRL!=='undefined'&&TRL.ready)TRL.tr.forEach(function(t){var n=t.x.length;if(n<6)return;var d=Math.hypot(t.x[n-1]-m.x,t.z[n-1]-m.z);if(d<40&&(!best||d<best.d))best={d:d,t:t};});
+  if(!best)return psEgg0(E);
+  var t=best.t,L=t.len,p0=trPt(t,Math.max(0,L-16)),p1=trPt(t,Math.max(0,L-11)),dx=p1[0]-p0[0],dz=p1[1]-p0[1],l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;
+  var lx=dz,lz=-dx;   /* a sinistra di chi cammina verso la grotta (x verso ovest) */
+  function wet(x,z){var md=1e9;if(typeof WAT!=='undefined'&&WAT.ready)WAT.R.forEach(function(R){if(R.k==='t')return;for(var i=0;i+1<R.x.length;i++){var x0=R.x[i],z0=R.z[i];if(Math.abs(x0-x)>60||Math.abs(z0-z)>60)continue;var a=R.x[i+1]-x0,b=R.z[i+1]-z0,L2=a*a+b*b||1,u=Math.max(0,Math.min(1,((x-x0)*a+(z-z0)*b)/L2)),dd=Math.hypot(x0+a*u-x,z0+b*u-z)-R.half;if(dd<md)md=dd;}});return md;}
+  var x=p1[0]+lx*3.4,z=p1[1]+lz*3.4;
+  for(var o=3.4;o<=9;o+=.4){x=p1[0]+lx*o;z=p1[1]+lz*o;if(wet(x,z)>1.6&&!(typeof cicInBld==='function'&&cicInBld(x,z,.7)))break;}
+  return{x:x,z:z,y:gndY(x,z),r:Math.atan2(-lx,-lz)};};   /* guarda il sentiero */
+/* ===== FINE PASTENA 2 ===== */
 /* ================= FERENTINO: Sant'Agata con l'ITE, San Francesco con il «Martino Filetico», il Testamento di Aulo Quintilio Prisco, le porte della città =================
    Modelli fatti su misura dalle foto. Ognuno si sposta e si ruota in modalità God (Q/E) come le altre costruzioni. */
 var FER={def:{
