@@ -12029,6 +12029,211 @@ function cicWalk(E,bx,bz){var key=Math.round(bx*10)+','+Math.round(bz*10);
     return[A[i-1][0]+(A[i][0]-A[i-1][0])*t,A[i-1][1]+(A[i][1]-A[i-1][1])*t,Math.atan2(dx,dz),mv];}acc+=l;}
   return[A[0][0],A[0][1],E.pos.r,0];}
 /* ===== FINE CICERONE ===== */
+/* ================= PROFESSORI IN CATTEDRA: all'ingresso di otto paesi un professore, dietro la cattedra, fa una domanda;
+   si risponde una volta sola (1 punto in classifica se è giusta) ================= */
+var PRF={L:[
+  {town:'Ferentino',d:'Dove acquisti i beni di cui hai bisogno?',r:['In comune','Nei negozi','In palestra'],ok:1},
+  {town:'Frosinone',d:'Il cibo per te è un bisogno:',r:['Primario','Secondario','Non indispensabile'],ok:0},
+  {town:'Alatri',d:'Chi produce il cibo che acquisti?',r:['La scuola','L’azienda','L’ufficio postale'],ok:1},
+  {town:'Anagni',d:'Chi è il titolare dell’azienda?',r:['Il professore','L’imprenditore','Il medico'],ok:1},
+  {town:'Fiuggi',d:'Qual è l’obiettivo dell’imprenditore?',r:['Guadagnare un utile','Curare gli animali','Accogliere stranieri'],ok:0},
+  {town:'Ceccano',d:'Se l’imprenditore vende per 200 € e ha spese per 50 €, quanto guadagna?',r:['1000 €','150 €','2000 €'],ok:1},
+  {town:'Veroli',d:'Se l’imprenditore vende per 1000 € e ha spese per 500 €, ha:',r:['Un utile','Una perdita','Un premio'],ok:0},
+  {town:'Ripi',d:'Quando un’azienda si dice sostenibile?',r:['Quando si trova all’estero','Quando resiste al maltempo','Quando produce rispettando l’ambiente e le persone'],ok:2}
+],g:null,near:null,chk:0,box:null,cur:null,done:{}};
+/* aspetto: quattro professoresse e quattro professori, ognuno vestito a modo suo */
+var PRFLOOK=[
+  {top:0x7a2f3a,bot:0x2b2f36,hair:0x2a1c14,skin:0xe0b494,skirt:1,longHair:1,f:1},
+  {top:0x2f4a6b,bot:0x3a3f46,hair:0x8a8a8a,skin:0xd8a884},
+  {top:0x4f6b3a,bot:0x2b2f36,hair:0x6a3a1c,skin:0xd9ae8c,skirt:1,f:1},
+  {top:0x3a3a40,bot:0x22252a,hair:0x1a1410,skin:0xc99a76},
+  {top:0xb0763a,bot:0x3a2f2a,hair:0xc9a35a,skin:0xe8c0a0,skirt:1,longHair:1,f:1},
+  {top:0x6b2f2f,bot:0x2f3440,hair:0x3a2a1c,skin:0xd4a27f},
+  {top:0x2f5d6b,bot:0x2b2f36,hair:0xa8a8a8,skin:0xe0b494,skirt:1,f:1},
+  {top:0x5a4a7a,bot:0x2b2f36,hair:0x2a2420,skin:0xb98a66}];
+PRF.L.forEach(function(P,i){P.i=i;P.p={pk:'prof:'+P.town.toLowerCase().replace(/[^a-z]/g,''),n:'Professore all’ingresso di '+P.town};P.look=PRFLOOK[i%8];});
+try{PRF.done=JSON.parse(localStorage.getItem('au_prof')||'{}')||{};}catch(e){PRF.done={};}
+function prfKey(P){return clsQKey({d:P.d,r:P.r});}
+function prfDone(P){return PRF.done[prfKey(P)]||(typeof clsQDone==='function'&&clsQDone({d:P.d,r:P.r})?{r:-1}:null);}
+function prfCount(){var n=0;PRF.L.forEach(function(P){if(prfDone(P))n++;});return n;}
+/* dove: la strada principale che entra in paese, poco dopo il cartello d'inizio del centro abitato, a destra di chi arriva */
+function prfCands(P){
+  var t=null;(NET.towns||[]).forEach(function(q){if(q.n===P.town&&q.c>=1)t=q;});if(!t)return[];
+  var R=t.r*.75,NP=NET.P,L=[];
+  for(var p=0;p<NP.e.length;p++){
+    if(Math.abs(NP.x0[p]-t.x)>R+400||Math.abs(NP.z0[p]-t.z)>R+400)continue;
+    var e=NET.E[NP.e[p]];if(e.cls<2||e.link||e.br||e.tu)continue;
+    var d0=Math.hypot(NP.x0[p]-t.x,NP.z0[p]-t.z)<R,d1=Math.hypot(NP.x1[p]-t.x,NP.z1[p]-t.z)<R;if(d0===d1)continue;
+    var lo=0,hi=1;for(var it=0;it<20;it++){var m=(lo+hi)/2,ins=Math.hypot(NP.x0[p]+(NP.x1[p]-NP.x0[p])*m-t.x,NP.z0[p]+(NP.z1[p]-NP.z0[p])*m-t.z)<R;if(ins===d0)lo=m;else hi=m;}
+    var sv=NP.s0[p]+(NP.s1[p]-NP.s0[p])*lo;
+    L.push({ei:NP.e[p],sv:sv,dir:d1?1:-1,sc:e.cls*1e5-e.len});}
+  L.sort(function(a,b){return a.sc-b.sc;});return L;}
+function prfFree(x,z){
+  if(typeof cicInBld==='function'&&cicInBld(x,z,1.8))return false;
+  var pr=netProbe(x,z);if(pr&&pr.d<NET.E[pr.e].half+2.2)return false;
+  return true;}
+function prfRail(ax,az,bx,bz){   /* un guard rail o un muretto tra la strada e la cattedra? */
+  function cr(p1x,p1z,p2x,p2z,p3x,p3z){return (p2x-p1x)*(p3z-p1z)-(p2z-p1z)*(p3x-p1x);}
+  var tx=Math.floor(ax/NT),tz=Math.floor(az/NT);
+  for(var i=-1;i<=1;i++)for(var j=-1;j<=1;j++){var T=netTiles[nk(tx+i,tz+j)];if(!T||!T.obs)continue;
+    for(var k=0;k<T.obs.length;k++){var o=T.obs[k];if(o[0]!==3)continue;if(Math.abs(o[1]-ax)>30||Math.abs(o[2]-az)>30)continue;
+      var d1=cr(ax,az,bx,bz,o[3],o[4]),d2=cr(ax,az,bx,bz,o[5],o[6]),d3=cr(o[3],o[4],o[5],o[6],ax,az),d4=cr(o[3],o[4],o[5],o[6],bx,bz);
+      if(d1*d2<0&&d3*d4<0)return true;}}
+  return false;}
+function prfPlace(P){
+  if(!P.cands)P.cands=prfCands(P);
+  for(var c=0;c<P.cands.length&&c<6;c++){var C=P.cands[c],e=NET.E[C.ei],lo=(NET.rj?NET.rj[e.a]:0)+6,hi=e.len-(NET.rj?NET.rj[e.b]:0)-6;
+    var offs=[18,26,12,34,42,6];
+    for(var k=0;k<offs.length;k++){var s=C.sv+C.dir*offs[k];if(s<lo||s>hi)continue;
+      var pt=netEdgeAt(C.ei,s),ix=pt.ux*C.dir,iz=pt.uz*C.dir,rx=iz,rz=-ix;
+      if(typeof cicReady==='function'&&!cicReady(pt.x,pt.z))return 'wait';
+      for(var sd=1;sd>=-1;sd-=2){var o=e.half+3.6,x=pt.x+rx*sd*o,z=pt.z+rz*sd*o;
+        if(!prfFree(x,z))continue;
+        var hy=pt.y!=null?pt.y:terrH(pt.x,pt.z),okH=true;[[0,0],[1.2,0],[-1.2,0],[0,1.5],[0,-1.5]].forEach(function(q){var yy=terrH(x+rx*q[1]*sd+ix*q[0],z+rz*q[1]*sd+iz*q[0]);if(Math.abs(yy-hy)>.8)okH=false;});
+        var mh=terrH(pt.x+rx*sd*(e.half+1.2),pt.z+rz*sd*(e.half+1.2));if(Math.abs(mh-hy)>.6)okH=false;   /* niente scarpate né guardrail tra strada e cattedra */
+        if(!okH)continue;
+        if(prfRail(pt.x+rx*sd*(e.half-.5),pt.z+rz*sd*(e.half-.5),x-rx*sd*1.4,z-rz*sd*1.4)||prfRail(pt.x+ix*1.5+rx*sd*(e.half-.5),pt.z+iz*1.5+rz*sd*(e.half-.5),x+ix*1.5+rx*sd*1.4,z+iz*1.5+rz*sd*1.4)||prfRail(pt.x-ix*1.5+rx*sd*(e.half-.5),pt.z-iz*1.5+rz*sd*(e.half-.5),x-ix*1.5+rx*sd*1.4,z-iz*1.5+rz*sd*1.4))continue;
+        return{x:x,z:z,r:Math.atan2(-rx*sd,-rz*sd)};}}}   /* guarda la strada */
+  var C0=P.cands[0];if(!C0)return null;   /* nessun posto libero: comunque accanto alla strada */
+  var pt0=netEdgeAt(C0.ei,C0.sv+C0.dir*18),rx0=pt0.uz*C0.dir,rz0=-pt0.ux*C0.dir,o0=NET.E[C0.ei].half+3.6;
+  return{x:pt0.x+rx0*o0,z:pt0.z+rz0*o0,r:Math.atan2(-rx0,-rz0)};}
+/* ---------- il modello: cattedra, sedia, lavagna, libro e mela; sopra, il segnale da lontano ---------- */
+function prfTex(w,h,fn){var c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);var t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;}
+function prfMarkTex(st){return prfTex(128,128,function(x){
+  x.fillStyle=st==='ok'?'#2e9e5b':st==='no'?'#c0392b':'#f2b705';x.beginPath();x.arc(64,64,58,0,7);x.fill();x.lineWidth=7;x.strokeStyle='#fff';x.stroke();
+  x.fillStyle='#fff';x.font='bold 84px Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(st==='ok'?'✓':st==='no'?'✗':'?',64,70);});}
+function prfModel(P){
+  var g=new THREE.Group(),M=function(c,em){return new THREE.MeshLambertMaterial({color:c,emissive:em||0});},
+    wood=M(0x7a4a24),wood2=M(0x5e3618),metal=M(0x6c727a),green=M(0x23402f),paper=M(0xf4efe2),red=M(0xc0201a,0x200000),cover=M(0x2a4f8a);
+  function bx(p,w,h,d,m,x,y,z){var o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);p.add(o);return o;}
+  /* pedana e cattedra (davanti, verso la strada, il pannello con la scritta) */
+  bx(g,2.6,.16,2.2,M(0x8f8a80),0,.08,-.3);
+  bx(g,1.6,.07,.8,wood,0,.92,0);
+  bx(g,1.6,.72,.05,wood2,0,.52,.36);bx(g,.05,.76,.78,wood2,-.78,.54,0);bx(g,.05,.76,.78,wood2,.78,.54,0);
+  var lab=new THREE.Mesh(new THREE.PlaneGeometry(1.4,.5),new THREE.MeshLambertMaterial({map:prfTex(256,92,function(x,w,h){
+    x.fillStyle='#f7f1e1';x.fillRect(0,0,w,h);x.strokeStyle='#5e3618';x.lineWidth=6;x.strokeRect(3,3,w-6,h-6);
+    x.fillStyle='#1d2a3a';x.textAlign='center';x.textBaseline='middle';x.font='bold 38px Georgia,serif';x.fillText(P.look.f?'Prof.ssa':'Prof.',w/2,34);
+    x.font='bold 22px Arial,sans-serif';x.fillStyle='#7a2f1a';x.fillText('DOMANDA '+(P.i+1)+' DI '+PRF.L.length,w/2,70);})}));
+  lab.position.set(0,.58,.39);g.add(lab);
+  /* sulla cattedra: registro aperto, libro chiuso, mela */
+  bx(g,.42,.02,.3,paper,-.35,.965,.05).rotation.y=.12;bx(g,.02,.025,.3,wood2,-.35,.97,.05).rotation.y=.12;
+  bx(g,.3,.07,.22,cover,.38,.99,-.1);
+  var ap=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),red);ap.position.set(.6,1.02,.18);g.add(ap);bx(g,.012,.05,.012,wood2,.6,1.1,.18);
+  /* la sedia dietro */
+  bx(g,.46,.05,.44,wood,0,.5,-.95);bx(g,.46,.5,.04,wood,0,.78,-1.17);
+  [[-.2,-.75],[.2,-.75],[-.2,-1.15],[.2,-1.15]].forEach(function(q){bx(g,.04,.48,.04,metal,q[0],.25,q[1]);});
+  /* lavagna a cavalletto accanto */
+  var lv=new THREE.Group();lv.position.set(1.55,0,-.35);lv.rotation.y=-.35;g.add(lv);
+  bx(lv,1.05,.75,.04,wood2,0,1.55,0);
+  var bl=new THREE.Mesh(new THREE.PlaneGeometry(.95,.65),new THREE.MeshLambertMaterial({map:prfTex(192,128,function(x,w,h){
+    x.fillStyle='#23402f';x.fillRect(0,0,w,h);x.fillStyle='rgba(255,255,255,.9)';x.font='bold 30px "Comic Sans MS",cursive';x.textAlign='center';
+    x.fillText(['Beni','Bisogni','Azienda','Impresa','Utile','Ricavi','Costi','Sostenibile'][P.i%8],w/2,44);
+    x.font='24px "Comic Sans MS",cursive';x.fillText(P.i===5?'200 − 50 = ?':P.i===6?'1000 − 500 = ?':'?',w/2,92);})}));
+  bl.position.set(0,1.55,.025);lv.add(bl);
+  [[-.4,.15],[.4,.15]].forEach(function(q){bx(lv,.05,1.9,.05,wood2,q[0],.95,q[1]).rotation.x=-.08;});bx(lv,.05,1.9,.05,wood2,0,.95,-.35).rotation.x=.2;
+  /* il professore, in piedi dietro la cattedra */
+  var L=P.look,pp=pwPerson({top:L.top,bot:L.bot,hair:L.hair,skin:L.skin,skirt:L.skirt,longHair:L.longHair});
+  pp.g.position.set(0,.16,-.5);g.add(pp.g);
+  var gl=M(0x111111);bx(pp.g,.07,.035,.02,gl,-.055,1.67,.125);bx(pp.g,.07,.035,.02,gl,.055,1.67,.125);bx(pp.g,.04,.012,.02,gl,0,1.675,.125);
+  /* il segnale: si vede da lontano, giallo con il punto di domanda; poi verde o rosso */
+  var mk=new THREE.Sprite(new THREE.SpriteMaterial({map:prfMarkTex(''),transparent:true,depthWrite:false,fog:false}));mk.scale.set(1.3,1.3,1);mk.position.y=3.1;g.add(mk);
+  g.userData={pp:pp,mk:mk,st:''};g.traverse(function(o){o.userData.prf=P;});return g;}
+function prfMark(P){if(!P.g)return;var d=prfDone(P),st=d?(d.r<0?'ok':d.ok?'ok':'no'):'',u=P.g.userData;
+  if(u.st===st&&u.mk.material.map)return;if(u.mk.material.map)u.mk.material.map.dispose();u.mk.material.map=prfMarkTex(st);u.mk.material.needsUpdate=true;u.st=st;}
+/* ---------- ogni fotogramma ---------- */
+function prfTick(dt){
+  if(world!=='net'||!NET)return;
+  if(!PRF.g){PRF.g=new THREE.Group();scene.add(PRF.g);}
+  var me=PW.on?PW:car,cx=me.x,cz=me.z;PRF.chk-=dt;var scan=PRF.chk<=0;if(scan)PRF.chk=.5;
+  var best=null,bd=1e9;
+  PRF.L.forEach(function(P){
+    if(!P.pos){if(!scan||P.pos===null)return;
+      var t0=P.t0;if(!t0){(NET.towns||[]).forEach(function(q){if(q.n===P.town&&q.c>=1)t0=q;});P.t0=t0||{x:1e9,z:1e9,r:0};t0=P.t0;}
+      if(Math.hypot(t0.x-cx,t0.z-cz)>t0.r+1600)return;
+      var r=prfPlace(P);if(r==='wait')return;P.pos=r;if(!r)return;}
+    var EO=typeof edOff==='function'?edOff(P.p):null,x=P.pos.x+(EO?+EO.dx||0:0),z=P.pos.z+(EO?+EO.dz||0:0),ry=P.pos.r+(EO?(+EO.rot||0)*Math.PI/180:0);
+    var dd=Math.hypot(x-cx,z-cz);P.x=x;P.z=z;
+    if(dd<1300&&!P.g){P.g=prfModel(P);PRF.g.add(P.g);P.t=0;prfMark(P);}
+    else if(dd>1600&&P.g){PRF.g.remove(P.g);P.g.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});P.g=null;}
+    if(!P.g)return;P.t+=dt;
+    var gy=terrH(x,z);[[1.2,1],[-1.2,1],[1.2,-1.4],[-1.2,-1.4]].forEach(function(q){var c=Math.cos(ry),s=Math.sin(ry);gy=Math.min(gy,terrH(x+q[0]*c+q[1]*s,z-q[0]*s+q[1]*c));});
+    P.g.position.set(x-OX,gy+(EO?+EO.dy||0:0),z-OZ);P.g.rotation.y=ry;
+    /* il professore segue con lo sguardo chi arriva e, da vicino, alza la mano per chiamare */
+    var u=P.g.userData,pp=u.pp,tw=Math.atan2(cx-x,cz-z)-ry;tw=Math.atan2(Math.sin(tw),Math.cos(tw));
+    pp.g.rotation.y+=(clamp(tw,-.9,.9)*(dd<120?1:0)-pp.g.rotation.y)*Math.min(1,dt*3);
+    var call=dd<80&&!prfDone(P),A=pp.limbs[2];
+    if(A){A.rotation.x+=((call?-2.6+Math.sin(P.t*6)*.25:0)-A.rotation.x)*Math.min(1,dt*5);A.rotation.z=call?Math.sin(P.t*6)*.2:0;}
+    u.mk.position.y=3.1+Math.sin(P.t*2.2)*.12;u.mk.scale.setScalar(dd>200?Math.min(4,1.3*dd/200):1.3);
+    if(dd<bd){bd=dd;best=P;}
+    if(dd<160&&!P.said&&state==='drive'&&!prfDone(P)){P.said=true;say('All’ingresso di '+P.town+' un professore ti aspetta in cattedra: fermati, ha una domanda per te','good',3500);}
+  });
+  /* il pulsante, quando ci si ferma vicino */
+  var b=prfBtn();if(state!=='drive'||WALK.on||BINO.on||paused){b.hidden=true;return;}
+  var slow=PW.on||Math.hypot(car.vx,car.vz)<6;PRF.near=best&&bd<(PW.on?8:32)&&slow?best:null;
+  if(PRF.near){b.textContent=prfDone(PRF.near)?'🎓 Rivedi la domanda del professore':'🎓 Rispondi al professore';}
+  b.hidden=!PRF.near;
+}
+function prfBtn(){var b=$('prfBtn');if(b)return b;
+  b=document.createElement('button');b.id='prfBtn';b.className='chip hud';b.type='button';b.hidden=true;$('game').appendChild(b);
+  b.addEventListener('pointerdown',function(e){e.stopPropagation();});b.addEventListener('click',function(){if(PRF.near)prfOpen(PRF.near);});return b;}
+(function(){var st=document.createElement('style');st.textContent=
+  '#prfBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(200px + env(safe-area-inset-bottom,0px));z-index:8;background:#f2b705;color:#1d2a3a;border-color:#ffd54a;font-weight:800}#prfBtn[hidden]{display:none}'+
+  '#prfBox{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(5,9,16,.6)}#prfBox[hidden]{display:none}'+
+  '#prfBox .box{max-width:min(460px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;background:#f7f1e1;color:#1d2a3a;border:6px solid #5e3618;border-radius:14px;padding:18px 18px 14px;font:16px/1.45 system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.55)}'+
+  '#prfBox .who{font:700 12px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#7a2f1a;margin:0 0 6px}'+
+  '#prfBox h2{margin:0 0 14px;font:700 21px/1.3 Georgia,serif}'+
+  '#prfBox .ans{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}'+
+  '#prfBox .ans button{text-align:left;font:600 16px system-ui,sans-serif;border-radius:10px;padding:11px 14px;border:2px solid #c9bc9c;background:#fff;color:#1d2a3a;cursor:pointer}'+
+  '#prfBox .ans button:disabled{cursor:default;opacity:.75}#prfBox .ans button.ok{background:#d9f2e1;border-color:#2e9e5b;opacity:1}#prfBox .ans button.no{background:#f8dcd8;border-color:#c0392b;opacity:1}'+
+  '#prfBox .res{min-height:1.4em;margin:0 0 12px;font-weight:700}#prfBox .res.ok{color:#1f7a44}#prfBox .res.no{color:#a5281b}'+
+  '#prfBox .row{display:flex;justify-content:space-between;align-items:center;gap:8px}#prfBox .cnt{font-size:13px;color:#5e5446}'+
+  '#prfBox .go{font:700 15px system-ui,sans-serif;border-radius:999px;padding:9px 18px;border:0;background:#2f6fd6;color:#fff;cursor:pointer}';
+  document.head.appendChild(st);})();
+/* ---------- la domanda ---------- */
+function prfOpen(P){
+  var box=$('prfBox');if(!box){box=document.createElement('div');box.id='prfBox';box.hidden=true;$('game').appendChild(box);}
+  var d=prfDone(P);PRF.cur=P;
+  box.innerHTML='<div class="box"><p class="who"></p><h2></h2><div class="ans"></div><p class="res"></p><div class="row"><span class="cnt"></span><button type="button" class="go">Continua</button></div></div>';
+  box.querySelector('.who').textContent=(P.look.f?'La professoressa':'Il professore')+' all’ingresso di '+P.town+' · domanda '+(P.i+1)+' di '+PRF.L.length;
+  box.querySelector('h2').textContent=P.d;
+  var A=box.querySelector('.ans'),res=box.querySelector('.res'),ord=P.r.map(function(_,i){return i;});
+  for(var i=ord.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=ord[i];ord[i]=ord[j];ord[j]=t;}   /* risposte in ordine sparso */
+  ord.forEach(function(ri){var b=document.createElement('button');b.type='button';b.textContent=P.r[ri];b.dataset.r=ri;A.appendChild(b);});
+  function show(ri,ok,first,pts){
+    A.querySelectorAll('button').forEach(function(x){x.disabled=true;var r=+x.dataset.r;if(r===P.ok)x.classList.add('ok');else if(r===ri)x.classList.add('no');});
+    res.className='res '+(ok?'ok':'no');
+    res.textContent=first?(ok?'Esatto!'+(pts?' +1 punto.':'')+' '+(P.look.f?'La professoressa':'Il professore')+' approva.':'Non è questa: la risposta giusta è evidenziata in verde.')
+      :'Hai già risposto a questa domanda: si risponde una volta sola.'+(ri>=0?(ok?' La tua risposta era giusta.':' La tua risposta non era giusta.'):'');}
+  function cnt(){box.querySelector('.cnt').textContent='Domande dei professori: '+prfCount()+' di '+PRF.L.length;}
+  if(d)show(d.r,d.r<0?true:!!d.ok,false);
+  else A.addEventListener('click',function h(e){var b=e.target.closest('button');if(!b||prfDone(P))return;A.removeEventListener('click',h);
+    var ri=+b.dataset.r,ok=ri===P.ok,pts=typeof clsQuiz==='function'?clsQuiz({d:P.d,r:P.r},ok):0;
+    PRF.done[prfKey(P)]={r:ri,ok:ok?1:0};try{localStorage.setItem('au_prof',JSON.stringify(PRF.done));}catch(e2){}
+    if(typeof SC!=='undefined'){SC.quizN=(SC.quizN||0)+1;if(ok){SC.quizOk=(SC.quizOk||0)+1;SC.score+=pts||0;}}
+    show(ri,ok,true,pts);cnt();prfMark(P);
+    if(typeof pwBubble==='function'&&P.g)pwBubble({x:P.x,y:P.g.position.y+.16,z:P.z},ok?'Bravo!':'Ripassa!');
+    if(prfCount()===PRF.L.length)setTimeout(function(){say('Hai risposto a tutte le domande dei professori!','good',3500);},400);});
+  cnt();
+  box.querySelector('.go').addEventListener('click',function(){box.hidden=true;paused=false;PRF.cur=null;});
+  paused=true;inp.kbGas=inp.kbBrake=inp.kbL=inp.kbR=false;inp.syncPedals();box.hidden=false;}
+/* tocco sul professore o sulla cattedra */
+(function(){
+  var el=$('view'),rc=new THREE.Raycaster(),v2=new THREE.Vector2(),dn=null;
+  el.addEventListener('pointerdown',function(e){dn={x:e.clientX,y:e.clientY,t:performance.now()};},true);
+  el.addEventListener('pointerup',function(e){
+    if(!dn||state!=='drive'||paused||world!=='net'||BINO.on||!PRF.g)return;
+    var mv=Math.hypot(e.clientX-dn.x,e.clientY-dn.y),dt=performance.now()-dn.t;dn=null;if(mv>10||dt>450)return;
+    var R=renderer.domElement.getBoundingClientRect();v2.set((e.clientX-R.left)/R.width*2-1,-(e.clientY-R.top)/R.height*2+1);rc.setFromCamera(v2,camera);rc.camera=camera;
+    var h=rc.intersectObjects(PRF.g.children,true);if(!h.length||h[0].distance>120)return;
+    var P=h[0].object.userData.prf;if(!P)return;
+    if(!prfDone(P)&&Math.hypot(P.x-(PW.on?PW.x:car.x),P.z-(PW.on?PW.z:car.z))>40){say('Avvicinati e fermati davanti alla cattedra per rispondere','',2600);return;}
+    prfOpen(P);
+  },true);
+})();
+/* modalità God: i professori si spostano come le altre sorprese */
+var prfEdT0=edTargets;edTargets=function(){var L=prfEdT0();PRF.L.forEach(function(P){if(P.pos)L.push({pk:P.p.pk,n:P.p.n,x:P.pos.x,z:P.pos.z,kind:'egg'});});return L;};
+var prfTr0=trSync;trSync=function(dt){prfTr0(dt);try{prfTick(dt);}catch(e){if(!PRF.err){PRF.err=1;console.error(e);}}};
+/* ===== FINE PROFESSORI ===== */
 /* ================= FERENTINO: Sant'Agata con l'ITE, San Francesco con il «Martino Filetico», il Testamento di Aulo Quintilio Prisco, le porte della città =================
    Modelli fatti su misura dalle foto. Ognuno si sposta e si ruota in modalità God (Q/E) come le altre costruzioni. */
 var FER={def:{
