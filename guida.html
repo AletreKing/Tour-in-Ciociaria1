@@ -12249,6 +12249,17 @@ var psEgg0=eggPlace;eggPlace=function(E){
   for(var o=3.4;o<=9;o+=.4){x=p1[0]+lx*o;z=p1[1]+lz*o;if(wet(x,z)>1.6&&!(typeof cicInBld==='function'&&cicInBld(x,z,.7)))break;}
   return{x:x,z:z,y:gndY(x,z),r:Math.atan2(-lx,-lz)};};   /* guarda il sentiero */
 /* ===== FINE PASTENA 2 ===== */
+/* ================= ORDINE DEL CIELO: sole, luna e stelle vanno dietro al profilo dei monti lontani =================
+   Il profilo dei monti all'orizzonte è un anello che non scrive la profondità: quello che è disegnato dopo di lui gli finisce davanti.
+   Gli oggetti trasparenti si disegnano sempre dopo gli opachi, perciò il sole ci finiva sopra. Ora sole, luna e stelle si disegnano
+   con gli opachi, subito dopo il cielo e prima dei monti, con la stessa fusione di colore di prima. */
+function skyOrdFix(o,ord){
+  if(!o||!o.material||o.userData.skyOrd)return;var m=o.material;
+  if(m.blending!==THREE.AdditiveBlending){m.blending=THREE.CustomBlending;m.blendEquation=THREE.AddEquation;m.blendSrc=THREE.SrcAlphaFactor;m.blendDst=THREE.OneMinusSrcAlphaFactor;}
+  m.transparent=false;m.depthWrite=false;m.needsUpdate=true;o.renderOrder=ord;o.userData.skyOrd=1;}
+var skoTr0=trSync;trSync=function(dt){skoTr0(dt);try{skyOrdFix(sunSpr,-1.8);if(typeof stars!=='undefined')skyOrdFix(stars,-1.7);if(typeof SKY!=='undefined'&&SKY.moon)skyOrdFix(SKY.moon,-1.75);}catch(e){}};
+skyOrdFix(sunSpr,-1.8);
+/* ===== FINE ORDINE DEL CIELO ===== */
 /* ================= FERENTINO: Sant'Agata con l'ITE, San Francesco con il «Martino Filetico», il Testamento di Aulo Quintilio Prisco, le porte della città =================
    Modelli fatti su misura dalle foto. Ognuno si sposta e si ruota in modalità God (Q/E) come le altre costruzioni. */
 var FER={def:{
